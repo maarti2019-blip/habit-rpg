@@ -3,114 +3,107 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Accountability Raid RPG</title>
+    <title>Accountability RPG</title>
     <link rel="manifest" href="/static/manifest.json">
     <style>
-        body { font-family: -apple-system, system-ui, sans-serif; background: #0f0f12; color: #e2e8f0; padding: 15px; margin: 0; }
+        body { font-family: -apple-system, sans-serif; background: #0f0f12; color: #e2e8f0; padding: 15px; margin: 0; }
         .card { background: #1a1a24; border: 1px solid #2d2d3d; border-radius: 12px; padding: 16px; margin-bottom: 16px; }
         .btn { background: #4f46e5; color: #fff; border: none; padding: 12px; font-weight: bold; border-radius: 6px; width: 100%; cursor: pointer; display: block; text-align: center; text-decoration: none; box-sizing: border-box; }
-        .btn-alt { background: #2b2b3a; border: 1px solid #4f46e5; }
         .flex-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        
+        /* Interactive Tab System CSS */
+        .tabs { display: flex; margin-bottom: 12px; background: #1e1e2f; border-radius: 8px; padding: 4px; }
+        .tab-btn { flex: 1; padding: 10px; border: none; background: none; color: #94a3b8; font-weight: bold; cursor: pointer; border-radius: 6px; }
+        .tab-btn.active { background: #4f46e5; color: white; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
         .boss-bar { background: #2d2d3d; height: 24px; border-radius: 12px; overflow: hidden; margin: 12px 0; position: relative; }
-        .boss-progress { background: linear-gradient(90deg, #dc2626, #ea580c); height: 100%; transition: width 0.4s ease; }
-        .boss-text { position: absolute; width: 100%; text-align: center; top: 2px; font-weight: bold; font-size: 14px; }
-        .loot-badge { display: inline-block; padding: 4px 8px; font-size: 11px; border-radius: 4px; font-weight: bold; background: #3b82f6; }
-        .item-row { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #2d2d3d; padding: 8px 0; }
-        input, select { background: #252538; color: #fff; border: 1px solid #3d3d5c; padding: 10px; border-radius: 6px; width: 100%; margin-bottom: 10px; box-sizing: border-box; }
+        .boss-progress { height: 100%; transition: width 0.4s ease; }
+        .boss-text { position: absolute; width: 100%; text-align: center; top: 2px; font-weight: bold; font-size: 14px; color: white; }
+        input, select { background: #252538; color: #fff; border: 1px solid #3d3d5c; padding: 12px; border-radius: 6px; width: 100%; margin-bottom: 12px; box-sizing: border-box; }
+        .checkbox-container { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; background: #252538; padding: 12px; border-radius: 6px; border: 1px solid #3d3d5c; }
+        .checkbox-container input { width: auto; margin: 0; }
     </style>
 </head>
 <body>
 
     {% if not current_user %}
     <div class="card" style="text-align: center;">
-        <h2>Identify Account to Bind Device IP</h2>
+        <h2>Device Profile Allocation</h2>
         <div class="flex-grid">
             <a href="/manual_login/Alaina" class="btn">Alaina</a>
-            <a href="/manual_login/Matthew" class="btn btn-alt">Matthew</a>
+            <a href="/manual_login/Matthew" class="btn">Matthew</a>
         </div>
     </div>
     {% else %}
     
-    <div style="display:flex; justify-content: space-between; margin-bottom:12px; align-items:center;">
-        <span>Bound Profile: <strong>{{ current_user.username }}</strong></span>
-        <a href="/manual_login/{% if current_user.username == 'Alaina' %}Matthew{% else %}Alaina{% endif %}" style="color:#818cf8; text-decoration:none; font-size:13px;">Switch Device Lock</a>
+    <div style="display:flex; justify-content: space-between; margin-bottom:12px;">
+        <span>User: <strong>{{ current_user.username }}</strong></span>
+        <a href="/manual_login/{% if current_user.username == 'Alaina' %}Matthew{% else %}Alaina{% endif %}" style="color:#818cf8; text-decoration:none;">Switch Profile</a>
     </div>
 
-    <div class="card">
-        <h3 style="margin:0 0 4px 0;">⚔️ Current Raid Objective</h3>
-        <small style="color:#94a3b8;">{{ boss.name }}</small>
-        <div class="boss-bar">
-            <div class="boss-progress" style="width: {{ (boss.current_hp / boss.max_hp) * 100 }}%;"></div>
-            <div class="boss-text">{{ boss.current_hp | int }} / {{ boss.max_hp | int }} HP</div>
-        </div>
-    </div>
-
-    <div class="flex-grid">
+    <div class="flex-grid" style="margin-bottom: 16px;">
         {% for p in players %}
-        <div class="card" style="margin-bottom:12px; border-top: 4px solid {% if p.username == 'Alaina' %}#ec4899{% else %}#3b82f6{% endif %};">
-            <h4 style="margin:0;">{{ p.username }}</h4>
-            <div style="font-size:20px; font-weight:bold; color:#10b981; margin-top:6px;">${{ "%.2f"|format(p.gold_balance) }}</div>
-            <small style="color:#94a3b8;">Personal Vault</small>
+        <div class="card" style="margin:0; border-bottom: 3px solid #10b981;">
+            <small style="color:#94a3b8;">{{ p.username }}'s Bank</small>
+            <div style="font-size:22px; font-weight:bold; color:#10b981;">${{ "%.2f"|format(p.gold_balance) }}</div>
         </div>
         {% endfor %}
     </div>
 
-    <div class="card">
-        <h3>Log Habit & Deal Strike</h3>
-        <form action="/log_activity" method="POST">
-            <select name="type" id="type-select" onchange="toggleIntensity()">
-                <option value="cardio">Cardio Routine</option>
-                <option value="hobby">Productive Hobby Development</option>
-                <option value="screen_time">Time Defeating Doomscrolling Limits</option>
-            </select>
-            
-            <input type="number" step="any" name="minutes" placeholder="Duration (Minutes)" required>
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('solo-tab', this)">Solo Bosses</button>
+        <button class="tab-btn" onclick="switchTab('raid-tab', this)">Co-Op Raid Boss</button>
+    </div>
 
-            <div id="intensity-wrapper">
-                <select name="intensity">
-                    <option value="1.0">Low Impact Strike (1.0x)</option>
-                    <option value="1.5">Medium Intensity Strike (1.5x)</option>
-                    <option value="2.0">High Intensity Strike (2.0x)</option>
-                </select>
+    <div id="solo-tab" class="tab-content active card">
+        <h3 style="margin:0;">👤 Your Solo Adversary</h3>
+        <p style="color:#94a3b8; margin:4px 0;">Defeating drops your primary cash orbs.</p>
+        <div class="boss-bar">
+            <div class="boss-progress" style="width: {{ (current_user.solo_monster_hp / current_user.solo_monster_max) * 100 }}%; background: #06b6d4;"></div>
+            <div class="boss-text">{{ current_user.solo_monster_name }}: {{ current_user.solo_monster_hp | int }} / {{ current_user.solo_monster_max | int }} HP</div>
+        </div>
+    </div>
+
+    <div id="raid-tab" class="tab-content card">
+        <h3 style="margin:0;">🌋 Shared Co-Op Raid Objective</h3>
+        <p style="color:#94a3b8; margin:4px 0;">Combines daily damage metrics from both players.</p>
+        <div class="boss-bar">
+            <div class="boss-progress" style="width: {{ (boss.current_hp / boss.max_hp) * 100 }}%; background: #dc2626;"></div>
+            <div class="boss-text">{{ boss.name }}: {{ boss.current_hp | int }} / {{ boss.max_hp | int }} HP</div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>Log Actions (Calculated at 11:59 PM)</h3>
+        <form action="/stage_activity" method="POST">
+            <select name="type">
+                <option value="cardio">Cardio Output</option>
+                <option value="hobby">Hobby Tracking (1.5x Base Mod)</option>
+                <option value="screen_time">Screen Time Management (2.0x Base Mod)</option>
+            </select>
+            <input type="number" step="any" name="minutes" placeholder="Minutes completed" required>
+            
+            <div class="checkbox-container">
+                <input type="checkbox" name="chores" id="chores" {% if queue.chores_completed %}checked{% endif %}>
+                <label for="chores"><strong>Are chores completed for the day? (Global 1.5x Buff)</strong></label>
             </div>
             
-            <button type="submit" class="btn">Deploy Strike Engine</button>
+            <button type="submit" class="btn">Stage Metrics</button>
         </form>
     </div>
 
-    <div class="card">
-        <h3>🎒 Your Loot Inventory</h3>
-        {% if not inventory %}
-        <p style="color:#64748b; font-size:14px; margin:0;">Defeat the Shared Raid Boss to populate your storage with Habit-Hook boosters.</p>
-        {% else %}
-            {% for item in inventory %}
-            <div class="item-row">
-                <div>
-                    <div style="font-weight:bold;">{{ item.item_name }}</div>
-                    <small style="color:#94a3b8;">+{{ int((item.multiplier - 1)*100) }}% multiplier to {{ item.category_target }}</small>
-                </div>
-                <div>
-                    {% if item.is_active %}
-                        <span class="loot-badge" style="background:#10b981;">ACTIVE (7D Time Limit)</span>
-                    {% else %}
-                        <a href="/activate_item/{{ item.id }}" class="btn" style="padding:6px 12px; font-size:12px; width:auto;">Equip & Hook</a>
-                    {% endif %}
-                </div>
-            </div>
-            {% endfor %}
-        {% endif %}
+    <div style="margin-bottom: 20px;">
+        <a href="/trigger_midnight_calculation" class="btn" style="background: #252538; border: 1px solid #4f46e5;">simulate 11:59 PM calculation check</a>
     </div>
 
     <script>
-        function toggleIntensity() {
-            var select = document.getElementById('type-select').value;
-            var wrapper = document.getElementById('intensity-wrapper');
-            wrapper.style.display = (select === 'cardio') ? 'block' : 'none';
-        }
-        toggleIntensity();
-
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/static/sw.js');
+        function switchTab(tabId, element) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            element.classList.add('active');
         }
     </script>
     {% endif %}
