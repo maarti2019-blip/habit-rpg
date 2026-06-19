@@ -42,7 +42,7 @@ class RaidBoss(db.Model):
     __tablename__ = 'raid_boss'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), default="Dragon")
-    max_hp = db.Column(db.Float, default=1200.0)  # NERFED from 3000
+    max_hp = db.Column(db.Float, default=1200.0)
     current_hp = db.Column(db.Float, default=1200.0)
     world_level = db.Column(db.Integer, default=1)
     is_active = db.Column(db.Boolean, default=True)
@@ -87,6 +87,18 @@ def calculate_90_percent_loot_orb(world_level):
         if random.random() > 0.5: return round(random.uniform(1.00, 2.99 + level_bonus), 2)
         return round(random.uniform(4.01 + level_bonus, 7.00 + level_bonus), 2)
 
+def roll_equipment():
+    roll = random.random() * 100
+    if roll <= 0.5:
+        return ("Legendary", random.choice([("Aegis of the Titan", "workout", 2.0), ("Crown of the Scholar", "hobby", 2.0)]))
+    elif roll <= 3.5:
+        return ("Rare", random.choice([("Iron Gauntlets", "workout", 1.5), ("Master Brush", "hobby", 1.5)]))
+    elif roll <= 11.5:
+        return ("Uncommon", random.choice([("Winged Sneakers", "workout", 1.25), ("Tome of Focus", "hobby", 1.25)]))
+    elif roll <= 26.5:
+        return ("Common", random.choice([("Rusty Dumbbell", "workout", 1.1), ("Worn Sketchbook", "hobby", 1.1)]))
+    return None
+
 def get_next_monday_midnight():
     now = datetime.now()
     days_ahead = 0 - now.weekday()
@@ -118,18 +130,20 @@ def process_all_end_of_day_strikes():
                 bosses_killed += 1
                 
                 gold_drop = calculate_90_percent_loot_orb(boss.world_level)
-                item_drop = None
+                item_drop_text = None
                 
-                if random.random() <= 0.15:
-                    item_drop = "Master Brush"
-                    db.session.add(UserInventory(user_id=user.id, item_name=item_drop, category_target="hobby", multiplier=1.5))
+                loot = roll_equipment()
+                if loot:
+                    tier, item_data = loot
+                    item_name, item_cat, item_mult = item_data
+                    item_drop_text = f"[{tier}] {item_name}"
+                    db.session.add(UserInventory(user_id=user.id, item_name=item_name, category_target=item_cat, multiplier=item_mult))
                 
                 user.gold_balance += gold_drop
-                db.session.add(PendingReward(user_id=user.id, gold_amount=gold_drop, item_name=item_drop))
+                db.session.add(PendingReward(user_id=user.id, gold_amount=gold_drop, item_name=item_drop_text))
                 
                 notify_discord(f"💀 **{user.username}** slaughtered a {user.solo_monster_name} and queued a Gacha Orb drop!")
 
-                user.solo_monster_max += 100 
                 user.solo_monster_hp = user.solo_monster_max
                 user.solo_monster_name = random.choice(SOLO_ENEMIES)
             else:
@@ -146,10 +160,10 @@ def process_all_end_of_day_strikes():
                 boss.is_active = False
                 boss.next_spawn_date = get_next_monday_midnight()
                 
-                db.session.add(PendingReward(user_id=user.id, gold_amount=10.0, item_name="Raid Boss Bounty"))
+                db.session.add(PendingReward(user_id=user.id, gold_amount=10.0, item_name="[Raid] Raid Boss Bounty"))
                 user.gold_balance += 10.0
                 
-                notify_discord(f"🌋 **{boss.name.upper()} DESTROYED!** It is dead until Monday. The server advances to **World Level {boss.world_level + 1}**!")
+                notify_discord(f"🌋 **{boss.name.upper()} DESTROYED!** It is dead until Monday. The server will advance to **World Level {boss.world_level + 1}** upon respawn!")
 
         queue.workout_mins = 0
         queue.hobby_mins = 0
@@ -164,7 +178,7 @@ def get_client_ip():
 
 @app.before_request
 def auto_login_by_ip():
-    if request.endpoint in ['static', 'manual_login', 'claim_gacha'] or not request.endpoint: return
+    if request.endpoint in ['static', 'manual_login', 'claim_gacha', 'spend_gold'] or not request.endpoint: return
     if 'user_id' not in session:
         try:
             matched_user = User.query.filter_by(last_known_ip=get_client_ip()).first()
@@ -175,17 +189,24 @@ def auto_login_by_ip():
 def index():
     current_user = User.query.get(session['user_id']) if 'user_id' in session else None
     boss = RaidBoss.query.first()
+    players = User.query.all()
     
     if boss and not boss.is_active and boss.next_spawn_date:
         if datetime.now() >= boss.next_spawn_date:
             boss.is_active = True
             boss.world_level += 1
-            boss.max_hp += 150  # Much more forgiving scaling
+            
+            boss.max_hp = round(boss.max_hp * 1.03, 1) 
             boss.current_hp = boss.max_hp
             boss.name = random.choice(RAID_BOSSES)
             boss.next_spawn_date = None
+            
+            for player in players:
+                player.solo_monster_max = round(player.solo_monster_max * 1.03, 1)
+                player.solo_monster_hp = player.solo_monster_max
+            
             db.session.commit()
-            notify_discord(f"🚨 **NEW RAID BOSS SPAWN!** A massive {boss.name} has appeared for the week!")
+            notify_discord(f"🚨 **WORLD LEVEL {boss.world_level}!** A massive {boss.name} has appeared! All enemies have scaled up in difficulty by 3%.")
 
     pending_rewards = PendingReward.query.filter_by(user_id=current_user.id).all() if current_user else []
     user_queue = DailyQueue.query.filter_by(user_id=current_user.id).first() if current_user else None
@@ -195,7 +216,7 @@ def index():
         db.session.add(user_queue)
         db.session.commit()
 
-    return render_template('index.html', current_user=current_user, players=User.query.all(), boss=boss, queue=user_queue, pending_rewards=pending_rewards)
+    return render_template('index.html', current_user=current_user, players=players, boss=boss, queue=user_queue, pending_rewards=pending_rewards)
 
 @app.route('/manual_login/<username>')
 def manual_login(username):
@@ -246,9 +267,24 @@ def claim_gacha():
 
     return redirect('/')
 
-@app.route('/trigger_midnight_calculation')
-def trigger_midnight_calculation():
-    process_all_end_of_day_strikes()
+@app.route('/spend_gold', methods=['POST'])
+def spend_gold():
+    if 'user_id' not in session: return redirect('/')
+    user = User.query.get(session['user_id'])
+    
+    try:
+        amount = float(request.form.get('amount', 0))
+    except ValueError:
+        amount = 0.0
+        
+    reason = request.form.get('reason', 'a mystery reward')
+    
+    # Strictly prevent negative balances
+    if amount > 0 and user.gold_balance >= amount:
+        user.gold_balance -= amount
+        db.session.commit()
+        notify_discord(f"🎉 **CONGRATULATIONS!** {user.username} just cashed out **${amount:.2f}** from their vault for: *{reason}*! Enjoy your hard-earned reward!")
+        
     return redirect('/')
 
 def initialize_database():
