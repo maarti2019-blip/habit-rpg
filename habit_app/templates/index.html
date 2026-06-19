@@ -43,11 +43,10 @@
         body.bg-dots { --bg-pattern: radial-gradient(var(--border-color) 2px, transparent 2px); background-size: 20px 20px; }
         body.bg-scan { --bg-pattern: repeating-linear-gradient(0deg, transparent, transparent 2px, var(--border-color) 2px, var(--border-color) 4px); }
 
-        .rarity-common { color: #a1a1aa; }
-        .rarity-uncommon { color: #10b981; }
-        .rarity-rare { color: #3b82f6; }
-        .rarity-legendary { color: #f59e0b; text-shadow: 0 0 8px rgba(245, 158, 11, 0.6); }
-        .rarity-raid { color: #ef4444; font-weight: 900; text-shadow: 0 0 8px rgba(239, 68, 68, 0.6); }
+        .rarity-Common { color: #a1a1aa; }
+        .rarity-Uncommon { color: #10b981; }
+        .rarity-Rare { color: #3b82f6; }
+        .rarity-Legendary { color: #f59e0b; text-shadow: 0 0 8px rgba(245, 158, 11, 0.6); }
 
         body { font-family: var(--font-family); font-size: var(--base-font-size); background-color: var(--bg-main); background-image: var(--bg-pattern); color: var(--text-main); padding: 15px; margin: 0; transition: all 0.3s ease; }
         .card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 16px; margin-bottom: 16px; }
@@ -73,6 +72,13 @@
         .checkbox-container { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; background: var(--bg-main); padding: 12px; border-radius: 6px; border: 1px solid var(--border-color); }
         .checkbox-container input { width: 24px; height: 24px; margin: 0; cursor: pointer; }
 
+        .inventory-item { background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+        .inventory-info { flex: 1; }
+        .inventory-title { font-weight: bold; font-size: 1.05em; margin: 0 0 4px 0; }
+        .inventory-desc { color: var(--text-muted); font-size: 0.85em; margin: 0; }
+        .btn-use { padding: 8px; width: auto; font-size: 0.85em; min-width: 70px; }
+        .badge-active { background: #10b981; color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.75em; font-weight: bold; }
+
         #gacha-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 2000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         .gacha-text { font-size: 1.5em; font-weight: bold; color: white; margin-bottom: 40px; text-shadow: 0 0 10px var(--accent-primary); }
         .orb-container { position: relative; width: 150px; height: 150px; cursor: pointer; }
@@ -85,7 +91,6 @@
         @keyframes flashScreen { 0% { opacity: 1; } 100% { opacity: 0; } }
         .reward-results { display: none; background: #0f0f12; border: 2px solid #10b981; border-radius: 12px; padding: 30px; text-align: center; box-shadow: 0 0 50px 10px rgba(16, 185, 129, 0.4); z-index: 2002; width: 80%; max-width: 300px; }
         .gold-text { color: #10b981; font-size: 2em; font-weight: bold; margin: 15px 0; text-shadow: 0 0 10px rgba(16, 185, 129, 0.5); }
-        
         details summary { cursor: pointer; font-weight: bold; color: var(--accent-primary); margin-top: 10px; font-size: 0.9em; outline: none; }
         details .loot-box { padding: 10px; background: rgba(0,0,0,0.3); border-radius: 6px; margin-top: 8px; font-size: 0.85em; border: 1px solid var(--border-color); }
     </style>
@@ -102,7 +107,6 @@
     </div>
     {% else %}
 
-    <!-- GACHA MODULE -->
     {% if pending_rewards %}
     <div id="gacha-overlay">
         <div class="burst-flash" id="burstFlash"></div>
@@ -115,12 +119,11 @@
                 {% set total_gold.value = total_gold.value + r.gold_amount %}
                 {% if r.item_name %}
                     {% set rarity_class = '' %}
-                    {% if '[Legendary]' in r.item_name %}{% set rarity_class = 'rarity-legendary' %}{% endif %}
-                    {% if '[Rare]' in r.item_name %}{% set rarity_class = 'rarity-rare' %}{% endif %}
-                    {% if '[Uncommon]' in r.item_name %}{% set rarity_class = 'rarity-uncommon' %}{% endif %}
-                    {% if '[Common]' in r.item_name %}{% set rarity_class = 'rarity-common' %}{% endif %}
-                    {% if '[Raid]' in r.item_name %}{% set rarity_class = 'rarity-raid' %}{% endif %}
-                    
+                    {% if '[Legendary]' in r.item_name %}{% set rarity_class = 'rarity-Legendary' %}{% endif %}
+                    {% if '[Rare]' in r.item_name %}{% set rarity_class = 'rarity-Rare' %}{% endif %}
+                    {% if '[Uncommon]' in r.item_name %}{% set rarity_class = 'rarity-Uncommon' %}{% endif %}
+                    {% if '[Common]' in r.item_name %}{% set rarity_class = 'rarity-Common' %}{% endif %}
+                    {% if '[Raid]' in r.item_name %}{% set rarity_class = 'rarity-Legendary' %}{% endif %}
                     <p class="{{ rarity_class }}" style="font-weight: bold; margin: 5px 0; font-size: 1.1em;">✨ {{ r.item_name }} ✨</p>
                 {% endif %}
             {% endfor %}
@@ -158,7 +161,6 @@
     <div id="settingsModal" class="settings-modal">
         <div class="modal-body">
             <h3 style="margin-top: 0;">Personalize Interface</h3>
-            
             <div class="setting-group">
                 <h4>Base Theme</h4>
                 <button class="pref-btn" onclick="applyPref('base', 'base-obsidian')">Obsidian</button>
@@ -166,7 +168,6 @@
                 <button class="pref-btn" onclick="applyPref('base', 'base-slate')">Navy Slate</button>
                 <button class="pref-btn" onclick="applyPref('base', 'base-chocolate')">Tavern Wood</button>
             </div>
-
             <div class="setting-group">
                 <h4>Accent Color</h4>
                 <button class="pref-btn" onclick="applyPref('accent', 'accent-blue')">🔵 Neon Blue</button>
@@ -176,7 +177,6 @@
                 <button class="pref-btn" onclick="applyPref('accent', 'accent-gold')">🪙 Gold</button>
                 <button class="pref-btn" onclick="applyPref('accent', 'accent-purple')">🟣 Amethyst</button>
             </div>
-
             <div class="setting-group">
                 <h4>Typography Style</h4>
                 <button class="pref-btn" onclick="applyPref('font', 'font-standard')">Modern</button>
@@ -184,7 +184,6 @@
                 <button class="pref-btn" onclick="applyPref('font', 'font-elegant')">Elegant</button>
                 <button class="pref-btn" onclick="applyPref('font', 'font-fantasy')">Fantasy</button>
             </div>
-
             <div class="setting-group">
                 <h4>Font Size</h4>
                 <button class="pref-btn" onclick="applyPref('size', 'size-sm')">Small</button>
@@ -192,7 +191,6 @@
                 <button class="pref-btn" onclick="applyPref('size', 'size-lg')">Large</button>
                 <button class="pref-btn" onclick="applyPref('size', 'size-xl')">Extra Large</button>
             </div>
-
             <div class="setting-group">
                 <h4>Background Pattern</h4>
                 <button class="pref-btn" onclick="applyPref('bg', 'bg-solid')">Solid Dark</button>
@@ -200,12 +198,11 @@
                 <button class="pref-btn" onclick="applyPref('bg', 'bg-dots')">Dots</button>
                 <button class="pref-btn" onclick="applyPref('bg', 'bg-scan')">Scanlines</button>
             </div>
-
             <button class="btn" style="background: var(--border-color); margin-top: 10px;" onclick="toggleSettings(false)">Save & Close</button>
         </div>
     </div>
 
-    <!-- Gold Balances & The Withdraw Vault -->
+    <!-- Gold Balances -->
     <div class="card" style="padding-bottom: 8px;">
         <div class="flex-grid">
             {% for p in players %}
@@ -215,7 +212,6 @@
             </div>
             {% endfor %}
         </div>
-        
         <details>
             <summary style="font-size: 1.1em; color: #10b981; margin-bottom: 10px;">💸 Withdraw from {{ current_user.username }}'s Vault</summary>
             <div class="loot-box" style="margin-top: 10px; margin-bottom: 10px;">
@@ -230,7 +226,10 @@
 
     <!-- Boss Cards -->
     <div class="card">
-        <h3 style="margin:0;">👤 Solo Adversary (Max 3/Day)</h3>
+        <div style="display:flex; justify-content: space-between; align-items:center;">
+            <h3 style="margin:0;">👤 Solo Adversary</h3>
+            <span style="font-size: 0.8em; color: var(--text-muted); border: 1px solid var(--border-color); padding: 2px 6px; border-radius: 4px;">{{ current_user.bosses_killed_today }} / 3 Killed Today</span>
+        </div>
         <div class="boss-bar">
             <div class="boss-progress" style="width: {{ (current_user.solo_monster_hp / current_user.solo_monster_max) * 100 }}%; background: #06b6d4;"></div>
             <div class="boss-text">{{ current_user.solo_monster_name }}: {{ current_user.solo_monster_hp | int }} / {{ current_user.solo_monster_max | int }} HP</div>
@@ -242,12 +241,12 @@
                 • 90% Chance: $3.00 - $4.00<br>
                 • 5% Chance: $1.00 - $2.99<br>
                 • 5% Chance: $4.01 - $7.00<br>
-                <em style="color:#94a3b8; font-size:0.85em;">(Scales up with World Level)</em><br><br>
+                <br>
                 <strong>📦 Equipment Orbs:</strong><br>
-                <span class="rarity-common">• Common (15.0%):</span> Rusty Gear (1.1x Mod)<br>
-                <span class="rarity-uncommon">• Uncommon (8.0%):</span> Focused Gear (1.25x Mod)<br>
-                <span class="rarity-rare">• Rare (3.0%):</span> Master Gear (1.5x Mod)<br>
-                <span class="rarity-legendary">• Legendary (0.5%):</span> Titan/Scholar Gear (2.0x Mod)
+                <span class="rarity-Common">• Common (15.0%):</span> Rusty Gear / Coin Purse<br>
+                <span class="rarity-Uncommon">• Uncommon (8.0%):</span> Focused Gear / Goblin Bomb<br>
+                <span class="rarity-Rare">• Rare (3.0%):</span> Master Gear / Maid's Bell<br>
+                <span class="rarity-Legendary">• Legendary (0.5%):</span> Titan Gear / Hero's Elixir
             </div>
         </details>
     </div>
@@ -260,39 +259,73 @@
                 <div class="boss-progress" style="width: {{ (boss.current_hp / boss.max_hp) * 100 }}%; background: #dc2626;"></div>
                 <div class="boss-text">World Lvl {{ boss.world_level }} | {{ boss.name }}: {{ boss.current_hp | int }} / {{ boss.max_hp | int }} HP</div>
             </div>
-            <details>
-                <summary>View Global Clear Rewards</summary>
-                <div class="loot-box">
-                    <strong>🏆 The Bounty:</strong><br>
-                    • 100% Chance: Raid Boss Orb ($10.00 - $50.00, Avg $25) to BOTH players<br>
-                    • 100% Chance: Server advances +1 World Level<br>
-                    <em style="color:#94a3b8; font-size:0.85em;">(World Levels permanently increase all Server Difficulty by 3% and Solo Gold by $0.50)</em>
-                </div>
-            </details>
         {% else %}
             <p style="color:#10b981; font-weight:bold;">Defeated! The {{ boss.name }} respawns Monday.</p>
         {% endif %}
     </div>
 
+    <!-- Instant Combat Form -->
     <div class="card">
         <h3>Log Daily Actions</h3>
+        <p style="color:var(--accent-primary); font-size:0.85em; font-weight:bold; margin-top:0;">⚡ Damage is dealt instantly!</p>
         <form action="/stage_activity" method="POST">
             <select name="type">
                 <option value="workout">Workout Time (1:4.5 Ratio)</option>
                 <option value="hobby">Hobby Tracking (1:7.0 Ratio)</option>
             </select>
-            <input type="number" step="any" name="minutes" placeholder="Minutes completed" required>
+            <input type="number" step="any" name="minutes" placeholder="Minutes completed">
             
             <div class="checkbox-container">
-                <input type="checkbox" name="chores" id="chores" {% if queue.chores_completed %}checked{% endif %}>
-                <label for="chores" style="font-size:0.9em;"><strong>Household Chores Completed?</strong><br><span style="color:var(--text-muted); font-weight:normal;">Personal 1.5x damage buff!</span></label>
+                <input type="checkbox" name="chores" id="chores" {% if current_user.chores_completed %}checked disabled{% endif %}>
+                <label for="chores" style="font-size:0.9em;">
+                    <strong>Household Chores Completed?</strong><br>
+                    {% if current_user.chores_completed %}
+                        <span style="color:#10b981; font-weight:bold;">Active! 1.5x Daily Multiplier Applied.</span>
+                    {% else %}
+                        <span style="color:var(--text-muted); font-weight:normal;">Personal 1.5x damage buff!</span>
+                    {% endif %}
+                </label>
             </div>
             
-            <button type="submit" class="btn">Stage Metrics</button>
+            <button type="submit" class="btn">Unleash Damage</button>
         </form>
     </div>
 
+    <!-- Active Inventory -->
+    <div class="card">
+        <h3 style="margin: 0 0 10px 0;">🎒 Your Vault Inventory</h3>
+        {% if not inventory %}
+            <p style="color: var(--text-muted); font-size: 0.9em; font-style: italic; margin: 0;">Your inventory is empty. Defeat solo bosses to earn drops!</p>
+        {% else %}
+            {% for item in inventory %}
+            <div class="inventory-item">
+                <div class="inventory-info">
+                    <p class="inventory-title rarity-{{ item.rarity }}">{{ item.item_name }}</p>
+                    <p class="inventory-desc">{{ item.description }}</p>
+                </div>
+                
+                {% if item.is_active %}
+                    <div class="badge-active">ACTIVE</div>
+                {% else %}
+                    <form action="/use_item/{{ item.id }}" method="POST" style="margin:0;">
+                        <button type="submit" class="btn btn-use">Use</button>
+                    </form>
+                {% endif %}
+            </div>
+            {% endfor %}
+        {% endif %}
+    </div>
+
     <script>
+        // "Are you sure?" Chores Safety Check
+        document.getElementById('chores').addEventListener('change', function(e) {
+            if (this.checked && !this.disabled) {
+                if (!confirm("Are you SURE you completed your household chores? Once checked, this daily 1.5x multiplier cannot be reversed!")) {
+                    this.checked = false;
+                }
+            }
+        });
+
         function applyPref(category, value) {
             document.body.className = document.body.className.replace(new RegExp(`\\b${category}-\\S+`, 'g'), '');
             document.body.classList.add(value);
