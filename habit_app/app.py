@@ -42,8 +42,8 @@ class RaidBoss(db.Model):
     __tablename__ = 'raid_boss'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), default="Dragon")
-    max_hp = db.Column(db.Float, default=3000.0)
-    current_hp = db.Column(db.Float, default=3000.0)
+    max_hp = db.Column(db.Float, default=1200.0)  # NERFED from 3000
+    current_hp = db.Column(db.Float, default=1200.0)
     world_level = db.Column(db.Integer, default=1)
     is_active = db.Column(db.Boolean, default=True)
     next_spawn_date = db.Column(db.DateTime, nullable=True)
@@ -112,7 +112,6 @@ def process_all_end_of_day_strikes():
         raid_dmg = 0
         bosses_killed = 0
 
-        # Process Solo Bosses (Max 3)
         while solo_dmg > 0 and bosses_killed < 3:
             if solo_dmg >= user.solo_monster_hp:
                 solo_dmg -= user.solo_monster_hp
@@ -130,7 +129,6 @@ def process_all_end_of_day_strikes():
                 
                 notify_discord(f"💀 **{user.username}** slaughtered a {user.solo_monster_name} and queued a Gacha Orb drop!")
 
-                # Randomly spawn next monster from the pool
                 user.solo_monster_max += 100 
                 user.solo_monster_hp = user.solo_monster_max
                 user.solo_monster_name = random.choice(SOLO_ENEMIES)
@@ -138,12 +136,10 @@ def process_all_end_of_day_strikes():
                 user.solo_monster_hp -= solo_dmg
                 solo_dmg = 0
 
-        # Overflow Damage to Raid Boss
         if solo_dmg > 0:
             raid_dmg += solo_dmg
             notify_discord(f"🌊 **OVERFLOW BURST!** {user.username} hit their solo cap and blasted **{raid_dmg:.1f}** remaining damage directly into the {boss.name}!")
 
-        # Hit Shared Raid Boss
         if boss.is_active and raid_dmg > 0:
             boss.current_hp -= raid_dmg
             if boss.current_hp <= 0:
@@ -155,7 +151,6 @@ def process_all_end_of_day_strikes():
                 
                 notify_discord(f"🌋 **{boss.name.upper()} DESTROYED!** It is dead until Monday. The server advances to **World Level {boss.world_level + 1}**!")
 
-        # Clear queue
         queue.workout_mins = 0
         queue.hobby_mins = 0
         queue.chores_completed = False
@@ -181,23 +176,20 @@ def index():
     current_user = User.query.get(session['user_id']) if 'user_id' in session else None
     boss = RaidBoss.query.first()
     
-    # Check Raid Boss Respawn Timer
     if boss and not boss.is_active and boss.next_spawn_date:
         if datetime.now() >= boss.next_spawn_date:
             boss.is_active = True
             boss.world_level += 1
-            boss.max_hp += 500 
+            boss.max_hp += 150  # Much more forgiving scaling
             boss.current_hp = boss.max_hp
-            boss.name = random.choice(RAID_BOSSES) # Pull new raid boss from pool
+            boss.name = random.choice(RAID_BOSSES)
             boss.next_spawn_date = None
             db.session.commit()
             notify_discord(f"🚨 **NEW RAID BOSS SPAWN!** A massive {boss.name} has appeared for the week!")
 
-    pending_rewards = []
-    if current_user:
-        pending_rewards = PendingReward.query.filter_by(user_id=current_user.id).all()
-        
+    pending_rewards = PendingReward.query.filter_by(user_id=current_user.id).all() if current_user else []
     user_queue = DailyQueue.query.filter_by(user_id=current_user.id).first() if current_user else None
+    
     if current_user and not user_queue:
         user_queue = DailyQueue(user_id=current_user.id)
         db.session.add(user_queue)
@@ -225,14 +217,14 @@ def stage_activity():
     
     if act_type == 'workout': 
         queue.workout_mins += minutes
-        notify_discord(f"⚔️ {user.username} readied their weapons, staging {minutes} mins of Workout Time.")
+        notify_discord(f"⚔️ {user.username} staged {minutes} mins of Workout Time.")
     elif act_type == 'hobby': 
         queue.hobby_mins += minutes
-        notify_discord(f"📚 {user.username} sharpened their mind, staging {minutes} mins of Hobby Time.")
+        notify_discord(f"📚 {user.username} staged {minutes} mins of Hobby Time.")
     
     if 'chores' in request.form and not queue.chores_completed: 
         queue.chores_completed = True
-        notify_discord(f"🧹 {user.username} completed their chores, unlocking a massive 1.5x damage buff for tonight's strike!")
+        notify_discord(f"🧹 {user.username} completed chores! Personal 1.5x damage buff active.")
         
     db.session.commit()
     return redirect('/')
@@ -250,7 +242,7 @@ def claim_gacha():
         db.session.commit()
 
         item_str = f" and found {', '.join(items)}!" if items else "!"
-        notify_discord(f"🎰 **GACHA CLAIMED!** {user.username} cracked open their orbs and walked away with **${total_gold:.2f}**{item_str}")
+        notify_discord(f"🎰 **GACHA CLAIMED!** {user.username} cracked open their orbs for **${total_gold:.2f}**{item_str}")
 
     return redirect('/')
 

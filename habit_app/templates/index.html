@@ -1,219 +1,267 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Accountability RPG</title>
+import os
+import requests
+import random
+from datetime import datetime, timedelta
+from flask import Flask, render_template, request, redirect, session
+from flask_sqlalchemy import SQLAlchemy
+
+app = Flask(__name__)
+app.secret_key = 'rpg_accountability_secret_chain'
+basedir = os.path.abspath(os.path.dirname(__file__))
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'instance', 'app.db')
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+db = SQLAlchemy(app)
+
+# --- Fantasy Monster Pools ---
+SOLO_ENEMIES = [
+    "Goblin", "Skeleton", "Slime", "Orc", "Troll", "Kobold", "Harpy", "Imp", "Ghoul", "Zombie",
+    "Bandit", "Cultist", "Sprite", "Mimic", "Spider", "Rat", "Wolf", "Bat", "Hobgoblin", "Wraith",
+    "Basilisk", "Cockatrice", "Manticore", "Gargoyle", "Elemental", "Golem", "Treant", "Centaur", "Minotaur", "Naga"
+]
+
+RAID_BOSSES = [
+    "Dragon", "Behemoth", "Kraken", "Leviathan", "Hydra", "Lich", "Titan", "Colossus", "Balrog", "Chimera",
+    "Wyrm", "Tarrasque", "Cyclops", "Sphinx", "Roc", "Wendigo", "Dullahan", "Juggernaut", "Beholder", "Deathknight",
+    "Goliath", "Ogre", "Vampire", "Necromancer", "Archdemon", "Archangel", "Ifrit", "Geryon", "Bahamut", "Fenrir"
+]
+
+# --- Models ---
+class User(db.Model):
+    __tablename__ = 'user'
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(50), unique=True, nullable=False)
+    gold_balance = db.Column(db.Float, default=0.0)
+    last_known_ip = db.Column(db.String(100), nullable=True)
     
-    <link rel="manifest" href="/static/manifest.json">
-    <link rel="apple-touch-icon" href="/static/icon-192.png">
+    solo_monster_hp = db.Column(db.Float, default=300.0)
+    solo_monster_max = db.Column(db.Float, default=300.0)
+    solo_monster_name = db.Column(db.String(100), default="Slime")
 
-    <style>
-        :root { --bg-main: #0f0f12; --bg-card: #1a1a24; --border-color: #2d2d3d; --accent-primary: #4f46e5; --text-main: #e2e8f0; --text-muted: #94a3b8; }
-        body.theme-onyx { --bg-main: #0f0f12; --bg-card: #1a1a24; --border-color: #2d2d3d; --accent-primary: #4f46e5; }
-        body.theme-rose { --bg-main: #140d14; --bg-card: #241420; --border-color: #441d38; --accent-primary: #ec4899; }
-        body.theme-cobalt { --bg-main: #0b132b; --bg-card: #1c2541; --border-color: #3a506b; --accent-primary: #00b4d8; }
+class RaidBoss(db.Model):
+    __tablename__ = 'raid_boss'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), default="Dragon")
+    max_hp = db.Column(db.Float, default=1200.0)  # NERFED from 3000
+    current_hp = db.Column(db.Float, default=1200.0)
+    world_level = db.Column(db.Integer, default=1)
+    is_active = db.Column(db.Boolean, default=True)
+    next_spawn_date = db.Column(db.DateTime, nullable=True)
 
-        body { font-family: -apple-system, sans-serif; background-color: var(--bg-main); color: var(--text-main); padding: 15px; margin: 0; transition: all 0.3s ease; }
-        .card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 16px; margin-bottom: 16px; }
-        .btn { background: var(--accent-primary); color: #fff; border: none; padding: 12px; font-weight: bold; border-radius: 6px; width: 100%; cursor: pointer; display: block; text-align: center; text-decoration: none; box-sizing: border-box; }
-        .flex-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        .app-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-        .settings-trigger { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; cursor: pointer; padding: 8px 12px; color: var(--text-muted); }
-        
-        .settings-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center; }
-        .settings-modal.open { display: flex; }
-        .modal-body { background: var(--bg-card); border: 2px solid var(--border-color); border-radius: 14px; padding: 20px; width: 90%; max-width: 360px; box-sizing: border-box; }
-        .pref-btn { background: var(--bg-main); border: 1px solid var(--border-color); color: var(--text-muted); padding: 8px; border-radius: 6px; margin-bottom: 8px; cursor: pointer; width: 100%; text-align: left; font-weight: bold; }
-        
-        .boss-bar { background: var(--bg-main); border: 1px solid var(--border-color); height: 24px; border-radius: 12px; overflow: hidden; margin: 12px 0; position: relative; }
-        .boss-progress { height: 100%; transition: width 0.4s ease; }
-        .boss-text { position: absolute; width: 100%; text-align: center; top: 2px; font-weight: bold; font-size: 14px; color: white; }
-        input, select { background: var(--bg-main); color: #fff; border: 1px solid var(--border-color); padding: 12px; border-radius: 6px; width: 100%; margin-bottom: 12px; box-sizing: border-box; }
-        .checkbox-container { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; background: var(--bg-main); padding: 12px; border-radius: 6px; border: 1px solid var(--border-color); }
-        .checkbox-container input { width: 24px; height: 24px; margin: 0; cursor: pointer; }
+class DailyQueue(db.Model):
+    __tablename__ = 'daily_queue'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, nullable=False)
+    workout_mins = db.Column(db.Float, default=0.0)
+    hobby_mins = db.Column(db.Float, default=0.0)
+    chores_completed = db.Column(db.Boolean, default=False)
 
-        /* --- GACHA ANIMATION CSS --- */
-        #gacha-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 2000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .gacha-text { font-size: 24px; font-weight: bold; color: white; margin-bottom: 40px; text-shadow: 0 0 10px var(--accent-primary); }
-        
-        .orb-container { position: relative; width: 150px; height: 150px; cursor: pointer; }
-        .orb { width: 100%; height: 100%; border-radius: 50%; background: radial-gradient(circle at 30% 30%, #ffffff, var(--accent-primary), #000000); box-shadow: 0 0 30px var(--accent-primary); transition: transform 0.2s; }
-        .orb:active { transform: scale(0.9); }
-        
-        .shake { animation: shakeOrb 0.5s infinite; }
-        @keyframes shakeOrb { 
-            0% { transform: translate(2px, 1px) rotate(0deg); }
-            25% { transform: translate(-2px, -2px) rotate(-5deg); }
-            50% { transform: translate(1px, 2px) rotate(5deg); }
-            75% { transform: translate(-2px, 1px) rotate(-2deg); }
-            100% { transform: translate(2px, 1px) rotate(0deg); }
-        }
+class PendingReward(db.Model):
+    __tablename__ = 'pending_reward'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, nullable=False)
+    gold_amount = db.Column(db.Float, default=0.0)
+    item_name = db.Column(db.String(100), nullable=True)
 
-        .burst-flash { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 2001; opacity: 0; pointer-events: none; }
-        .flash-anim { animation: flashScreen 0.8s ease-out forwards; }
-        @keyframes flashScreen { 0% { opacity: 1; } 100% { opacity: 0; } }
+class UserInventory(db.Model):
+    __tablename__ = 'user_inventory'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, nullable=False)
+    item_name = db.Column(db.String(100), nullable=False)
+    category_target = db.Column(db.String(50), nullable=False)
+    multiplier = db.Column(db.Float, default=1.0)
+    is_active = db.Column(db.Boolean, default=False)
 
-        .reward-results { display: none; background: #0f0f12; border: 2px solid #10b981; border-radius: 12px; padding: 30px; text-align: center; box-shadow: 0 0 50px 10px rgba(16, 185, 129, 0.4); z-index: 2002; width: 80%; max-width: 300px; }
-        .gold-text { color: #10b981; font-size: 32px; font-weight: bold; margin: 15px 0; text-shadow: 0 0 10px rgba(16, 185, 129, 0.5); }
-    </style>
-</head>
-<body>
+# --- Helpers ---
+def notify_discord(message):
+    webhook_url = os.environ.get('DISCORD_WEBHOOK_URL')
+    if webhook_url:
+        try: requests.post(webhook_url, json={"content": message})
+        except: pass
 
-    {% if not current_user %}
-    <div class="card" style="text-align: center; margin-top: 40px;">
-        <h2>Device Profile Allocation</h2>
-        <div class="flex-grid">
-            <a href="/manual_login/Alaina" class="btn">Alaina</a>
-            <a href="/manual_login/Matthew" class="btn">Matthew</a>
-        </div>
-    </div>
-    {% else %}
+def calculate_90_percent_loot_orb(world_level):
+    level_bonus = (world_level - 1) * 0.50
+    if random.random() <= 0.90:
+        return round(random.uniform(3.00 + level_bonus, 4.00 + level_bonus), 2)
+    else:
+        if random.random() > 0.5: return round(random.uniform(1.00, 2.99 + level_bonus), 2)
+        return round(random.uniform(4.01 + level_bonus, 7.00 + level_bonus), 2)
 
-    <!-- GACHA OVERLAY (Only visible if rewards exist) -->
-    {% if pending_rewards %}
-    <div id="gacha-overlay">
-        <div class="burst-flash" id="burstFlash"></div>
-        
-        <div class="gacha-text" id="gachaText">Tap to Open Orb!</div>
-        
-        <div class="orb-container" id="orbContainer" onclick="triggerGacha()">
-            <div class="orb"></div>
-        </div>
+def get_next_monday_midnight():
+    now = datetime.now()
+    days_ahead = 0 - now.weekday()
+    if days_ahead <= 0: days_ahead += 7
+    return (now + timedelta(days=days_ahead)).replace(hour=0, minute=1, second=0, microsecond=0)
 
-        <div class="reward-results" id="rewardResults">
-            <h2 style="margin: 0; color: white;">Loot Dropped!</h2>
-            {% set total_gold = namespace(value=0) %}
-            {% for r in pending_rewards %}
-                {% set total_gold.value = total_gold.value + r.gold_amount %}
-                {% if r.item_name %}
-                    <p style="color: #06b6d4; font-weight: bold; margin: 5px 0;">✨ {{ r.item_name }} ✨</p>
-                {% endif %}
-            {% endfor %}
-            <div class="gold-text">+${{ "%.2f"|format(total_gold.value) }}</div>
+# --- Midnight Calculation Engine ---
+def process_all_end_of_day_strikes():
+    queues = DailyQueue.query.all()
+    boss = RaidBoss.query.first()
+    
+    for queue in queues:
+        if queue.workout_mins == 0 and queue.hobby_mins == 0 and not queue.chores_completed:
+            continue
             
-            <form action="/claim_gacha" method="POST">
-                <button type="submit" class="btn" style="background: #10b981; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);">Claim to Vault</button>
-            </form>
-        </div>
-    </div>
+        user = User.query.get(queue.user_id)
+        
+        base_dmg = (queue.workout_mins * 4.5) + (queue.hobby_mins * 7.0)
+        if queue.chores_completed:
+            base_dmg *= 1.5
 
-    <script>
-        function triggerGacha() {
-            const orb = document.getElementById('orbContainer');
-            const text = document.getElementById('gachaText');
-            
-            // 1. Shake the orb
-            orb.classList.add('shake');
-            text.innerText = "Opening...";
+        solo_dmg = base_dmg
+        raid_dmg = 0
+        bosses_killed = 0
 
-            // 2. Flash and Reveal after 1.5 seconds
-            setTimeout(() => {
-                orb.style.display = 'none';
-                text.style.display = 'none';
-                document.getElementById('burstFlash').classList.add('flash-anim');
-                document.getElementById('rewardResults').style.display = 'block';
-            }, 1500);
-        }
-    </script>
-    {% endif %}
-    <!-- END GACHA -->
+        while solo_dmg > 0 and bosses_killed < 3:
+            if solo_dmg >= user.solo_monster_hp:
+                solo_dmg -= user.solo_monster_hp
+                bosses_killed += 1
+                
+                gold_drop = calculate_90_percent_loot_orb(boss.world_level)
+                item_drop = None
+                
+                if random.random() <= 0.15:
+                    item_drop = "Master Brush"
+                    db.session.add(UserInventory(user_id=user.id, item_name=item_drop, category_target="hobby", multiplier=1.5))
+                
+                user.gold_balance += gold_drop
+                db.session.add(PendingReward(user_id=user.id, gold_amount=gold_drop, item_name=item_drop))
+                
+                notify_discord(f"💀 **{user.username}** slaughtered a {user.solo_monster_name} and queued a Gacha Orb drop!")
 
-    <!-- NORMAL DASHBOARD (Hidden if Gacha is covering it) -->
-    <div class="app-header">
-        <div>
-            <span style="font-size: 18px;">Profile: <strong>{{ current_user.username }}</strong></span>
-            <br>
-            <a href="/manual_login/{% if current_user.username == 'Alaina' %}Matthew{% else %}Alaina{% endif %}" style="color:var(--accent-primary); text-decoration:none; font-size: 12px;">Switch User</a>
-        </div>
-        <button class="settings-trigger" onclick="toggleSettings(true)">⚙️ Layout</button>
-    </div>
+                user.solo_monster_max += 100 
+                user.solo_monster_hp = user.solo_monster_max
+                user.solo_monster_name = random.choice(SOLO_ENEMIES)
+            else:
+                user.solo_monster_hp -= solo_dmg
+                solo_dmg = 0
 
-    <div id="settingsModal" class="settings-modal">
-        <div class="modal-body">
-            <h3 style="margin-top: 0;">Personalize Interface</h3>
-            <div class="setting-group">
-                <button class="pref-btn" onclick="applyPref('theme', 'theme-onyx')">⚫ Onyx (Default)</button>
-                <button class="pref-btn" onclick="applyPref('theme', 'theme-rose')">🌺 Velvet Rose</button>
-                <button class="pref-btn" onclick="applyPref('theme', 'theme-cobalt')">🔵 Deep Cobalt</button>
-            </div>
-            <button class="btn" style="background: var(--border-color);" onclick="toggleSettings(false)">Save & Close</button>
-        </div>
-    </div>
+        if solo_dmg > 0:
+            raid_dmg += solo_dmg
+            notify_discord(f"🌊 **OVERFLOW BURST!** {user.username} hit their solo cap and blasted **{raid_dmg:.1f}** remaining damage directly into the {boss.name}!")
 
-    <div class="flex-grid" style="margin-bottom: 16px;">
-        {% for p in players %}
-        <div class="card" style="margin:0; border-bottom: 3px solid #10b981;">
-            <small style="color:var(--text-muted);">{{ p.username }}'s Bank</small>
-            <div style="font-size:22px; font-weight:bold; color:#10b981;">${{ "%.2f"|format(p.gold_balance) }}</div>
-        </div>
-        {% endfor %}
-    </div>
+        if boss.is_active and raid_dmg > 0:
+            boss.current_hp -= raid_dmg
+            if boss.current_hp <= 0:
+                boss.is_active = False
+                boss.next_spawn_date = get_next_monday_midnight()
+                
+                db.session.add(PendingReward(user_id=user.id, gold_amount=10.0, item_name="Raid Boss Bounty"))
+                user.gold_balance += 10.0
+                
+                notify_discord(f"🌋 **{boss.name.upper()} DESTROYED!** It is dead until Monday. The server advances to **World Level {boss.world_level + 1}**!")
 
-    <div class="card">
-        <h3 style="margin:0;">👤 Solo Adversary (Max 3/Day)</h3>
-        <div class="boss-bar">
-            <div class="boss-progress" style="width: {{ (current_user.solo_monster_hp / current_user.solo_monster_max) * 100 }}%; background: #06b6d4;"></div>
-            <div class="boss-text">{{ current_user.solo_monster_name }}: {{ current_user.solo_monster_hp | int }} / {{ current_user.solo_monster_max | int }} HP</div>
-        </div>
-    </div>
+        queue.workout_mins = 0
+        queue.hobby_mins = 0
+        queue.chores_completed = False
 
-    <div class="card">
-        <h3 style="margin:0;">🌋 Shared Co-Op Raid</h3>
-        {% if boss.is_active %}
-            <p style="color:var(--text-muted); margin:4px 0; font-size:14px;">Absorbs all damage overflowing from Solos.</p>
-            <div class="boss-bar">
-                <div class="boss-progress" style="width: {{ (boss.current_hp / boss.max_hp) * 100 }}%; background: #dc2626;"></div>
-                <div class="boss-text">World Lvl {{ boss.world_level }} | {{ boss.current_hp | int }} / {{ boss.max_hp | int }} HP</div>
-            </div>
-        {% else %}
-            <p style="color:#10b981; font-weight:bold;">Defeated! Respawns Monday.</p>
-        {% endif %}
-    </div>
+    db.session.commit()
 
-    <div class="card">
-        <h3>Log Daily Actions</h3>
-        <p style="color:var(--text-muted); font-size:12px; margin-top:0;">Damage is calculated at 11:59 PM.</p>
-        <form action="/stage_activity" method="POST">
-            <select name="type">
-                <option value="workout">Workout Time (1:4.5 Ratio)</option>
-                <option value="hobby">Hobby Tracking (1:7.0 Ratio)</option>
-            </select>
-            <input type="number" step="any" name="minutes" placeholder="Minutes completed" required>
-            
-            <div class="checkbox-container">
-                <input type="checkbox" name="chores" id="chores" {% if queue.chores_completed %}checked{% endif %}>
-                <label for="chores" style="font-size:14px;"><strong>Household Chores Completed?</strong><br><span style="color:var(--text-muted); font-weight:normal;">Personal 1.5x damage buff!</span></label>
-            </div>
-            
-            <button type="submit" class="btn">Stage Metrics</button>
-        </form>
-    </div>
+# --- Routes ---
+def get_client_ip():
+    if request.headers.get('X-Forwarded-For'): return request.headers.get('X-Forwarded-For').split(',')[0].strip()
+    return request.remote_addr
 
-    <div style="margin-bottom: 20px;">
-        <a href="/trigger_midnight_calculation" class="btn" style="background: var(--bg-card); border: 1px solid var(--accent-primary); color: var(--text-muted);">Simulate 11:59 PM Execution</a>
-    </div>
+@app.before_request
+def auto_login_by_ip():
+    if request.endpoint in ['static', 'manual_login', 'claim_gacha'] or not request.endpoint: return
+    if 'user_id' not in session:
+        try:
+            matched_user = User.query.filter_by(last_known_ip=get_client_ip()).first()
+            if matched_user: session['user_id'] = matched_user.id
+        except: pass
 
-    <script>
-        function applyPref(category, value) {
-            document.body.className = document.body.className.replace(new RegExp(`\\b${category}-\\S+`, 'g'), '');
-            document.body.classList.add(value);
-            localStorage.setItem(`rpg-pref-${category}`, value);
-        }
+@app.route('/')
+def index():
+    current_user = User.query.get(session['user_id']) if 'user_id' in session else None
+    boss = RaidBoss.query.first()
+    
+    if boss and not boss.is_active and boss.next_spawn_date:
+        if datetime.now() >= boss.next_spawn_date:
+            boss.is_active = True
+            boss.world_level += 1
+            boss.max_hp += 150  # Much more forgiving scaling
+            boss.current_hp = boss.max_hp
+            boss.name = random.choice(RAID_BOSSES)
+            boss.next_spawn_date = None
+            db.session.commit()
+            notify_discord(f"🚨 **NEW RAID BOSS SPAWN!** A massive {boss.name} has appeared for the week!")
 
-        const savedTheme = localStorage.getItem('rpg-pref-theme') || 'theme-onyx';
-        applyPref('theme', savedTheme);
+    pending_rewards = PendingReward.query.filter_by(user_id=current_user.id).all() if current_user else []
+    user_queue = DailyQueue.query.filter_by(user_id=current_user.id).first() if current_user else None
+    
+    if current_user and not user_queue:
+        user_queue = DailyQueue(user_id=current_user.id)
+        db.session.add(user_queue)
+        db.session.commit()
 
-        function toggleSettings(show) {
-            const modal = document.getElementById('settingsModal');
-            if (show) modal.classList.add('open');
-            else modal.classList.remove('open');
-        }
+    return render_template('index.html', current_user=current_user, players=User.query.all(), boss=boss, queue=user_queue, pending_rewards=pending_rewards)
 
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/static/sw.js');
-        }
-    </script>
-    {% endif %}
-</body>
-</html>
+@app.route('/manual_login/<username>')
+def manual_login(username):
+    user = User.query.filter_by(username=username).first()
+    if user:
+        user.last_known_ip = get_client_ip()
+        db.session.commit()
+        session['user_id'] = user.id
+    return redirect('/')
+
+@app.route('/stage_activity', methods=['POST'])
+def stage_activity():
+    if 'user_id' not in session: return redirect('/')
+    user = User.query.get(session['user_id'])
+    queue = DailyQueue.query.filter_by(user_id=session['user_id']).first()
+    
+    act_type = request.form.get('type')
+    minutes = float(request.form.get('minutes', 0))
+    
+    if act_type == 'workout': 
+        queue.workout_mins += minutes
+        notify_discord(f"⚔️ {user.username} staged {minutes} mins of Workout Time.")
+    elif act_type == 'hobby': 
+        queue.hobby_mins += minutes
+        notify_discord(f"📚 {user.username} staged {minutes} mins of Hobby Time.")
+    
+    if 'chores' in request.form and not queue.chores_completed: 
+        queue.chores_completed = True
+        notify_discord(f"🧹 {user.username} completed chores! Personal 1.5x damage buff active.")
+        
+    db.session.commit()
+    return redirect('/')
+
+@app.route('/claim_gacha', methods=['POST'])
+def claim_gacha():
+    if 'user_id' in session:
+        user = User.query.get(session['user_id'])
+        rewards = PendingReward.query.filter_by(user_id=user.id).all()
+        
+        total_gold = sum(r.gold_amount for r in rewards)
+        items = [r.item_name for r in rewards if r.item_name]
+        
+        PendingReward.query.filter_by(user_id=user.id).delete()
+        db.session.commit()
+
+        item_str = f" and found {', '.join(items)}!" if items else "!"
+        notify_discord(f"🎰 **GACHA CLAIMED!** {user.username} cracked open their orbs for **${total_gold:.2f}**{item_str}")
+
+    return redirect('/')
+
+@app.route('/trigger_midnight_calculation')
+def trigger_midnight_calculation():
+    process_all_end_of_day_strikes()
+    return redirect('/')
+
+def initialize_database():
+    with app.app_context():
+        os.makedirs(os.path.join(basedir, 'instance'), exist_ok=True)
+        db.create_all()
+        if not User.query.first():
+            db.session.add(User(username='Alaina', solo_monster_name=random.choice(SOLO_ENEMIES)))
+            db.session.add(User(username='Matthew', solo_monster_name=random.choice(SOLO_ENEMIES)))
+            db.session.add(RaidBoss(name=random.choice(RAID_BOSSES)))
+            db.session.commit()
+
+initialize_database()
+
+if __name__ == '__main__':
+    app.run(debug=True, host='0.0.0.0', port=5000)
