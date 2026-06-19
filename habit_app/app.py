@@ -8,26 +8,23 @@ from flask_sqlalchemy import SQLAlchemy
 app = Flask(__name__)
 app.secret_key = 'rpg_accountability_secret_chain'
 basedir = os.path.abspath(os.path.dirname(__file__))
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'app.db')
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'instance', 'app.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 
-# --- RPG Loot Configuration ---
-LOOT_TABLE = {
-    "common":    {"min_gold": 1.00, "max_gold": 2.50, "items": [("Running Shoes", "cardio", 1.25), ("Wooden Shield", "screen_time", 1.10)]},
-    "rare":      {"min_gold": 2.51, "max_gold": 4.50, "items": [("Painter's Brush", "hobby", 1.50), ("Heavy Greatsword", "all", 1.15)]},
-    "epic":      {"min_gold": 4.51, "max_gold": 6.50, "items": [("Focus Cloak", "screen_time", 2.00)]},
-    "legendary": {"min_gold": 6.51, "max_gold": 7.00, "items": [("The Golden Hourglass", "all", 1.30)]}
-}
-
 # --- Models ---
 class User(db.Model):
-    __tablename__ = 'user'  # Explicitly forces lowercase table name to match queries
+    __tablename__ = 'user'
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), unique=True, nullable=False)
     gold_balance = db.Column(db.Float, default=0.0)
     last_known_ip = db.Column(db.String(100), nullable=True)
+    
+    # Solo Boss Progression Tracking
+    solo_monster_hp = db.Column(db.Float, default=300.0)
+    solo_monster_max = db.Column(db.Float, default=300.0)
+    solo_monster_name = db.Column(db.String(100), default="Slime")
 
 class RaidBoss(db.Model):
     __tablename__ = 'raid_boss'
@@ -35,6 +32,15 @@ class RaidBoss(db.Model):
     name = db.Column(db.String(100), default="The Doomscroll Behemoth")
     max_hp = db.Column(db.Float, default=1500.0)
     current_hp = db.Column(db.Float, default=1500.0)
+
+class DailyQueue(db.Model):
+    __tablename__ = 'daily_queue'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, nullable=False)
+    cardio_mins = db.Column(db.Float, default=0.0)
+    hobby_mins = db.Column(db.Float, default=0.0)
+    screen_mins = db.Column(db.Float, default=0.0)
+    chores_completed = db.Column(db.Boolean, default=False)
 
 class UserInventory(db.Model):
     __tablename__ = 'user_inventory'
@@ -53,48 +59,74 @@ class UserInventory(db.Model):
             return False
         return datetime.utcnow() > (self.activated_at + timedelta(days=self.duration_days))
 
-# --- Middleware-like IP Handler ---
-def get_client_ip():
-    if request.headers.get('X-Forwarded-For'):
-        return request.headers.get('X-Forwarded-For').split(',')[0].strip()
-    return request.remote_addr
-
-@app.before_request
-def auto_login_by_ip():
-    # Prevent crashing during static file routes or before database initialization
-    if request.endpoint in ['static', 'manual_login']:
-        return
-        
-    if 'user_id' not in session:
-        ip = get_client_ip()
-        try:
-            # Safely check if the IP matches an existing bound account
-            matched_user = User.query.filter_by(last_known_ip=ip).first()
-            if matched_user:
-                session['user_id'] = matched_user.id
-        except Exception:
-            # If the database tables aren't built yet, skip gracefully
-            pass# --- Helpers ---
+# --- Helpers ---
 def notify_discord(message):
     webhook_url = os.environ.get('DISCORD_WEBHOOK_URL')
     if webhook_url:
         try: requests.post(webhook_url, json={"content": message})
         except: pass
 
-def get_clean_multiplier(user_id, category):
-    active_items = UserInventory.query.filter_by(user_id=user_id, is_active=True).all()
-    total_mod = 1.0
-    for item in active_items:
-        if item.is_expired:
-            item.is_active = False
-            db.session.commit()
-            user = User.query.get(user_id)
-            notify_discord(f"⏰ *{user.username}'s* [{item.item_name}] has degraded and broken after a week of intense habits!")
-        elif item.category_target == category or item.category_target == "all":
-            total_mod += (item.multiplier - 1.0)
-    return total_mod
+def calculate_90_percent_loot_orb():
+    roll = random.random()
+    if roll <= 0.90:
+        # 90% chance for average drop range ($3.00 - $4.00)
+        return round(random.uniform(3.00, 4.00), 2)
+    else:
+        # 10% chance to drop wild outliers ($1.00 - $2.99 OR $4.01 - $7.00)
+        if random.random() > 0.5:
+            return round(random.uniform(1.00, 2.99), 2)
+        return round(random.uniform(4.01, 7.00), 2)
 
-# --- Middleware-like IP Handler ---
+# --- Core Process Engine (Runs calculations simulated for 11:59 PM) ---
+def process_end_of_day_strikes(user_id):
+    user = User.query.get(user_id)
+    queue = DailyQueue.query.filter_by(user_id=user_id).first()
+    if not queue: return 0.0
+
+    # Base damage compilation (Multiplier choices removed)
+    base_dmg = queue.cardio_mins + (queue.hobby_mins * 1.5) + (queue.screen_mins * 2.0)
+
+    # Apply 1.5x Chore Multiplier if completed
+    if queue.chores_completed:
+        base_dmg *= 1.5
+
+    # Hit Solo Boss
+    user.solo_monster_hp -= base_dmg
+    if user.solo_monster_hp <= 0:
+        gold_drop = calculate_90_percent_loot_orb()
+        user.gold_balance += gold_drop
+        
+        # Check rare chance (15%) for an item gear piece
+        item_note = ""
+        if random.random() <= 0.15:
+            new_item = UserInventory(user_id=user.id, item_name="Master Brush", category_target="hobby", multiplier=1.5)
+            db.session.add(new_item)
+            item_note = " and discovered an Equipment Orb: [Master Brush]!"
+
+        notify_discord(f"💀 **SOLO MONSTER DEFEATED!** {user.username} destroyed {user.solo_monster_name} and burst open an orb dropping **${gold_drop:.2f}**{item_note}!")
+        
+        # Spawn next harder enemy
+        user.solo_monster_max += 150
+        user.solo_monster_hp = user.solo_monster_max
+        user.solo_monster_name = random.choice(["Orc Raider", "Mountain Troll", "Shadow Specter"])
+
+    # Hit Shared Raid Boss
+    boss = RaidBoss.query.first()
+    boss.current_hp = max(0.0, boss.current_hp - base_dmg)
+    if boss.current_hp <= 0:
+        boss.current_hp = boss.max_hp
+        notify_discord(f"🏆 **RAID BOSS SLAYED!** Global rewards have been dropped into the channels!")
+
+    # Clear queue storage for tomorrow
+    queue.cardio_mins = 0
+    queue.hobby_mins = 0
+    queue.screen_mins = 0
+    queue.chores_completed = False
+    db.session.commit()
+    
+    return base_dmg
+
+# --- Routes ---
 def get_client_ip():
     if request.headers.get('X-Forwarded-For'):
         return request.headers.get('X-Forwarded-For').split(',')[0].strip()
@@ -102,26 +134,29 @@ def get_client_ip():
 
 @app.before_request
 def auto_login_by_ip():
+    if request.endpoint in ['static', 'manual_login'] or not request.endpoint: return
     if 'user_id' not in session:
-        ip = get_client_ip()
-        matched_user = User.query.filter_by(last_known_ip=ip).first()
-        if matched_user:
-            session['user_id'] = matched_user.id
+        try:
+            matched_user = User.query.filter_by(last_known_ip=get_client_ip()).first()
+            if matched_user: session['user_id'] = matched_user.id
+        except: pass
 
-# --- Routes ---
 @app.route('/')
 def index():
     current_user = User.query.get(session['user_id']) if 'user_id' in session else None
     players = User.query.all()
     boss = RaidBoss.query.first()
+    inventory = UserInventory.query.filter_by(user_id=session['user_id']).all() if current_user else []
     
-    inventory = []
+    user_queue = None
     if current_user:
-        # Trigger cleanup pass
-        get_clean_multiplier(current_user.id, "all")
-        inventory = UserInventory.query.filter_by(user_id=current_user.id).all()
+        user_queue = DailyQueue.query.filter_by(user_id=current_user.id).first()
+        if not user_queue:
+            user_queue = DailyQueue(user_id=current_user.id)
+            db.session.add(user_queue)
+            db.session.commit()
 
-    return render_template('index.html', current_user=current_user, players=players, boss=boss, inventory=inventory)
+    return render_template('index.html', current_user=current_user, players=players, boss=boss, inventory=inventory, queue=user_queue)
 
 @app.route('/manual_login/<username>')
 def manual_login(username):
@@ -132,71 +167,26 @@ def manual_login(username):
         session['user_id'] = user.id
     return redirect('/')
 
-@app.route('/log_activity', methods=['POST'])
-def log_activity():
+@app.route('/stage_activity', methods=['POST'])
+def stage_activity():
     if 'user_id' not in session: return redirect('/')
-    user = User.query.get(session['user_id'])
+    queue = DailyQueue.query.filter_by(user_id=session['user_id']).first()
     
     act_type = request.form.get('type')
     minutes = float(request.form.get('minutes', 0))
     
-    # Base Math Engine
-    if act_type == 'cardio':
-        intensity = float(request.form.get('intensity', 1.0))
-        base_exp = minutes * intensity
-    elif act_type == 'hobby':
-        base_exp = minutes * 1.5
-    elif act_type == 'screen_time':
-        base_exp = minutes * 2.0
-    else:
-        base_exp = 0
-
-    # Process Active Boosters
-    multiplier = get_clean_multiplier(user.id, act_type)
-    final_damage = base_exp * multiplier
-
-    # Apply Strike to Shared Raid Boss
-    boss = RaidBoss.query.first()
-    boss.current_hp = max(0.0, boss.current_hp - final_damage)
+    if act_type == 'cardio': queue.cardio_mins += minutes
+    elif act_type == 'hobby': queue.hobby_mins += minutes
+    elif act_type == 'screen_time': queue.screen_mins += minutes
+    
+    queue.chores_completed = 'chores' in request.form
     db.session.commit()
-
-    notify_discord(f"⚔️ **{user.username}** struck the Raid Boss for **{final_damage:.2f} Damage** using a {act_type} entry! (Multiplier: {multiplier}x)")
-
-    # Handle Raid Boss Defeated Reward Loops
-    if boss.current_hp <= 0:
-        roll = random.random()
-        tier = "common" if roll <= 0.60 else "rare" if roll <= 0.85 else "epic" if roll <= 0.97 else "legendary"
-        tier_data = LOOT_TABLE[tier]
-        
-        gold_dropped = round(random.uniform(tier_data["min_gold"], tier_data["max_gold"]), 2)
-        user.gold_balance += gold_dropped
-        
-        item_dropped = None
-        if random.random() > 0.40: # 60% chance to also pull an item item
-            raw_item = random.choice(tier_data["items"])
-            item_dropped = UserInventory(user_id=user.id, item_name=raw_item[0], category_target=raw_item[1], multiplier=raw_item[2])
-            db.session.add(item_dropped)
-            
-        boss.current_hp = boss.max_hp  # Revive Boss stronger or reset
-        db.session.commit()
-
-        msg = f"🏆 🎉 **RAID BOSS DEFEATED!** {user.username} landed the execution. \n" \
-              f"🎁 **Loot Quality:** {tier.upper()}\n" \
-              f"💰 **Gold Drop:** +${gold_dropped:.2f} to {user.username}'s personal vault!"
-        if item_dropped:
-            msg += f"\n📦 **Item Added:** [{item_dropped.item_name}] (+{int((item_dropped.multiplier-1)*100)}% {item_dropped.category_target} bonus for 7 days!)"
-        notify_discord(msg)
-
     return redirect('/')
 
-@app.route('/activate_item/<int:item_id>')
-def activate_item(item_id):
+@app.route('/trigger_midnight_calculation')
+def trigger_midnight_calculation():
     if 'user_id' not in session: return redirect('/')
-    item = UserInventory.query.get(item_id)
-    if item and item.user_id == session['user_id'] and not item.is_active:
-        item.is_active = True
-        item.activated_at = datetime.utcnow()
-        db.session.commit()
+    dmg = process_end_of_day_strikes(session['user_id'])
     return redirect('/')
 
 def initialize_database():
