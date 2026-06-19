@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Accountability Raid RPG</title>
+    <link rel="manifest" href="/static/manifest.json">
+    <style>
+        body { font-family: -apple-system, system-ui, sans-serif; background: #0f0f12; color: #e2e8f0; padding: 15px; margin: 0; }
+        .card { background: #1a1a24; border: 1px solid #2d2d3d; border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+        .btn { background: #4f46e5; color: #fff; border: none; padding: 12px; font-weight: bold; border-radius: 6px; width: 100%; cursor: pointer; display: block; text-align: center; text-decoration: none; box-sizing: border-box; }
+        .btn-alt { background: #2b2b3a; border: 1px solid #4f46e5; }
+        .flex-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .boss-bar { background: #2d2d3d; height: 24px; border-radius: 12px; overflow: hidden; margin: 12px 0; position: relative; }
+        .boss-progress { background: linear-gradient(90deg, #dc2626, #ea580c); height: 100%; transition: width 0.4s ease; }
+        .boss-text { position: absolute; width: 100%; text-align: center; top: 2px; font-weight: bold; font-size: 14px; }
+        .loot-badge { display: inline-block; padding: 4px 8px; font-size: 11px; border-radius: 4px; font-weight: bold; background: #3b82f6; }
+        .item-row { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #2d2d3d; padding: 8px 0; }
+        input, select { background: #252538; color: #fff; border: 1px solid #3d3d5c; padding: 10px; border-radius: 6px; width: 100%; margin-bottom: 10px; box-sizing: border-box; }
+    </style>
+</head>
+<body>
+
+    {% if not current_user %}
+    <div class="card" style="text-align: center;">
+        <h2>Identify Account to Bind Device IP</h2>
+        <div class="flex-grid">
+            <a href="/manual_login/Alaina" class="btn">Alaina</a>
+            <a href="/manual_login/Matthew" class="btn btn-alt">Matthew</a>
+        </div>
+    </div>
+    {% else %}
+    
+    <div style="display:flex; justify-content: space-between; margin-bottom:12px; align-items:center;">
+        <span>Bound Profile: <strong>{{ current_user.username }}</strong></span>
+        <a href="/manual_login/{% if current_user.username == 'Alaina' %}Matthew{% else %}Alaina{% endif %}" style="color:#818cf8; text-decoration:none; font-size:13px;">Switch Device Lock</a>
+    </div>
+
+    <div class="card">
+        <h3 style="margin:0 0 4px 0;">⚔️ Current Raid Objective</h3>
+        <small style="color:#94a3b8;">{{ boss.name }}</small>
+        <div class="boss-bar">
+            <div class="boss-progress" style="width: {{ (boss.current_hp / boss.max_hp) * 100 }}%;"></div>
+            <div class="boss-text">{{ boss.current_hp | int }} / {{ boss.max_hp | int }} HP</div>
+        </div>
+    </div>
+
+    <div class="flex-grid">
+        {% for p in players %}
+        <div class="card" style="margin-bottom:12px; border-top: 4px solid {% if p.username == 'Alaina' %}#ec4899{% else %}#3b82f6{% endif %};">
+            <h4 style="margin:0;">{{ p.username }}</h4>
+            <div style="font-size:20px; font-weight:bold; color:#10b981; margin-top:6px;">${{ "%.2f"|format(p.gold_balance) }}</div>
+            <small style="color:#94a3b8;">Personal Vault</small>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="card">
+        <h3>Log Habit & Deal Strike</h3>
+        <form action="/log_activity" method="POST">
+            <select name="type" id="type-select" onchange="toggleIntensity()">
+                <option value="cardio">Cardio Routine</option>
+                <option value="hobby">Productive Hobby Development</option>
+                <option value="screen_time">Time Defeating Doomscrolling Limits</option>
+            </select>
+            
+            <input type="number" step="any" name="minutes" placeholder="Duration (Minutes)" required>
+
+            <div id="intensity-wrapper">
+                <select name="intensity">
+                    <option value="1.0">Low Impact Strike (1.0x)</option>
+                    <option value="1.5">Medium Intensity Strike (1.5x)</option>
+                    <option value="2.0">High Intensity Strike (2.0x)</option>
+                </select>
+            </div>
+            
+            <button type="submit" class="btn">Deploy Strike Engine</button>
+        </form>
+    </div>
+
+    <div class="card">
+        <h3>🎒 Your Loot Inventory</h3>
+        {% if not inventory %}
+        <p style="color:#64748b; font-size:14px; margin:0;">Defeat the Shared Raid Boss to populate your storage with Habit-Hook boosters.</p>
+        {% else %}
+            {% for item in inventory %}
+            <div class="item-row">
+                <div>
+                    <div style="font-weight:bold;">{{ item.item_name }}</div>
+                    <small style="color:#94a3b8;">+{{ int((item.multiplier - 1)*100) }}% multiplier to {{ item.category_target }}</small>
+                </div>
+                <div>
+                    {% if item.is_active %}
+                        <span class="loot-badge" style="background:#10b981;">ACTIVE (7D Time Limit)</span>
+                    {% else %}
+                        <a href="/activate_item/{{ item.id }}" class="btn" style="padding:6px 12px; font-size:12px; width:auto;">Equip & Hook</a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        {% endif %}
+    </div>
+
+    <script>
+        function toggleIntensity() {
+            var select = document.getElementById('type-select').value;
+            var wrapper = document.getElementById('intensity-wrapper');
+            wrapper.style.display = (select === 'cardio') ? 'block' : 'none';
+        }
+        toggleIntensity();
+
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/static/sw.js');
+        }
+    </script>
+    {% endif %}
+</body>
+</html>
