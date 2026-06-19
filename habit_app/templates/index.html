@@ -43,12 +43,11 @@
         body.bg-dots { --bg-pattern: radial-gradient(var(--border-color) 2px, transparent 2px); background-size: 20px 20px; }
         body.bg-scan { --bg-pattern: repeating-linear-gradient(0deg, transparent, transparent 2px, var(--border-color) 2px, var(--border-color) 4px); }
 
-        /* Rarity Loot Colors */
-        .rarity-common { color: #a1a1aa; } /* Gray */
-        .rarity-uncommon { color: #10b981; } /* Green */
-        .rarity-rare { color: #3b82f6; } /* Blue */
-        .rarity-legendary { color: #f59e0b; text-shadow: 0 0 8px rgba(245, 158, 11, 0.6); } /* Gold Glow */
-        .rarity-raid { color: #ef4444; font-weight: 900; text-shadow: 0 0 8px rgba(239, 68, 68, 0.6); } /* Red */
+        .rarity-common { color: #a1a1aa; }
+        .rarity-uncommon { color: #10b981; }
+        .rarity-rare { color: #3b82f6; }
+        .rarity-legendary { color: #f59e0b; text-shadow: 0 0 8px rgba(245, 158, 11, 0.6); }
+        .rarity-raid { color: #ef4444; font-weight: 900; text-shadow: 0 0 8px rgba(239, 68, 68, 0.6); }
 
         body { font-family: var(--font-family); font-size: var(--base-font-size); background-color: var(--bg-main); background-image: var(--bg-pattern); color: var(--text-main); padding: 15px; margin: 0; transition: all 0.3s ease; }
         .card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 16px; margin-bottom: 16px; }
@@ -218,11 +217,11 @@
         </div>
         
         <details>
-            <summary style="font-size: 1.1em; color: #10b981; margin-bottom: 10px;">💸 Withdraw / Spend Gold</summary>
+            <summary style="font-size: 1.1em; color: #10b981; margin-bottom: 10px;">💸 Withdraw from {{ current_user.username }}'s Vault</summary>
             <div class="loot-box" style="margin-top: 10px; margin-bottom: 10px;">
                 <form action="/spend_gold" method="POST">
                     <input type="number" step="0.01" min="0.01" max="{{ "%.2f"|format(current_user.gold_balance) }}" name="amount" placeholder="Amount (e.g. 5.00)" required>
-                    <input type="text" name="reason" placeholder="What are you buying?" required>
+                    <input type="text" name="reason" placeholder="What are you spending this on?" required>
                     <button type="submit" class="btn" style="background: #10b981; margin-top: 5px;">Cash Out Reward</button>
                 </form>
             </div>
@@ -265,7 +264,7 @@
                 <summary>View Global Clear Rewards</summary>
                 <div class="loot-box">
                     <strong>🏆 The Bounty:</strong><br>
-                    • 100% Chance: Flat $10.00 to Final Hitter<br>
+                    • 100% Chance: Raid Boss Orb ($10.00 - $50.00, Avg $25) to BOTH players<br>
                     • 100% Chance: Server advances +1 World Level<br>
                     <em style="color:#94a3b8; font-size:0.85em;">(World Levels permanently increase all Server Difficulty by 3% and Solo Gold by $0.50)</em>
                 </div>

@@ -87,6 +87,11 @@ def calculate_90_percent_loot_orb(world_level):
         if random.random() > 0.5: return round(random.uniform(1.00, 2.99 + level_bonus), 2)
         return round(random.uniform(4.01 + level_bonus, 7.00 + level_bonus), 2)
 
+def calculate_raid_boss_orb():
+    # Gaussian bell curve centered at 25, clamped between 10 and 50
+    drop = random.gauss(25.0, 10.0)
+    return round(max(10.0, min(50.0, drop)), 2)
+
 def roll_equipment():
     roll = random.random() * 100
     if roll <= 0.5:
@@ -160,10 +165,14 @@ def process_all_end_of_day_strikes():
                 boss.is_active = False
                 boss.next_spawn_date = get_next_monday_midnight()
                 
-                db.session.add(PendingReward(user_id=user.id, gold_amount=10.0, item_name="[Raid] Raid Boss Bounty"))
-                user.gold_balance += 10.0
+                # Drop the Raid Boss Orb for ALL players
+                all_users = User.query.all()
+                for u in all_users:
+                    raid_drop = calculate_raid_boss_orb()
+                    db.session.add(PendingReward(user_id=u.id, gold_amount=raid_drop, item_name="[Raid] Raid Boss Orb"))
+                    u.gold_balance += raid_drop
                 
-                notify_discord(f"🌋 **{boss.name.upper()} DESTROYED!** It is dead until Monday. The server will advance to **World Level {boss.world_level + 1}** upon respawn!")
+                notify_discord(f"🌋 **{boss.name.upper()} DESTROYED!** It is dead until Monday. Both players have received a Raid Boss Orb! The server will advance to **World Level {boss.world_level + 1}** upon respawn!")
 
         queue.workout_mins = 0
         queue.hobby_mins = 0
@@ -279,7 +288,6 @@ def spend_gold():
         
     reason = request.form.get('reason', 'a mystery reward')
     
-    # Strictly prevent negative balances
     if amount > 0 and user.gold_balance >= amount:
         user.gold_balance -= amount
         db.session.commit()
