@@ -21,24 +21,27 @@ LOOT_TABLE = {
     "legendary": {"min_gold": 6.51, "max_gold": 7.00, "items": [("The Golden Hourglass", "all", 1.30)]}
 }
 
-# --- Database Models ---
+# --- Models ---
 class User(db.Model):
+    __tablename__ = 'user'  # Explicitly forces lowercase table name to match queries
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), unique=True, nullable=False)
     gold_balance = db.Column(db.Float, default=0.0)
     last_known_ip = db.Column(db.String(100), nullable=True)
 
 class RaidBoss(db.Model):
+    __tablename__ = 'raid_boss'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), default="The Doomscroll Behemoth")
     max_hp = db.Column(db.Float, default=1500.0)
     current_hp = db.Column(db.Float, default=1500.0)
 
 class UserInventory(db.Model):
+    __tablename__ = 'user_inventory'
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, nullable=False)
     item_name = db.Column(db.String(100), nullable=False)
-    category_target = db.Column(db.String(50), nullable=False) # cardio, hobby, screen_time, all
+    category_target = db.Column(db.String(50), nullable=False)
     multiplier = db.Column(db.Float, default=1.0)
     is_active = db.Column(db.Boolean, default=False)
     activated_at = db.Column(db.DateTime, nullable=True)
@@ -50,7 +53,28 @@ class UserInventory(db.Model):
             return False
         return datetime.utcnow() > (self.activated_at + timedelta(days=self.duration_days))
 
-# --- Helpers ---
+# --- Middleware-like IP Handler ---
+def get_client_ip():
+    if request.headers.get('X-Forwarded-For'):
+        return request.headers.get('X-Forwarded-For').split(',')[0].strip()
+    return request.remote_addr
+
+@app.before_request
+def auto_login_by_ip():
+    # Prevent crashing during static file routes or before database initialization
+    if request.endpoint in ['static', 'manual_login']:
+        return
+        
+    if 'user_id' not in session:
+        ip = get_client_ip()
+        try:
+            # Safely check if the IP matches an existing bound account
+            matched_user = User.query.filter_by(last_known_ip=ip).first()
+            if matched_user:
+                session['user_id'] = matched_user.id
+        except Exception:
+            # If the database tables aren't built yet, skip gracefully
+            pass# --- Helpers ---
 def notify_discord(message):
     webhook_url = os.environ.get('DISCORD_WEBHOOK_URL')
     if webhook_url:
