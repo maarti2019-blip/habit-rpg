@@ -199,12 +199,17 @@ def activate_item(item_id):
         db.session.commit()
     return redirect('/')
 
-if __name__ == '__main__':
+def initialize_database():
     with app.app_context():
+        os.makedirs(os.path.join(basedir, 'instance'), exist_ok=True)
         db.create_all()
         if not User.query.first():
             db.session.add(User(username='Alaina'))
             db.session.add(User(username='Matthew'))
             db.session.add(RaidBoss())
             db.session.commit()
+
+initialize_database()
+
+if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
