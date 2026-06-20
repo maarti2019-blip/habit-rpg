@@ -9,13 +9,9 @@ from sqlalchemy.sql import text
 app = Flask(__name__)
 app.secret_key = 'rpg_accountability_secret_chain'
 basedir = os.path.abspath(os.path.dirname(__file__))
-# --- Secure Cloud Database Connection ---
-db_url = os.environ.get('DATABASE_URL', 'sqlite:///' + os.path.join(basedir, 'instance', 'app.db'))
-# Fixes an older SQLAlchemy bug with Postgres URLs
-if db_url.startswith("postgres://"):
-    db_url = db_url.replace("postgres://", "postgresql://", 1)
-
-app.config['SQLALCHEMY_DATABASE_URI'] = db_url
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///' + os.path.join(basedir, 'instance', 'app.db'))
+if app.config['SQLALCHEMY_DATABASE_URI'].startswith("postgres://"):
+    app.config['SQLALCHEMY_DATABASE_URI'] = app.config['SQLALCHEMY_DATABASE_URI'].replace("postgres://", "postgresql://", 1)
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
@@ -29,26 +25,6 @@ RAID_BOSSES = [
     "Dragon", "Behemoth", "Kraken", "Leviathan", "Hydra", "Lich", "Titan", "Colossus", "Balrog", "Chimera",
     "Wyrm", "Tarrasque", "Cyclops", "Sphinx", "Roc", "Wendigo", "Dullahan", "Juggernaut", "Beholder"
 ]
-
-# --- Auto-Image Scanner ---
-def get_monster_image(monster_name):
-    # Convert "Mountain Troll" into "mountain_troll" to match file names cleanly
-    safe_name = monster_name.lower().replace(" ", "_").replace("'", "")
-    
-    # Check the server folder for these file types
-    extensions = ['.gif', '.png', '.webp', '.jpg']
-    folder_path = os.path.join(basedir, 'static', 'images', 'monsters')
-    
-    # If the folder doesn't exist yet, just return a fallback
-    if not os.path.exists(folder_path):
-        return "/static/icon-192.png" # Safe fallback using your app icon
-        
-    for ext in extensions:
-        if os.path.exists(os.path.join(folder_path, safe_name + ext)):
-            return f"/static/images/monsters/{safe_name}{ext}"
-            
-    # If no custom art is found, show your default app icon
-    return "/static/icon-192.png"
 
 # --- THE 80-ITEM LOOT TABLE ---
 COMMON_ITEMS = [
@@ -153,9 +129,28 @@ class User(db.Model):
     solo_monster_hp = db.Column(db.Float, default=300.0)
     solo_monster_max = db.Column(db.Float, default=300.0)
     solo_monster_name = db.Column(db.String(100), default="Slime")
+    
+    # Daily Tracking
     bosses_killed_today = db.Column(db.Integer, default=0)
     chores_completed = db.Column(db.Boolean, default=False)
     last_active_date = db.Column(db.String(20), nullable=True)
+    
+    # Weekly Tracking Buckets
+    current_week = db.Column(db.Integer, nullable=True)
+    wk_workout = db.Column(db.Float, default=0.0)
+    wk_hobby = db.Column(db.Float, default=0.0)
+    wk_chore = db.Column(db.Float, default=0.0)
+    wk_bosses = db.Column(db.Integer, default=0)
+    wk_gold = db.Column(db.Float, default=0.0)
+    
+    # Last Week's Snapshot
+    prev_wk_workout = db.Column(db.Float, default=0.0)
+    prev_wk_hobby = db.Column(db.Float, default=0.0)
+    prev_wk_chore = db.Column(db.Float, default=0.0)
+    prev_wk_bosses = db.Column(db.Integer, default=0)
+    prev_wk_gold = db.Column(db.Float, default=0.0)
+    
+    show_weekly_report = db.Column(db.Boolean, default=False)
 
 class RaidBoss(db.Model):
     __tablename__ = 'raid_boss'
@@ -193,6 +188,17 @@ def notify_discord(message):
         try: requests.post(webhook_url, json={"content": message})
         except: pass
 
+def get_monster_image(monster_name):
+    safe_name = monster_name.lower().replace(" ", "_").replace("'", "")
+    extensions = ['.gif', '.png', '.webp', '.jpg']
+    folder_path = os.path.join(basedir, 'static', 'images', 'monsters')
+    
+    if not os.path.exists(folder_path): return "/static/icon-192.png"
+    for ext in extensions:
+        if os.path.exists(os.path.join(folder_path, safe_name + ext)):
+            return f"/static/images/monsters/{safe_name}{ext}"
+    return "/static/icon-192.png" 
+
 def calculate_90_percent_loot_orb(world_level):
     level_bonus = (world_level - 1) * 0.50
     if random.random() <= 0.90: return round(random.uniform(3.00 + level_bonus, 4.00 + level_bonus), 2)
@@ -212,7 +218,6 @@ def roll_equipment():
     return None
 
 def roll_raid_equipment():
-    # Massive boost to item tier chances when killing a Raid Boss
     roll = random.random() * 100
     if roll <= 10.0: return ("Legendary", random.choice(LEGENDARY_ITEMS))
     elif roll <= 50.0: return ("Rare", random.choice(RARE_ITEMS))
@@ -225,13 +230,38 @@ def get_next_monday_midnight():
     if days_ahead <= 0: days_ahead += 7
     return (now + timedelta(days=days_ahead)).replace(hour=0, minute=1, second=0, microsecond=0)
 
-def check_daily_reset(user):
-    today_str = datetime.now().strftime('%Y-%m-%d')
+def check_resets(user):
+    now = datetime.now()
+    today_str = now.strftime('%Y-%m-%d')
+    current_iso_week = now.isocalendar()[1]
+    
+    if user.current_week is None:
+        user.current_week = current_iso_week
+        
+    # Daily Reset
     if user.last_active_date != today_str:
         user.bosses_killed_today = 0
         user.chores_completed = False
         user.last_active_date = today_str
-        db.session.commit()
+        
+    # Weekly Reset
+    if user.current_week != current_iso_week:
+        user.prev_wk_workout = user.wk_workout
+        user.prev_wk_hobby = user.wk_hobby
+        user.prev_wk_chore = user.wk_chore
+        user.prev_wk_bosses = user.wk_bosses
+        user.prev_wk_gold = user.wk_gold
+        
+        user.wk_workout = 0.0
+        user.wk_hobby = 0.0
+        user.wk_chore = 0.0
+        user.wk_bosses = 0
+        user.wk_gold = 0.0
+        
+        user.current_week = current_iso_week
+        user.show_weekly_report = True
+        
+    db.session.commit()
 
 # --- Routes ---
 def get_client_ip():
@@ -240,7 +270,7 @@ def get_client_ip():
 
 @app.before_request
 def auto_login_by_ip():
-    if request.endpoint in ['static', 'manual_login', 'claim_gacha', 'spend_gold', 'use_item'] or not request.endpoint: return
+    if request.endpoint in ['static', 'manual_login', 'claim_gacha', 'spend_gold', 'use_item', 'dismiss_report'] or not request.endpoint: return
     if 'user_id' not in session:
         try:
             matched_user = User.query.filter_by(last_known_ip=get_client_ip()).first()
@@ -253,7 +283,7 @@ def index():
     boss = RaidBoss.query.first()
     players = User.query.all()
     
-    if current_user: check_daily_reset(current_user)
+    if current_user: check_resets(current_user)
 
     if boss and not boss.is_active and boss.next_spawn_date:
         if datetime.now() >= boss.next_spawn_date:
@@ -278,20 +308,10 @@ def index():
                 db.session.delete(item)
         db.session.commit()
 
-# Auto-scan for current monsters
     solo_img = get_monster_image(current_user.solo_monster_name) if current_user else None
     raid_img = get_monster_image(boss.name) if boss else None
 
-    return render_template('index.html', 
-                           current_user=current_user, 
-                           players=players, 
-                           boss=boss, 
-                           pending_rewards=pending_rewards, 
-                           inventory=inventory,
-                           solo_img=solo_img,
-                           raid_img=raid_img)
-
-    return render_template('index.html', current_user=current_user, players=players, boss=boss, pending_rewards=pending_rewards, inventory=inventory)
+    return render_template('index.html', current_user=current_user, players=players, boss=boss, pending_rewards=pending_rewards, inventory=inventory, solo_img=solo_img, raid_img=raid_img)
 
 @app.route('/manual_login/<username>')
 def manual_login(username):
@@ -302,12 +322,20 @@ def manual_login(username):
         session['user_id'] = user.id
     return redirect('/')
 
+@app.route('/dismiss_report', methods=['POST'])
+def dismiss_report():
+    if 'user_id' in session:
+        user = User.query.get(session['user_id'])
+        user.show_weekly_report = False
+        db.session.commit()
+    return redirect('/')
+
 @app.route('/stage_activity', methods=['POST'])
 def stage_activity():
     if 'user_id' not in session: return redirect('/')
     user = User.query.get(session['user_id'])
     boss = RaidBoss.query.first()
-    check_daily_reset(user)
+    check_resets(user)
     
     act_type = request.form.get('type')
     try: minutes = float(request.form.get('minutes', 0))
@@ -328,9 +356,15 @@ def stage_activity():
             chore_mult *= buff.multiplier
 
     base_dmg = 0
-    if act_type == 'workout': base_dmg = minutes * workout_mult
-    elif act_type == 'hobby': base_dmg = minutes * hobby_mult
-    elif act_type == 'chore': base_dmg = minutes * chore_mult
+    if act_type == 'workout': 
+        base_dmg = minutes * workout_mult
+        user.wk_workout += minutes
+    elif act_type == 'hobby': 
+        base_dmg = minutes * hobby_mult
+        user.wk_hobby += minutes
+    elif act_type == 'chore': 
+        base_dmg = minutes * chore_mult
+        user.wk_chore += minutes
     
     just_did_chores = False
     if 'chores' in request.form and not user.chores_completed:
@@ -351,6 +385,7 @@ def stage_activity():
         if solo_dmg >= user.solo_monster_hp:
             solo_dmg -= user.solo_monster_hp
             user.bosses_killed_today += 1
+            user.wk_bosses += 1
             
             gold_drop = calculate_90_percent_loot_orb(boss.world_level)
             item_drop_text = None
@@ -363,6 +398,7 @@ def stage_activity():
                 db.session.add(UserInventory(user_id=user.id, item_name=i_name, category_target=i_cat, multiplier=i_mult, description=i_desc, rarity=tier))
             
             user.gold_balance += gold_drop
+            user.wk_gold += gold_drop
             db.session.add(PendingReward(user_id=user.id, gold_amount=gold_drop, item_name=item_drop_text))
             notify_discord(f"💀 **{user.username}** slaughtered a {user.solo_monster_name}! ({user.bosses_killed_today}/3 Daily Cap)")
 
@@ -385,8 +421,6 @@ def stage_activity():
             
             for u in User.query.all():
                 raid_drop = calculate_raid_boss_orb()
-                
-                # RAID BOSS ITEM DROP (High Odds)
                 raid_loot = roll_raid_equipment()
                 r_tier, r_data = raid_loot
                 r_name, r_cat, r_mult, r_desc = r_data
@@ -394,6 +428,7 @@ def stage_activity():
                 
                 db.session.add(PendingReward(user_id=u.id, gold_amount=raid_drop, item_name=f"[Raid Boss Kill] [{r_tier}] {r_name}"))
                 u.gold_balance += raid_drop
+                u.wk_gold += raid_drop
             
             notify_discord(f"🌋 **{boss.name.upper()} DESTROYED!** Both players received a Raid Boss Orb and guaranteed high-tier loot!")
 
@@ -448,6 +483,7 @@ def use_item(item_id):
         
     elif effect == 'gold':
         user.gold_balance += val
+        user.wk_gold += val
         notify_discord(f"💰 **{user.username}** opened {item.item_name} and gained ${val:.2f}!")
         db.session.delete(item)
         
@@ -458,10 +494,12 @@ def use_item(item_id):
             boss_lvl = RaidBoss.query.first().world_level
             gold_drop = calculate_90_percent_loot_orb(boss_lvl)
             user.gold_balance += gold_drop
+            user.wk_gold += gold_drop
             db.session.add(PendingReward(user_id=user.id, gold_amount=gold_drop, item_name="[Explosive Kill]"))
             user.solo_monster_hp = user.solo_monster_max
             user.solo_monster_name = random.choice(SOLO_ENEMIES)
             user.bosses_killed_today += 1
+            user.wk_bosses += 1
         db.session.delete(item)
         
     elif effect == 'damage_raid':
@@ -474,14 +512,13 @@ def use_item(item_id):
                 boss.next_spawn_date = get_next_monday_midnight()
                 for u in User.query.all():
                     raid_drop = calculate_raid_boss_orb()
-                    
                     raid_loot = roll_raid_equipment()
                     r_tier, r_data = raid_loot
                     r_name, r_cat, r_mult, r_desc = r_data
                     db.session.add(UserInventory(user_id=u.id, item_name=r_name, category_target=r_cat, multiplier=r_mult, description=r_desc, rarity=r_tier))
-                    
                     db.session.add(PendingReward(user_id=u.id, gold_amount=raid_drop, item_name=f"[Raid Boss Kill] [{r_tier}] {r_name}"))
                     u.gold_balance += raid_drop
+                    u.wk_gold += raid_drop
                 notify_discord(f"🌋 **RAID BOSS ANNIHILATED BY ITEM!** Both players received a Raid Boss Orb and guaranteed high-tier loot!")
         db.session.delete(item)
         
@@ -497,6 +534,25 @@ def initialize_database():
     with app.app_context():
         os.makedirs(os.path.join(basedir, 'instance'), exist_ok=True)
         db.create_all()
+        
+        # Safely auto-migrate database for new WEEKLY mechanics
+        try:
+            db.session.execute(text('ALTER TABLE user ADD COLUMN current_week INTEGER'))
+            db.session.execute(text('ALTER TABLE user ADD COLUMN wk_workout FLOAT DEFAULT 0.0'))
+            db.session.execute(text('ALTER TABLE user ADD COLUMN wk_hobby FLOAT DEFAULT 0.0'))
+            db.session.execute(text('ALTER TABLE user ADD COLUMN wk_chore FLOAT DEFAULT 0.0'))
+            db.session.execute(text('ALTER TABLE user ADD COLUMN wk_bosses INTEGER DEFAULT 0'))
+            db.session.execute(text('ALTER TABLE user ADD COLUMN wk_gold FLOAT DEFAULT 0.0'))
+            db.session.execute(text('ALTER TABLE user ADD COLUMN prev_wk_workout FLOAT DEFAULT 0.0'))
+            db.session.execute(text('ALTER TABLE user ADD COLUMN prev_wk_hobby FLOAT DEFAULT 0.0'))
+            db.session.execute(text('ALTER TABLE user ADD COLUMN prev_wk_chore FLOAT DEFAULT 0.0'))
+            db.session.execute(text('ALTER TABLE user ADD COLUMN prev_wk_bosses INTEGER DEFAULT 0'))
+            db.session.execute(text('ALTER TABLE user ADD COLUMN prev_wk_gold FLOAT DEFAULT 0.0'))
+            db.session.execute(text('ALTER TABLE user ADD COLUMN show_weekly_report BOOLEAN DEFAULT 0'))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
         if not User.query.first():
             db.session.add(User(username='Alaina', solo_monster_name=random.choice(SOLO_ENEMIES)))
             db.session.add(User(username='Matthew', solo_monster_name=random.choice(SOLO_ENEMIES)))
