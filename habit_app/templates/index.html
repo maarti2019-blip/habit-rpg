@@ -123,7 +123,6 @@
                     {% if '[Rare]' in r.item_name %}{% set rarity_class = 'rarity-Rare' %}{% endif %}
                     {% if '[Uncommon]' in r.item_name %}{% set rarity_class = 'rarity-Uncommon' %}{% endif %}
                     {% if '[Common]' in r.item_name %}{% set rarity_class = 'rarity-Common' %}{% endif %}
-                    {% if '[Raid]' in r.item_name %}{% set rarity_class = 'rarity-Legendary' %}{% endif %}
                     <p class="{{ rarity_class }}" style="font-weight: bold; margin: 5px 0; font-size: 1.1em;">✨ {{ r.item_name }} ✨</p>
                 {% endif %}
             {% endfor %}
@@ -237,16 +236,11 @@
         <details>
             <summary>View Loot Pool & Odds</summary>
             <div class="loot-box">
-                <strong>💰 Gold Drops:</strong><br>
-                • 90% Chance: $3.00 - $4.00<br>
-                • 5% Chance: $1.00 - $2.99<br>
-                • 5% Chance: $4.01 - $7.00<br>
-                <br>
-                <strong>📦 Equipment Orbs:</strong><br>
-                <span class="rarity-Common">• Common (15.0%):</span> Rusty Gear / Coin Purse<br>
-                <span class="rarity-Uncommon">• Uncommon (8.0%):</span> Focused Gear / Goblin Bomb<br>
-                <span class="rarity-Rare">• Rare (3.0%):</span> Master Gear / Maid's Bell<br>
-                <span class="rarity-Legendary">• Legendary (0.5%):</span> Titan Gear / Hero's Elixir
+                <strong>📦 Equipment Orbs Drop Odds:</strong><br>
+                <span class="rarity-Common">• Common (15.0%):</span> Minor buffs, small DMG bombs, spare change.<br>
+                <span class="rarity-Uncommon">• Uncommon (8.0%):</span> Moderate buffs, medium bombs, gold bags.<br>
+                <span class="rarity-Rare">• Rare (3.0%):</span> High buffs, Maid's Bells, large bombs.<br>
+                <span class="rarity-Legendary">• Legendary (0.5%):</span> Insane 2.0x+ buffs, 1K+ DMG nukes, huge gold drops!
             </div>
         </details>
     </div>
@@ -259,6 +253,15 @@
                 <div class="boss-progress" style="width: {{ (boss.current_hp / boss.max_hp) * 100 }}%; background: #dc2626;"></div>
                 <div class="boss-text">World Lvl {{ boss.world_level }} | {{ boss.name }}: {{ boss.current_hp | int }} / {{ boss.max_hp | int }} HP</div>
             </div>
+            <details>
+                <summary>View Global Clear Rewards</summary>
+                <div class="loot-box">
+                    <strong>🏆 The Bounty:</strong><br>
+                    • 100% Chance: Raid Boss Orb ($10 - $50, Avg $25) to BOTH players<br>
+                    • 100% Chance: Guaranteed High-Tier Equipment Drop!<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;↳ <em style="font-size:0.9em;">(Common: 10% | Uncommon: 40% | Rare: 40% | Legendary: 10%)</em>
+                </div>
+            </details>
         {% else %}
             <p style="color:#10b981; font-weight:bold;">Defeated! The {{ boss.name }} respawns Monday.</p>
         {% endif %}
@@ -272,17 +275,18 @@
             <select name="type">
                 <option value="workout">Workout Time (1:4.5 Ratio)</option>
                 <option value="hobby">Hobby Tracking (1:7.0 Ratio)</option>
+                <option value="chore">Chore Time (1:5.0 Ratio)</option>
             </select>
             <input type="number" step="any" name="minutes" placeholder="Minutes completed">
             
             <div class="checkbox-container">
                 <input type="checkbox" name="chores" id="chores" {% if current_user.chores_completed %}checked disabled{% endif %}>
                 <label for="chores" style="font-size:0.9em;">
-                    <strong>Household Chores Completed?</strong><br>
+                    <strong>Initiative Strike: I started a chore!</strong><br>
                     {% if current_user.chores_completed %}
-                        <span style="color:#10b981; font-weight:bold;">Active! 1.5x Daily Multiplier Applied.</span>
+                        <span style="color:#10b981; font-weight:bold;">Active! 50 DMG already deployed today.</span>
                     {% else %}
-                        <span style="color:var(--text-muted); font-weight:normal;">Personal 1.5x damage buff!</span>
+                        <span style="color:var(--text-muted); font-weight:normal;">Check this box to deal an instant 50 Flat DMG!</span>
                     {% endif %}
                 </label>
             </div>
@@ -317,10 +321,9 @@
     </div>
 
     <script>
-        // "Are you sure?" Chores Safety Check
         document.getElementById('chores').addEventListener('change', function(e) {
             if (this.checked && !this.disabled) {
-                if (!confirm("Are you SURE you completed your household chores? Once checked, this daily 1.5x multiplier cannot be reversed!")) {
+                if (!confirm("Are you SURE you started a chore? This will instantly deal 50 damage to your boss and cannot be reversed!")) {
                     this.checked = false;
                 }
             }
