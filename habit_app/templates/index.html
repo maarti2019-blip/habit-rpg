@@ -103,6 +103,7 @@
     </div>
     {% else %}
 
+    <!-- WEEKLY REPORT POP-UP -->
     {% if current_user.show_weekly_report %}
     <div class="card" style="position: fixed; top: 10%; left: 5%; width: 90%; z-index: 3000; box-sizing: border-box; border-color: #f59e0b; box-shadow: 0 0 20px rgba(245, 158, 11, 0.5);">
         <div style="text-align: center;">
@@ -122,6 +123,7 @@
     </div>
     {% endif %}
 
+    <!-- GACHA MODULE -->
     {% if pending_rewards %}
     <div id="gacha-overlay">
         <div class="burst-flash" id="burstFlash"></div>
@@ -158,6 +160,7 @@
     </script>
     {% endif %}
 
+    <!-- HEADER & SETTINGS TRIGGER -->
     <div class="app-header">
         <div>
             <span style="font-size: 1.1em;">Profile: <strong>{{ current_user.username }}</strong></span><br>
@@ -166,6 +169,7 @@
         <button class="settings-trigger" onclick="toggleSettings(true)">⚙️ Layout</button>
     </div>
 
+    <!-- ENHANCED SETTINGS MODAL -->
     <div id="settingsModal" class="settings-modal">
         <div class="modal-body">
             <h3 style="margin-top: 0;">Personalize Interface</h3>
@@ -210,6 +214,7 @@
         </div>
     </div>
 
+    <!-- DYNAMIC EVENT BANNER -->
     {% if server_state and server_state.active_event %}
         {% set skin_class = "" %}
         {% if "Warrior" in server_state.active_event %}{% set skin_class = "evt-warrior" %}{% endif %}
@@ -225,6 +230,7 @@
         </div>
     {% endif %}
 
+    <!-- MASTER VAULT (WITH LEDGER) -->
     <div class="card">
         <div class="flex-grid">
             {% for p in players %}
@@ -234,18 +240,37 @@
             </div>
             {% endfor %}
         </div>
+        
         <details style="margin-top: 15px;">
             <summary style="font-size: 1.1em; font-weight: bold; color: #10b981; cursor: pointer; outline: none;">💸 Cash Out Reward</summary>
             <div style="margin-top: 10px; background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px; border: 1px solid var(--border-color);">
                 <form action="/spend_gold" method="POST" style="margin:0;">
                     <input type="number" step="0.01" min="0.01" name="amount" placeholder="Amount (e.g. 5.00)" required>
-                    <input type="text" name="reason" placeholder="What are you spending this on?" required>
+                    <input type="text" name="reason" placeholder="Personal log: What is this for?" required>
                     <button type="submit" class="btn" style="background: #10b981; margin-top: 5px;">Withdraw Funds</button>
                 </form>
             </div>
         </details>
+
+        <details style="margin-top: 10px;">
+            <summary style="font-size: 0.9em; color: var(--text-muted); cursor: pointer; outline: none;">📜 View Spending Ledger</summary>
+            <div style="margin-top: 10px; max-height: 150px; overflow-y: auto; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 6px; border: 1px solid var(--border-color);">
+                {% if transactions %}
+                    {% for t in transactions %}
+                    <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding: 6px 0; font-size: 0.85em;">
+                        <span style="color: #ef4444; font-weight: bold;">-${{ "%.2f"|format(t.amount) }}</span>
+                        <span style="color: var(--text-main); flex: 1; margin: 0 10px; text-align: left;">{{ t.reason }}</span>
+                        <span style="color: var(--text-muted);">{{ t.timestamp.strftime('%m/%d') }}</span>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p style="font-size: 0.85em; color: var(--text-muted); margin: 0; text-align: center;">No withdrawals on record.</p>
+                {% endif %}
+            </div>
+        </details>
     </div>
 
+    <!-- COMPANION PET INTERFACE -->
     <div class="card">
         <h3 style="margin:0 0 10px 0;">🐾 Companion Pet</h3>
         {% if not current_user.has_pet %}
@@ -269,6 +294,7 @@
         {% endif %}
     </div>
 
+    <!-- SOLO MONSTER -->
     <div class="card">
         <div style="display:flex; justify-content: space-between; align-items:center;">
             <h3 style="margin:0;">👤 Solo Adversary</h3>
@@ -289,6 +315,7 @@
         </div>
     </div>
 
+    <!-- RAID BOSS -->
     <div class="card">
         <h3>🌋 Shared Co-Op Raid</h3>
         <div style="display: flex; justify-content: center; margin: 10px 0;">
@@ -306,6 +333,7 @@
         </div>
     </div>
 
+    <!-- COMBAT CONTROLLER -->
     <div class="card">
         <h3>Log Daily Actions</h3>
         <form action="/stage_activity" method="POST">
@@ -332,6 +360,7 @@
         </form>
     </div>
 
+    <!-- ACTIVE INVENTORY -->
     <div class="card">
         <h3 style="margin: 0 0 10px 0;">🎒 Your Vault Inventory</h3>
         {% if not inventory %}
@@ -363,6 +392,7 @@
         {% endif %}
     </div>
 
+    <!-- JAVASCRIPT FUNCTIONS -->
     <script>
         document.getElementById('chores').addEventListener('change', function(e) {
             if (this.checked && !this.disabled) {
