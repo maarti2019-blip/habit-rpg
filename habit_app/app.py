@@ -330,7 +330,7 @@ def auto_login_by_ip():
             if matched_user: session['user_id'] = matched_user.id
         except: pass
 
-   @app.route('/')
+@app.route('/')
 def index():
     current_user = User.query.get(session['user_id']) if 'user_id' in session else None
     boss = RaidBoss.query.first()
