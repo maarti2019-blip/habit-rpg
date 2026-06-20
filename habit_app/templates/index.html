@@ -107,6 +107,29 @@
     </div>
     {% else %}
 
+    <!-- WEEKLY REPORT POP-UP -->
+    {% if current_user.show_weekly_report %}
+    <div id="weeklyReportModal" class="settings-modal open" style="z-index: 3000;">
+        <div class="modal-body" style="text-align: center; border-color: #f59e0b; box-shadow: 0 0 20px rgba(245, 158, 11, 0.5);">
+            <h2 style="color: #f59e0b; margin-top: 0;">🎉 Weekly Wrap-Up!</h2>
+            <p>Congratulations, <strong>{{ current_user.username }}</strong>! Here is what you conquered last week:</p>
+            
+            <div style="background: rgba(0,0,0,0.3); border-radius: 8px; padding: 15px; margin: 15px 0; text-align: left;">
+                <p style="margin: 5px 0;">⚔️ <strong>Workout:</strong> {{ current_user.prev_wk_workout | int }} mins</p>
+                <p style="margin: 5px 0;">📚 <strong>Hobby:</strong> {{ current_user.prev_wk_hobby | int }} mins</p>
+                <p style="margin: 5px 0;">🧹 <strong>Chores:</strong> {{ current_user.prev_wk_chore | int }} mins</p>
+                <p style="margin: 5px 0;">💀 <strong>Solo Bosses Slain:</strong> {{ current_user.prev_wk_bosses }}</p>
+                <p style="margin: 5px 0; color: #10b981;">💰 <strong>Gold Earned:</strong> ${{ "%.2f"|format(current_user.prev_wk_gold) }}</p>
+            </div>
+            
+            <form action="/dismiss_report" method="POST">
+                <button type="submit" class="btn" style="background: #f59e0b; color: #000;">Awesome!</button>
+            </form>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- GACHA MODULE -->
     {% if pending_rewards %}
     <div id="gacha-overlay">
         <div class="burst-flash" id="burstFlash"></div>
@@ -226,12 +249,12 @@
     <!-- Boss Cards -->
     <div class="card">
         <div style="display:flex; justify-content: space-between; align-items:center;">
-            <h3 style="margin:0;">👤 Solo Enemy</h3>
+            <h3 style="margin:0;">👤 Solo Adversary</h3>
             <span style="font-size: 0.8em; color: var(--text-muted); border: 1px solid var(--border-color); padding: 2px 6px; border-radius: 4px;">{{ current_user.bosses_killed_today }} / 3 Killed Today</span>
         </div>
-<div style="display: flex; justify-content: center; margin: 15px 0;">
-    <img src="{{ solo_img }}" alt="{{ current_user.solo_monster_name }}" style="max-height: 120px; object-fit: contain; filter: drop-shadow(0 0 10px var(--accent-primary));">
-</div>
+        <div style="display: flex; justify-content: center; margin: 15px 0;">
+            <img src="{{ solo_img }}" alt="{{ current_user.solo_monster_name }}" style="max-height: 120px; object-fit: contain; filter: drop-shadow(0 0 10px var(--accent-primary));">
+        </div>
         <div class="boss-bar">
             <div class="boss-progress" style="width: {{ (current_user.solo_monster_hp / current_user.solo_monster_max) * 100 }}%; background: #06b6d4;"></div>
             <div class="boss-text">{{ current_user.solo_monster_name }}: {{ current_user.solo_monster_hp | int }} / {{ current_user.solo_monster_max | int }} HP</div>
@@ -252,9 +275,9 @@
         <h3 style="margin:0;">🌋 Shared Co-Op Raid</h3>
         {% if boss.is_active %}
             <p style="color:var(--text-muted); margin:4px 0; font-size:0.9em;">Absorbs all damage overflowing from Solos.</p>
-<div style="display: flex; justify-content: center; margin: 15px 0;">
-    <img src="{{ raid_img }}" alt="{{ boss.name }}" style="max-height: 180px; object-fit: contain; filter: drop-shadow(0 0 15px #ef4444);">
-</div>
+            <div style="display: flex; justify-content: center; margin: 15px 0;">
+                <img src="{{ raid_img }}" alt="{{ boss.name }}" style="max-height: 180px; object-fit: contain; filter: drop-shadow(0 0 15px #ef4444);">
+            </div>
             <div class="boss-bar">
                 <div class="boss-progress" style="width: {{ (boss.current_hp / boss.max_hp) * 100 }}%; background: #dc2626;"></div>
                 <div class="boss-text">World Lvl {{ boss.world_level }} | {{ boss.name }}: {{ boss.current_hp | int }} / {{ boss.max_hp | int }} HP</div>
