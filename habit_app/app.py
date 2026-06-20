@@ -190,13 +190,18 @@ def notify_discord(message):
 
 def get_monster_image(monster_name):
     safe_name = monster_name.lower().replace(" ", "_").replace("'", "")
-    extensions = ['.gif', '.png', '.webp', '.jpg']
+    
+    # Check both lowercase and uppercase extensions to bypass strict Linux rules
+    extensions = ['.gif', '.png', '.webp', '.jpg', '.jpeg', '.GIF', '.PNG', '.WEBP', '.JPG', '.JPEG']
     folder_path = os.path.join(basedir, 'static', 'images', 'monsters')
     
-    if not os.path.exists(folder_path): return "/static/icon-192.png"
+    if not os.path.exists(folder_path): 
+        return "/static/icon-192.png"
+        
     for ext in extensions:
         if os.path.exists(os.path.join(folder_path, safe_name + ext)):
             return f"/static/images/monsters/{safe_name}{ext}"
+            
     return "/static/icon-192.png" 
 
 def calculate_90_percent_loot_orb(world_level):
