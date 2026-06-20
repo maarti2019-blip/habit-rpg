@@ -24,6 +24,26 @@ RAID_BOSSES = [
     "Wyrm", "Tarrasque", "Cyclops", "Sphinx", "Roc", "Wendigo", "Dullahan", "Juggernaut", "Beholder"
 ]
 
+# --- Auto-Image Scanner ---
+def get_monster_image(monster_name):
+    # Convert "Mountain Troll" into "mountain_troll" to match file names cleanly
+    safe_name = monster_name.lower().replace(" ", "_").replace("'", "")
+    
+    # Check the server folder for these file types
+    extensions = ['.gif', '.png', '.webp', '.jpg']
+    folder_path = os.path.join(basedir, 'static', 'images', 'monsters')
+    
+    # If the folder doesn't exist yet, just return a fallback
+    if not os.path.exists(folder_path):
+        return "/static/icon-192.png" # Safe fallback using your app icon
+        
+    for ext in extensions:
+        if os.path.exists(os.path.join(folder_path, safe_name + ext)):
+            return f"/static/images/monsters/{safe_name}{ext}"
+            
+    # If no custom art is found, show your default app icon
+    return "/static/icon-192.png"
+
 # --- THE 80-ITEM LOOT TABLE ---
 COMMON_ITEMS = [
     ("Rusty Dagger", "damage_solo", 20.0, "Instantly deal 20 DMG to your Solo Boss."),
@@ -251,6 +271,19 @@ def index():
             if item.is_active and item.expires_at and datetime.now() > item.expires_at:
                 db.session.delete(item)
         db.session.commit()
+
+# Auto-scan for current monsters
+    solo_img = get_monster_image(current_user.solo_monster_name) if current_user else None
+    raid_img = get_monster_image(boss.name) if boss else None
+
+    return render_template('index.html', 
+                           current_user=current_user, 
+                           players=players, 
+                           boss=boss, 
+                           pending_rewards=pending_rewards, 
+                           inventory=inventory,
+                           solo_img=solo_img,
+                           raid_img=raid_img)
 
     return render_template('index.html', current_user=current_user, players=players, boss=boss, pending_rewards=pending_rewards, inventory=inventory)
 

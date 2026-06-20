@@ -226,9 +226,12 @@
     <!-- Boss Cards -->
     <div class="card">
         <div style="display:flex; justify-content: space-between; align-items:center;">
-            <h3 style="margin:0;">👤 Solo Adversary</h3>
+            <h3 style="margin:0;">👤 Solo Enemy</h3>
             <span style="font-size: 0.8em; color: var(--text-muted); border: 1px solid var(--border-color); padding: 2px 6px; border-radius: 4px;">{{ current_user.bosses_killed_today }} / 3 Killed Today</span>
         </div>
+<div style="display: flex; justify-content: center; margin: 15px 0;">
+    <img src="{{ solo_img }}" alt="{{ current_user.solo_monster_name }}" style="max-height: 120px; object-fit: contain; filter: drop-shadow(0 0 10px var(--accent-primary));">
+</div>
         <div class="boss-bar">
             <div class="boss-progress" style="width: {{ (current_user.solo_monster_hp / current_user.solo_monster_max) * 100 }}%; background: #06b6d4;"></div>
             <div class="boss-text">{{ current_user.solo_monster_name }}: {{ current_user.solo_monster_hp | int }} / {{ current_user.solo_monster_max | int }} HP</div>
@@ -249,6 +252,9 @@
         <h3 style="margin:0;">🌋 Shared Co-Op Raid</h3>
         {% if boss.is_active %}
             <p style="color:var(--text-muted); margin:4px 0; font-size:0.9em;">Absorbs all damage overflowing from Solos.</p>
+<div style="display: flex; justify-content: center; margin: 15px 0;">
+    <img src="{{ raid_img }}" alt="{{ boss.name }}" style="max-height: 180px; object-fit: contain; filter: drop-shadow(0 0 15px #ef4444);">
+</div>
             <div class="boss-bar">
                 <div class="boss-progress" style="width: {{ (boss.current_hp / boss.max_hp) * 100 }}%; background: #dc2626;"></div>
                 <div class="boss-text">World Lvl {{ boss.world_level }} | {{ boss.name }}: {{ boss.current_hp | int }} / {{ boss.max_hp | int }} HP</div>
