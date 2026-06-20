@@ -4,20 +4,68 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Accountability RPG</title>
+    
+    <link rel="manifest" href="/static/manifest.json">
+    <link rel="apple-touch-icon" href="/static/icon-192.png">
+
     <style>
         :root {
             --bg-main: #0f0f12; --bg-card: #1a1a24; --border-color: #2d2d3d; 
             --accent-primary: #4f46e5; --text-main: #e2e8f0; --text-muted: #94a3b8;
-            --font-family: -apple-system, sans-serif;
+            --font-family: -apple-system, sans-serif; --bg-pattern: none;
+            --base-font-size: 16px;
         }
-        body { font-family: var(--font-family); background-color: var(--bg-main); color: var(--text-main); padding: 15px; margin: 0; }
+
+        /* Settings Customization CSS */
+        body.base-obsidian { --bg-main: #0f0f12; --bg-card: #1a1a24; --border-color: #2d2d3d; }
+        body.base-void { --bg-main: #000000; --bg-card: #0a0a0a; --border-color: #1f1f1f; }
+        body.base-slate { --bg-main: #1e293b; --bg-card: #334155; --border-color: #475569; }
+        body.base-chocolate { --bg-main: #1c1311; --bg-card: #2d1f1c; --border-color: #4a3530; }
+
+        body.accent-blue { --accent-primary: #3b82f6; }
+        body.accent-emerald { --accent-primary: #10b981; }
+        body.accent-crimson { --accent-primary: #ef4444; }
+        body.accent-pink { --accent-primary: #ec4899; }
+        body.accent-gold { --accent-primary: #f59e0b; }
+        body.accent-purple { --accent-primary: #8b5cf6; }
+
+        body.font-standard { --font-family: -apple-system, sans-serif; }
+        body.font-retro { --font-family: 'Courier New', Courier, monospace; }
+        body.font-elegant { --font-family: Georgia, serif; }
+        body.font-fantasy { --font-family: 'Palatino Linotype', 'Book Antiqua', Palatino, serif; }
+
+        body.size-sm { --base-font-size: 14px; }
+        body.size-md { --base-font-size: 16px; }
+        body.size-lg { --base-font-size: 18px; }
+        body.size-xl { --base-font-size: 20px; }
+
+        body.bg-solid { --bg-pattern: none; }
+        body.bg-grid { --bg-pattern: linear-gradient(var(--border-color) 1px, transparent 1px), linear-gradient(90deg, var(--border-color) 1px, transparent 1px); background-size: 20px 20px; }
+        body.bg-dots { --bg-pattern: radial-gradient(var(--border-color) 2px, transparent 2px); background-size: 20px 20px; }
+        body.bg-scan { --bg-pattern: repeating-linear-gradient(0deg, transparent, transparent 2px, var(--border-color) 2px, var(--border-color) 4px); }
+
+        /* General Layout */
+        body { font-family: var(--font-family); font-size: var(--base-font-size); background-color: var(--bg-main); background-image: var(--bg-pattern); color: var(--text-main); padding: 15px; margin: 0; transition: all 0.3s ease; }
         .card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 16px; margin-bottom: 16px; position: relative; overflow: hidden; }
-        .btn { background: var(--accent-primary); color: #fff; border: none; padding: 12px; font-weight: bold; border-radius: 6px; width: 100%; cursor: pointer; display: block; text-align: center; text-decoration: none; box-sizing: border-box; }
+        .btn { background: var(--accent-primary); color: #fff; border: none; padding: 12px; font-weight: bold; font-size: var(--base-font-size); border-radius: 6px; width: 100%; cursor: pointer; display: block; text-align: center; text-decoration: none; box-sizing: border-box; }
         .flex-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        
+        .app-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+        .settings-trigger { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; cursor: pointer; padding: 8px 12px; color: var(--text-muted); font-size: inherit; }
+        
+        .settings-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 4000; align-items: center; justify-content: center; }
+        .settings-modal.open { display: flex; }
+        .modal-body { background: var(--bg-card); border: 2px solid var(--border-color); border-radius: 14px; padding: 20px; width: 90%; max-width: 360px; box-sizing: border-box; max-height: 85vh; overflow-y: auto; }
+        
+        .setting-group { margin-bottom: 20px; }
+        .setting-group h4 { margin: 0 0 10px 0; border-bottom: 1px solid var(--border-color); padding-bottom: 5px; color: var(--accent-primary); font-size: 1.1em; }
+        .pref-btn { background: var(--bg-main); border: 1px solid var(--border-color); color: var(--text-muted); padding: 8px; border-radius: 6px; margin-bottom: 8px; cursor: pointer; width: 48%; display: inline-block; text-align: center; font-weight: bold; font-size: 0.9em; }
+        .pref-btn:hover { border-color: var(--accent-primary); color: var(--text-main); }
+
         .boss-bar { background: #0f0f12; border: 1px solid var(--border-color); height: 24px; border-radius: 12px; overflow: hidden; margin: 12px 0; position: relative; }
         .boss-progress { height: 100%; transition: width 0.4s ease; }
         .boss-text { position: absolute; width: 100%; text-align: center; top: 2px; font-weight: bold; font-size: 0.9em; color: white; text-shadow: 1px 1px 2px black; }
-        input, select { background: #0f0f12; color: #fff; border: 1px solid var(--border-color); padding: 12px; border-radius: 6px; width: 100%; margin-bottom: 12px; box-sizing: border-box; }
+        input, select { background: #0f0f12; color: #fff; border: 1px solid var(--border-color); padding: 12px; border-radius: 6px; width: 100%; margin-bottom: 12px; box-sizing: border-box; font-size: inherit; }
         
         /* Event UI Skin Variables */
         .evt-warrior { background: linear-gradient(135deg, #450a0a, #111827) !important; border: 2px solid #ef4444 !important; box-shadow: 0 0 20px rgba(239, 68, 68, 0.4); }
@@ -55,7 +103,6 @@
     </div>
     {% else %}
 
-    <!-- WEEKLY REPORT POP-UP -->
     {% if current_user.show_weekly_report %}
     <div class="card" style="position: fixed; top: 10%; left: 5%; width: 90%; z-index: 3000; box-sizing: border-box; border-color: #f59e0b; box-shadow: 0 0 20px rgba(245, 158, 11, 0.5);">
         <div style="text-align: center;">
@@ -75,7 +122,6 @@
     </div>
     {% endif %}
 
-    <!-- GACHA MODULE -->
     {% if pending_rewards %}
     <div id="gacha-overlay">
         <div class="burst-flash" id="burstFlash"></div>
@@ -112,7 +158,58 @@
     </script>
     {% endif %}
 
-    <!-- DYNAMIC EVENT BANNER -->
+    <div class="app-header">
+        <div>
+            <span style="font-size: 1.1em;">Profile: <strong>{{ current_user.username }}</strong></span><br>
+            <a href="/manual_login/{% if current_user.username == 'Alaina' %}Matthew{% else %}Alaina{% endif %}" style="color:var(--text-muted); text-decoration:underline; font-size: 0.8em;">Switch User Profile</a>
+        </div>
+        <button class="settings-trigger" onclick="toggleSettings(true)">⚙️ Layout</button>
+    </div>
+
+    <div id="settingsModal" class="settings-modal">
+        <div class="modal-body">
+            <h3 style="margin-top: 0;">Personalize Interface</h3>
+            <div class="setting-group">
+                <h4>Base Theme</h4>
+                <button class="pref-btn" onclick="applyPref('base', 'base-obsidian')">Obsidian</button>
+                <button class="pref-btn" onclick="applyPref('base', 'base-void')">Pure Void</button>
+                <button class="pref-btn" onclick="applyPref('base', 'base-slate')">Navy Slate</button>
+                <button class="pref-btn" onclick="applyPref('base', 'base-chocolate')">Tavern Wood</button>
+            </div>
+            <div class="setting-group">
+                <h4>Accent Color</h4>
+                <button class="pref-btn" onclick="applyPref('accent', 'accent-blue')">🔵 Neon Blue</button>
+                <button class="pref-btn" onclick="applyPref('accent', 'accent-emerald')">🟢 Emerald</button>
+                <button class="pref-btn" onclick="applyPref('accent', 'accent-crimson')">🔴 Crimson</button>
+                <button class="pref-btn" onclick="applyPref('accent', 'accent-pink')">🌸 Hot Pink</button>
+                <button class="pref-btn" onclick="applyPref('accent', 'accent-gold')">🪙 Gold</button>
+                <button class="pref-btn" onclick="applyPref('accent', 'accent-purple')">🟣 Amethyst</button>
+            </div>
+            <div class="setting-group">
+                <h4>Typography Style</h4>
+                <button class="pref-btn" onclick="applyPref('font', 'font-standard')">Modern</button>
+                <button class="pref-btn" onclick="applyPref('font', 'font-retro')">Terminal</button>
+                <button class="pref-btn" onclick="applyPref('font', 'font-elegant')">Elegant</button>
+                <button class="pref-btn" onclick="applyPref('font', 'font-fantasy')">Fantasy</button>
+            </div>
+            <div class="setting-group">
+                <h4>Font Size</h4>
+                <button class="pref-btn" onclick="applyPref('size', 'size-sm')">Small</button>
+                <button class="pref-btn" onclick="applyPref('size', 'size-md')">Normal</button>
+                <button class="pref-btn" onclick="applyPref('size', 'size-lg')">Large</button>
+                <button class="pref-btn" onclick="applyPref('size', 'size-xl')">Extra Large</button>
+            </div>
+            <div class="setting-group">
+                <h4>Background Pattern</h4>
+                <button class="pref-btn" onclick="applyPref('bg', 'bg-solid')">Solid Dark</button>
+                <button class="pref-btn" onclick="applyPref('bg', 'bg-grid')">Grid</button>
+                <button class="pref-btn" onclick="applyPref('bg', 'bg-dots')">Dots</button>
+                <button class="pref-btn" onclick="applyPref('bg', 'bg-scan')">Scanlines</button>
+            </div>
+            <button class="btn" style="background: var(--border-color); margin-top: 10px;" onclick="toggleSettings(false)">Save & Close</button>
+        </div>
+    </div>
+
     {% if server_state and server_state.active_event %}
         {% set skin_class = "" %}
         {% if "Warrior" in server_state.active_event %}{% set skin_class = "evt-warrior" %}{% endif %}
@@ -128,28 +225,27 @@
         </div>
     {% endif %}
 
-    <!-- MASTER VAULT -->
     <div class="card">
         <div class="flex-grid">
             {% for p in players %}
-            <div>
+            <div style="border-bottom: 3px solid #10b981; padding-bottom: 8px;">
                 <small style="color:var(--text-muted);">{{ p.username }}'s Vault</small>
                 <div style="font-size:1.5em; font-weight:bold; color:#10b981;">${{ "%.2f"|format(p.gold_balance) }}</div>
             </div>
             {% endfor %}
         </div>
-        <details style="margin-top: 10px;">
-            <summary style="font-size: 0.9em; color: #10b981; cursor: pointer;">💸 Cash Out Reward</summary>
-            <div style="margin-top: 10px; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 6px;">
+        <details style="margin-top: 15px;">
+            <summary style="font-size: 1.1em; font-weight: bold; color: #10b981; cursor: pointer; outline: none;">💸 Cash Out Reward</summary>
+            <div style="margin-top: 10px; background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px; border: 1px solid var(--border-color);">
                 <form action="/spend_gold" method="POST" style="margin:0;">
                     <input type="number" step="0.01" min="0.01" name="amount" placeholder="Amount (e.g. 5.00)" required>
-                    <button type="submit" class="btn" style="background: #10b981; margin-top: 5px;">Withdraw</button>
+                    <input type="text" name="reason" placeholder="What are you spending this on?" required>
+                    <button type="submit" class="btn" style="background: #10b981; margin-top: 5px;">Withdraw Funds</button>
                 </form>
             </div>
         </details>
     </div>
 
-    <!-- COMPANION PET INTERFACE -->
     <div class="card">
         <h3 style="margin:0 0 10px 0;">🐾 Companion Pet</h3>
         {% if not current_user.has_pet %}
@@ -173,11 +269,10 @@
         {% endif %}
     </div>
 
-    <!-- SOLO MONSTER -->
     <div class="card">
         <div style="display:flex; justify-content: space-between; align-items:center;">
             <h3 style="margin:0;">👤 Solo Adversary</h3>
-            <span style="font-size: 0.8em; color: var(--text-muted);">{{ current_user.bosses_killed_today }} Killed Today</span>
+            <span style="font-size: 0.8em; color: var(--text-muted); border: 1px solid var(--border-color); padding: 2px 6px; border-radius: 4px;">{{ current_user.bosses_killed_today }} Killed Today</span>
         </div>
         <div style="display: flex; justify-content: center; margin: 10px 0;">
             <img src="{{ solo_img }}" alt="Monster" style="max-height: 110px; object-fit: contain;">
@@ -194,7 +289,6 @@
         </div>
     </div>
 
-    <!-- RAID BOSS -->
     <div class="card">
         <h3>🌋 Shared Co-Op Raid</h3>
         <div style="display: flex; justify-content: center; margin: 10px 0;">
@@ -212,7 +306,6 @@
         </div>
     </div>
 
-    <!-- COMBAT CONTROLLER -->
     <div class="card">
         <h3>Log Daily Actions</h3>
         <form action="/stage_activity" method="POST">
@@ -223,16 +316,22 @@
             </select>
             <input type="number" step="any" name="minutes" placeholder="Minutes completed" required>
             
-            <div style="margin: 10px 0; display:flex; align-items:center; gap:8px; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 6px;">
-                <input type="checkbox" name="chores" id="chores" style="width:20px; height:20px; margin:0;" {% if current_user.chores_completed %}disabled checked{% endif %}>
-                <label for="chores" style="font-size: 0.9em;">Trigger Daily Chore Initiative Strike!</label>
+            <div style="margin: 10px 0; display:flex; align-items:center; gap:10px; background: rgba(0,0,0,0.3); padding: 12px; border-radius: 6px; border: 1px solid var(--border-color);">
+                <input type="checkbox" name="chores" id="chores" style="width:24px; height:24px; margin:0; cursor:pointer;" {% if current_user.chores_completed %}disabled checked{% endif %}>
+                <label for="chores" style="font-size: 0.9em;">
+                    <strong>Initiative Strike: I started a chore!</strong><br>
+                    {% if current_user.chores_completed %}
+                        <span style="color:#10b981; font-weight:bold;">Active! Strike already deployed today.</span>
+                    {% else %}
+                        <span style="color:var(--text-muted); font-weight:normal;">Instantly deal 50 Flat DMG!</span>
+                    {% endif %}
+                </label>
             </div>
             
             <button type="submit" class="btn">Unleash Damage</button>
         </form>
     </div>
 
-    <!-- ACTIVE INVENTORY (RESTORED!) -->
     <div class="card">
         <h3 style="margin: 0 0 10px 0;">🎒 Your Vault Inventory</h3>
         {% if not inventory %}
@@ -247,7 +346,7 @@
                 
                 <div style="display: flex; gap: 8px;">
                     {% if item.is_active %}
-                        <div style="background: #10b981; color: white; padding: 6px 12px; border-radius: 4px; font-size: 0.8em; font-weight: bold;">ACTIVE (72h)</div>
+                        <div style="background: #10b981; color: white; padding: 6px 12px; border-radius: 4px; font-size: 0.8em; font-weight: bold;">ACTIVE (24h)</div>
                     {% else %}
                         <form action="/use_item/{{ item.id }}" method="POST" style="margin:0; flex:1;">
                             <button type="submit" class="btn" style="padding: 8px; font-size: 0.85em;">Use Item</button>
@@ -264,10 +363,41 @@
         {% endif %}
     </div>
 
-    <div style="text-align: center; margin-top: 20px;">
-        <a href="/manual_login/{% if current_user.username == 'Alaina' %}Matthew{% else %}Alaina{% endif %}" style="color:var(--text-muted); font-size:0.9em; text-decoration: underline;">Switch User Profile</a>
-    </div>
+    <script>
+        document.getElementById('chores').addEventListener('change', function(e) {
+            if (this.checked && !this.disabled) {
+                if (!confirm("Are you SURE you started a chore? This will instantly deal damage to your boss and cannot be reversed!")) {
+                    this.checked = false;
+                }
+            }
+        });
 
+        function applyPref(category, value) {
+            document.body.className = document.body.className.replace(new RegExp(`\\b${category}-\\S+`, 'g'), '');
+            document.body.classList.add(value);
+            localStorage.setItem(`rpg-pref-${category}`, value);
+        }
+
+        function loadPrefs() {
+            applyPref('base', localStorage.getItem('rpg-pref-base') || 'base-obsidian');
+            applyPref('accent', localStorage.getItem('rpg-pref-accent') || 'accent-blue');
+            applyPref('font', localStorage.getItem('rpg-pref-font') || 'font-standard');
+            applyPref('size', localStorage.getItem('rpg-pref-size') || 'size-md');
+            applyPref('bg', localStorage.getItem('rpg-pref-bg') || 'bg-solid');
+        }
+
+        function toggleSettings(show) {
+            const modal = document.getElementById('settingsModal');
+            if (show) modal.classList.add('open');
+            else modal.classList.remove('open');
+        }
+
+        loadPrefs();
+
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/static/sw.js');
+        }
+    </script>
     {% endif %}
 </body>
 </html>
