@@ -9,9 +9,13 @@ from sqlalchemy.sql import text
 app = Flask(__name__)
 app.secret_key = 'rpg_accountability_secret_chain'
 basedir = os.path.abspath(os.path.dirname(__file__))
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///' + os.path.join(basedir, 'instance', 'app.db'))
-if app.config['SQLALCHEMY_DATABASE_URI'].startswith("postgres://"):
-    app.config['SQLALCHEMY_DATABASE_URI'] = app.config['SQLALCHEMY_DATABASE_URI'].replace("postgres://", "postgresql://", 1)
+
+# --- Secure Cloud Database Connection ---
+db_url = os.environ.get('DATABASE_URL', 'sqlite:///' + os.path.join(basedir, 'instance', 'app.db'))
+if db_url.startswith("postgres://"):
+    db_url = db_url.replace("postgres://", "postgresql://", 1)
+
+app.config['SQLALCHEMY_DATABASE_URI'] = db_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
@@ -181,6 +185,14 @@ class UserInventory(db.Model):
     expires_at = db.Column(db.DateTime, nullable=True)
     rarity = db.Column(db.String(50), default="Common")
 
+class DailyQueue(db.Model):
+    __tablename__ = 'daily_queue'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, nullable=False)
+    workout_mins = db.Column(db.Float, default=0.0)
+    hobby_mins = db.Column(db.Float, default=0.0)
+    chores_completed = db.Column(db.Boolean, default=False)
+
 # --- Helpers ---
 def notify_discord(message):
     webhook_url = os.environ.get('DISCORD_WEBHOOK_URL')
@@ -188,20 +200,33 @@ def notify_discord(message):
         try: requests.post(webhook_url, json={"content": message})
         except: pass
 
+# --- Bulletproof Auto-Image Scanner ---
 def get_monster_image(monster_name):
+    # What the game is looking for (e.g., "slime")
     safe_name = monster_name.lower().replace(" ", "_").replace("'", "")
     
-    # Check both lowercase and uppercase extensions to bypass strict Linux rules
-    extensions = ['.gif', '.png', '.webp', '.jpg', '.jpeg', '.GIF', '.PNG', '.WEBP', '.JPG', '.JPEG']
-    folder_path = os.path.join(basedir, 'static', 'images', 'monsters')
+    # Let Flask tell us exactly where the static folder is on the server
+    folder_path = os.path.join(app.static_folder, 'images', 'monsters')
     
-    if not os.path.exists(folder_path): 
+    if not os.path.exists(folder_path):
         return "/static/icon-192.png"
         
-    for ext in extensions:
-        if os.path.exists(os.path.join(folder_path, safe_name + ext)):
-            return f"/static/images/monsters/{safe_name}{ext}"
+    try:
+        # Get a list of every single file actually inside the folder
+        actual_files = os.listdir(folder_path)
+        
+        for real_file_name in actual_files:
+            # If the file is "SlImE.PnG", this turns it into "slime.png" just for the check
+            lower_file = real_file_name.lower()
             
+            # If it matches, we return the EXACT real file name so the Linux server doesn't 404
+            if lower_file.startswith(safe_name + "."):
+                return f"/static/images/monsters/{real_file_name}"
+    except Exception as e:
+        print(f"Error scanning folder: {e}")
+        pass
+            
+    # If no match is found, use the fallback
     return "/static/icon-192.png" 
 
 def calculate_90_percent_loot_orb(world_level):
@@ -371,10 +396,8 @@ def stage_activity():
         base_dmg = minutes * chore_mult
         user.wk_chore += minutes
     
-    just_did_chores = False
     if 'chores' in request.form and not user.chores_completed:
         user.chores_completed = True
-        just_did_chores = True
         base_dmg += 50.0
         notify_discord(f"🔥 **{user.username}** sparked an Initiative Strike! 50 Flat DMG added to their attack!")
 
@@ -540,7 +563,6 @@ def initialize_database():
         os.makedirs(os.path.join(basedir, 'instance'), exist_ok=True)
         db.create_all()
         
-        # Safely auto-migrate database for new WEEKLY mechanics
         try:
             db.session.execute(text('ALTER TABLE user ADD COLUMN current_week INTEGER'))
             db.session.execute(text('ALTER TABLE user ADD COLUMN wk_workout FLOAT DEFAULT 0.0'))
