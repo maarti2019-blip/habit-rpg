@@ -219,6 +219,14 @@ class UserInventory(db.Model):
     expires_at = db.Column(db.DateTime, nullable=True)
     rarity = db.Column(db.String(50), default="Common")
 
+class TransactionHistory(db.Model):
+    __tablename__ = 'transaction_history'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, nullable=False)
+    amount = db.Column(db.Float, nullable=False)
+    reason = db.Column(db.String(255), nullable=True)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
 # --- Helpers & Core Event Interceptors ---
 def get_monster_image(monster_name):
     safe_name = monster_name.lower().replace(" ", "_").replace("'", "")
@@ -322,7 +330,7 @@ def auto_login_by_ip():
             if matched_user: session['user_id'] = matched_user.id
         except: pass
 
-@app.route('/')
+   @app.route('/')
 def index():
     current_user = User.query.get(session['user_id']) if 'user_id' in session else None
     boss = RaidBoss.query.first()
@@ -353,6 +361,9 @@ def index():
 
     pending_rewards = PendingReward.query.filter_by(user_id=current_user.id).all() if current_user else []
     inventory = UserInventory.query.filter_by(user_id=current_user.id).all() if current_user else []
+    
+    # NEW: Fetch the personal spending ledger for the active user
+    transactions = TransactionHistory.query.filter_by(user_id=current_user.id).order_by(TransactionHistory.timestamp.desc()).limit(15).all() if current_user else []
 
     if inventory:
         for item in inventory:
@@ -363,15 +374,13 @@ def index():
     solo_img = get_monster_image(current_user.solo_monster_name) if current_user else None
     raid_img = get_monster_image(boss.name) if boss else None
 
-    # Pet Level Up System
     if current_user and current_user.has_pet and current_user.pet_xp >= 100:
         current_user.pet_level += 1
         current_user.pet_xp = 0
         db.session.commit()
 
-    return render_template('index.html', current_user=current_user, players=players, boss=boss, pending_rewards=pending_rewards, inventory=inventory, solo_img=solo_img, raid_img=raid_img, server_state=server_state)
-
-@app.route('/manual_login/<username>')
+    # Pass the transactions to the HTML
+    return render_template('index.html', current_user=current_user, players=players, boss=boss, pending_rewards=pending_rewards, inventory=inventory, solo_img=solo_img, raid_img=raid_img, server_state=server_state, transactions=transactions)@app.route('/manual_login/<username>')
 def manual_login(username):
     user = User.query.filter_by(username=username).first()
     if user:
@@ -555,11 +564,18 @@ def claim_gacha():
 def spend_gold():
     if 'user_id' not in session: return redirect('/')
     user = User.query.get(session['user_id'])
+    
     try: amount = float(request.form.get('amount', 0))
     except: amount = 0.0
+    
+    reason = request.form.get('reason', 'Personal Reward')
+    
     if amount > 0 and user.gold_balance >= amount:
         user.gold_balance -= amount
+        # Log the purchase to the database ledger instead of Discord
+        db.session.add(TransactionHistory(user_id=user.id, amount=amount, reason=reason))
         db.session.commit()
+        
     return redirect('/')
 
 @app.route('/use_item/<int:item_id>', methods=['POST'])
