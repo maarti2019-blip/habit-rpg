@@ -219,6 +219,7 @@ class UserInventory(db.Model):
     expires_at = db.Column(db.DateTime, nullable=True)
     rarity = db.Column(db.String(50), default="Common")
 
+# --- NEW: Spending Ledger Model ---
 class TransactionHistory(db.Model):
     __tablename__ = 'transaction_history'
     id = db.Column(db.Integer, primary_key=True)
@@ -374,13 +375,15 @@ def index():
     solo_img = get_monster_image(current_user.solo_monster_name) if current_user else None
     raid_img = get_monster_image(boss.name) if boss else None
 
+    # Pet Level Up System
     if current_user and current_user.has_pet and current_user.pet_xp >= 100:
         current_user.pet_level += 1
         current_user.pet_xp = 0
         db.session.commit()
 
-    # Pass the transactions to the HTML
-    return render_template('index.html', current_user=current_user, players=players, boss=boss, pending_rewards=pending_rewards, inventory=inventory, solo_img=solo_img, raid_img=raid_img, server_state=server_state, transactions=transactions)@app.route('/manual_login/<username>')
+    return render_template('index.html', current_user=current_user, players=players, boss=boss, pending_rewards=pending_rewards, inventory=inventory, solo_img=solo_img, raid_img=raid_img, server_state=server_state, transactions=transactions)
+
+@app.route('/manual_login/<username>')
 def manual_login(username):
     user = User.query.filter_by(username=username).first()
     if user:
@@ -572,7 +575,7 @@ def spend_gold():
     
     if amount > 0 and user.gold_balance >= amount:
         user.gold_balance -= amount
-        # Log the purchase to the database ledger instead of Discord
+        # Save to personal spending ledger
         db.session.add(TransactionHistory(user_id=user.id, amount=amount, reason=reason))
         db.session.commit()
         
