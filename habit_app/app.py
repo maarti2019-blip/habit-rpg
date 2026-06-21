@@ -2,6 +2,7 @@ import os
 import requests
 import random
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 from flask import Flask, render_template, request, redirect, session
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.sql import text
@@ -19,6 +20,10 @@ app.config['SQLALCHEMY_DATABASE_URI'] = db_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
+
+# --- TIMEZONE HELPER (Enforces US/Eastern Standard Time) ---
+def get_est_now():
+    return datetime.now(ZoneInfo("America/New_York"))
 
 SOLO_ENEMIES = [
     "Goblin", "Skeleton", "Slime", "Orc", "Troll", "Kobold", "Harpy", "Imp", "Ghoul", "Zombie",
@@ -224,7 +229,7 @@ class TransactionHistory(db.Model):
     reason = db.Column(db.String(255), nullable=True)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
-# --- Discord Notification Helper (RESTORED) ---
+# --- Discord Notification Helper ---
 def notify_discord(message):
     webhook_url = os.environ.get('DISCORD_WEBHOOK_URL')
     if webhook_url:
@@ -247,7 +252,7 @@ def get_monster_image(monster_name):
 def manage_world_events():
     state = ServerState.query.first()
     if not state: return
-    now = datetime.now()
+    now = get_est_now()
     is_weekend = (now.weekday() == 4 and now.hour >= 17) or now.weekday() in [5, 6]
     
     if is_weekend and not state.active_event:
@@ -290,13 +295,13 @@ def roll_raid_equipment():
     else: return ("Common", random.choice(COMMON_ITEMS))
 
 def get_next_monday_midnight():
-    now = datetime.now()
+    now = get_est_now()
     days_ahead = 0 - now.weekday()
     if days_ahead <= 0: days_ahead += 7
     return (now + timedelta(days=days_ahead)).replace(hour=0, minute=1, second=0, microsecond=0)
 
 def check_resets(user):
-    now = datetime.now()
+    now = get_est_now()
     today_str = now.strftime('%Y-%m-%d')
     current_iso_week = now.isocalendar()[1]
     
@@ -349,7 +354,7 @@ def index():
     if current_user: check_resets(current_user)
 
     if boss and not boss.is_active and boss.next_spawn_date:
-        if datetime.now() >= boss.next_spawn_date:
+        if get_est_now() >= boss.next_spawn_date.replace(tzinfo=ZoneInfo("America/New_York")):
             boss.is_active = True
             boss.world_level += 1
             boss.max_hp = round(boss.max_hp * 1.03, 1) 
@@ -369,7 +374,7 @@ def index():
 
     if inventory:
         for item in inventory:
-            if item.is_active and item.expires_at and datetime.now() > item.expires_at:
+            if item.is_active and item.expires_at and get_est_now() > item.expires_at.replace(tzinfo=ZoneInfo("America/New_York")):
                 db.session.delete(item)
         db.session.commit()
 
@@ -438,7 +443,7 @@ def stage_activity():
         hobby_mult *= 3.0
         workout_mult *= 0.5
     
-    if state.active_event == "The Early Bird Wormhole" and datetime.now().hour < 10:
+    if state.active_event == "The Early Bird Wormhole" and get_est_now().hour < 10:
         workout_mult *= 1.5; hobby_mult *= 1.5; chore_mult *= 1.5
 
     pet_multiplier = 1.0 + (user.pet_level * 0.01) if user.has_pet else 1.0
@@ -472,7 +477,7 @@ def stage_activity():
     kill_cap = 10 if state.active_event == "Colosseum Draft" else 3
 
     while solo_dmg > 0 and user.bosses_killed_today < kill_cap:
-        target_hp = 1.0 if (state.active_event == "Necromancer’s Curse" and datetime.now().weekday() == 6) else user.solo_monster_hp
+        target_hp = 1.0 if (state.active_event == "Necromancer’s Curse" and get_est_now().weekday() == 6) else user.solo_monster_hp
         
         if solo_dmg >= target_hp:
             solo_dmg -= target_hp
@@ -517,7 +522,7 @@ def stage_activity():
 
     if boss.is_active and raid_dmg > 0:
         if state.active_event == "The Shadow Clone":
-            pass # Co-op coordinated strategy required
+            pass
         boss.current_hp -= raid_dmg
         
         if boss.current_hp <= 0:
@@ -534,7 +539,6 @@ def stage_activity():
                 u.gold_balance += raid_drop
                 u.wk_gold += raid_drop
             
-            # --- DISCORD RESTORED: RAID BOSS DEATH ---
             notify_discord(f"🌋 **{boss.name.upper()} DESTROYED!** Both players received a Raid Boss Orb and guaranteed high-tier loot!")
 
     db.session.commit()
@@ -577,7 +581,6 @@ def spend_gold():
         db.session.add(TransactionHistory(user_id=user.id, amount=amount, reason=reason))
         db.session.commit()
         
-        # --- DISCORD RESTORED: SPENDING GOLD (Keeps Reason Private) ---
         notify_discord(f"🎉 **CONGRATULATIONS!** {user.username} cashed out **${amount:.2f}** from their Vault!")
         
     return redirect('/')
@@ -596,13 +599,12 @@ def use_item(item_id):
     if item.category_target.startswith('buff'):
         item.is_active = True
         duration = 72 if state.active_event == "Broken Seal" else 24
-        item.expires_at = datetime.now() + timedelta(hours=duration)
+        item.expires_at = get_est_now() + timedelta(hours=duration)
     elif item.category_target == 'damage_raid' or state.active_event == "Titan’s Shield":
         boss = RaidBoss.query.first()
         if boss.is_active: 
             boss.current_hp -= item.multiplier
             
-            # --- DISCORD RESTORED: RAID BOSS DEATH (From Item) ---
             if boss.current_hp <= 0:
                 boss.is_active = False
                 boss.next_spawn_date = get_next_monday_midnight()
