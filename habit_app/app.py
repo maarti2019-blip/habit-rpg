@@ -160,7 +160,6 @@ class User(db.Model):
     chores_completed = db.Column(db.Boolean, default=False)
     last_active_date = db.Column(db.String(20), nullable=True)
     
-    # Weekly Tracking Buckets
     current_week = db.Column(db.Integer, nullable=True)
     wk_workout = db.Column(db.Float, default=0.0)
     wk_hobby = db.Column(db.Float, default=0.0)
@@ -168,7 +167,6 @@ class User(db.Model):
     wk_bosses = db.Column(db.Integer, default=0)
     wk_gold = db.Column(db.Float, default=0.0)
     
-    # Snapshots
     prev_wk_workout = db.Column(db.Float, default=0.0)
     prev_wk_hobby = db.Column(db.Float, default=0.0)
     prev_wk_chore = db.Column(db.Float, default=0.0)
@@ -176,7 +174,6 @@ class User(db.Model):
     prev_wk_gold = db.Column(db.Float, default=0.0)
     show_weekly_report = db.Column(db.Boolean, default=False)
 
-    # Tamagotchi Pet Companion Columns
     egg_minutes = db.Column(db.Float, default=0.0)
     has_pet = db.Column(db.Boolean, default=False)
     pet_level = db.Column(db.Integer, default=1)
@@ -219,7 +216,6 @@ class UserInventory(db.Model):
     expires_at = db.Column(db.DateTime, nullable=True)
     rarity = db.Column(db.String(50), default="Common")
 
-# --- NEW: Spending Ledger Model ---
 class TransactionHistory(db.Model):
     __tablename__ = 'transaction_history'
     id = db.Column(db.Integer, primary_key=True)
@@ -227,6 +223,13 @@ class TransactionHistory(db.Model):
     amount = db.Column(db.Float, nullable=False)
     reason = db.Column(db.String(255), nullable=True)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
+# --- Discord Notification Helper (RESTORED) ---
+def notify_discord(message):
+    webhook_url = os.environ.get('DISCORD_WEBHOOK_URL')
+    if webhook_url:
+        try: requests.post(webhook_url, json={"content": message})
+        except: pass
 
 # --- Helpers & Core Event Interceptors ---
 def get_monster_image(monster_name):
@@ -245,7 +248,6 @@ def manage_world_events():
     state = ServerState.query.first()
     if not state: return
     now = datetime.now()
-    # Active Friday 5pm through Sunday night
     is_weekend = (now.weekday() == 4 and now.hour >= 17) or now.weekday() in [5, 6]
     
     if is_weekend and not state.active_event:
@@ -363,7 +365,6 @@ def index():
     pending_rewards = PendingReward.query.filter_by(user_id=current_user.id).all() if current_user else []
     inventory = UserInventory.query.filter_by(user_id=current_user.id).all() if current_user else []
     
-    # NEW: Fetch the personal spending ledger for the active user
     transactions = TransactionHistory.query.filter_by(user_id=current_user.id).order_by(TransactionHistory.timestamp.desc()).limit(15).all() if current_user else []
 
     if inventory:
@@ -375,7 +376,6 @@ def index():
     solo_img = get_monster_image(current_user.solo_monster_name) if current_user else None
     raid_img = get_monster_image(boss.name) if boss else None
 
-    # Pet Level Up System
     if current_user and current_user.has_pet and current_user.pet_xp >= 100:
         current_user.pet_level += 1
         current_user.pet_xp = 0
@@ -431,7 +431,6 @@ def stage_activity():
             hobby_mult *= buff.multiplier
             chore_mult *= buff.multiplier
 
-    # Event Rules Interceptions
     if state.active_event == "Frenzy of the Warrior":
         workout_mult *= 3.0
         hobby_mult *= 0.5
@@ -456,18 +455,15 @@ def stage_activity():
 
     if base_dmg <= 0: return redirect('/')
 
-    # Synergy Link Mechanics
     if state.active_event == "Synergy Link" and state.last_logged_activity_type == act_type and state.last_logged_user_id != user.id:
         if boss.is_active: boss.current_hp -= 500.0
 
     state.last_logged_activity_type = act_type
     state.last_logged_user_id = user.id
 
-    # Critical Strike Mechanics
     if state.active_event == "Critical Strike Weekend" and random.random() <= 0.25:
         base_dmg = user.solo_monster_hp
 
-    # Gambler's Fallacy
     if state.active_event == "Gambler’s Fallacy" and int(minutes) == 7:
         db.session.add(UserInventory(user_id=user.id, item_name="Gambler's Box", category_target="gold", multiplier=5.0, description="Guaranteed Box from the system!", rarity="Uncommon"))
 
@@ -537,6 +533,9 @@ def stage_activity():
                 db.session.add(PendingReward(user_id=u.id, gold_amount=raid_drop, item_name=f"[Raid Boss Kill] [{r_tier}] {r_name}"))
                 u.gold_balance += raid_drop
                 u.wk_gold += raid_drop
+            
+            # --- DISCORD RESTORED: RAID BOSS DEATH ---
+            notify_discord(f"🌋 **{boss.name.upper()} DESTROYED!** Both players received a Raid Boss Orb and guaranteed high-tier loot!")
 
     db.session.commit()
     return redirect('/')
@@ -575,9 +574,11 @@ def spend_gold():
     
     if amount > 0 and user.gold_balance >= amount:
         user.gold_balance -= amount
-        # Save to personal spending ledger
         db.session.add(TransactionHistory(user_id=user.id, amount=amount, reason=reason))
         db.session.commit()
+        
+        # --- DISCORD RESTORED: SPENDING GOLD (Keeps Reason Private) ---
+        notify_discord(f"🎉 **CONGRATULATIONS!** {user.username} cashed out **${amount:.2f}** from their Vault!")
         
     return redirect('/')
 
@@ -598,7 +599,24 @@ def use_item(item_id):
         item.expires_at = datetime.now() + timedelta(hours=duration)
     elif item.category_target == 'damage_raid' or state.active_event == "Titan’s Shield":
         boss = RaidBoss.query.first()
-        if boss.is_active: boss.current_hp -= item.multiplier
+        if boss.is_active: 
+            boss.current_hp -= item.multiplier
+            
+            # --- DISCORD RESTORED: RAID BOSS DEATH (From Item) ---
+            if boss.current_hp <= 0:
+                boss.is_active = False
+                boss.next_spawn_date = get_next_monday_midnight()
+                for u in User.query.all():
+                    raid_drop = calculate_raid_boss_orb()
+                    raid_loot = roll_raid_equipment()
+                    r_tier, r_data = raid_loot
+                    r_name, r_cat, r_mult, r_desc = r_data
+                    db.session.add(UserInventory(user_id=u.id, item_name=r_name, category_target=r_cat, multiplier=r_mult, description=r_desc, rarity=r_tier))
+                    db.session.add(PendingReward(user_id=u.id, gold_amount=raid_drop, item_name=f"[Raid Boss Kill] [{r_tier}] {r_name}"))
+                    u.gold_balance += raid_drop
+                    u.wk_gold += raid_drop
+                notify_discord(f"🌋 **{boss.name.upper()} ANNIHILATED BY AN ITEM!** Both players received a Raid Boss Orb and guaranteed high-tier loot!")
+                
         db.session.delete(item)
     elif item.category_target == 'gold':
         user.gold_balance += item.multiplier
