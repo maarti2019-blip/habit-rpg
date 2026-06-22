@@ -353,18 +353,40 @@ def index():
     manage_world_events()
     if current_user: check_resets(current_user)
 
-    if boss and not boss.is_active and boss.next_spawn_date:
-        if get_est_now() >= boss.next_spawn_date.replace(tzinfo=ZoneInfo("America/New_York")):
-            boss.is_active = True
-            boss.world_level += 1
-            boss.max_hp = round(boss.max_hp * 1.03, 1) 
-            boss.current_hp = boss.max_hp
-            boss.name = random.choice(RAID_BOSSES)
-            boss.next_spawn_date = None
+    # --- WEEKLY RAID BOSS RESET LOGIC ---
+    if boss:
+        # Failsafe for older DBs to ensure the timer works
+        if boss.next_spawn_date is None:
+            boss.next_spawn_date = get_est_now() - timedelta(days=1)
+            db.session.commit()
+
+        spawn_time = boss.next_spawn_date
+        if spawn_time.tzinfo is None:
+            spawn_time = spawn_time.replace(tzinfo=ZoneInfo("America/New_York"))
+
+        # If it's time for the Monday reset (or past due)
+        if get_est_now() >= spawn_time:
+            was_defeated = (boss.current_hp <= 0 or not boss.is_active)
             
-            for player in players:
-                player.solo_monster_max = round(player.solo_monster_max * 1.03, 1)
-                player.solo_monster_hp = player.solo_monster_max
+            if was_defeated:
+                boss.world_level += 1
+                boss.max_hp = round(boss.max_hp * 1.03, 1)
+                
+                # Apply 3% boost to all players' solo monsters
+                for player in players:
+                    player.solo_monster_max = round(player.solo_monster_max * 1.03, 1)
+                    if player.solo_monster_hp > player.solo_monster_max:
+                        player.solo_monster_hp = player.solo_monster_max
+                        
+                notify_discord(f"🔄 **NEW WEEK!** You defeated the previous boss. The world grows stronger! A new **{random.choice(RAID_BOSSES)}** (Lvl {boss.world_level}) has arrived!")
+            else:
+                notify_discord(f"🔄 **NEW WEEK!** The previous boss fled before you could defeat it! The World Level remains at {boss.world_level}. A new **{random.choice(RAID_BOSSES)}** has appeared!")
+            
+            # Spawn the new boss and reset the timer for NEXT Monday
+            boss.name = random.choice(RAID_BOSSES)
+            boss.current_hp = boss.max_hp
+            boss.is_active = True
+            boss.next_spawn_date = get_next_monday_midnight()
             db.session.commit()
 
     pending_rewards = PendingReward.query.filter_by(user_id=current_user.id).all() if current_user else []
@@ -525,10 +547,9 @@ def stage_activity():
             pass
         boss.current_hp -= raid_dmg
         
+        # Boss dies mid-week. It stays dead until Monday reset.
         if boss.current_hp <= 0:
             boss.is_active = False
-            boss.next_spawn_date = get_next_monday_midnight()
-            
             for u in User.query.all():
                 raid_drop = calculate_raid_boss_orb()
                 raid_loot = roll_raid_equipment()
@@ -539,7 +560,7 @@ def stage_activity():
                 u.gold_balance += raid_drop
                 u.wk_gold += raid_drop
             
-            notify_discord(f"🌋 **{boss.name.upper()} DESTROYED!** Both players received a Raid Boss Orb and guaranteed high-tier loot!")
+            notify_discord(f"🌋 **{boss.name.upper()} DESTROYED!** Both players received a Raid Boss Orb and guaranteed high-tier loot! A new boss will spawn on Monday.")
 
     db.session.commit()
     return redirect('/')
@@ -605,9 +626,9 @@ def use_item(item_id):
         if boss.is_active: 
             boss.current_hp -= item.multiplier
             
+            # Boss dies mid-week. It stays dead until Monday reset.
             if boss.current_hp <= 0:
                 boss.is_active = False
-                boss.next_spawn_date = get_next_monday_midnight()
                 for u in User.query.all():
                     raid_drop = calculate_raid_boss_orb()
                     raid_loot = roll_raid_equipment()
@@ -617,7 +638,7 @@ def use_item(item_id):
                     db.session.add(PendingReward(user_id=u.id, gold_amount=raid_drop, item_name=f"[Raid Boss Kill] [{r_tier}] {r_name}"))
                     u.gold_balance += raid_drop
                     u.wk_gold += raid_drop
-                notify_discord(f"🌋 **{boss.name.upper()} ANNIHILATED BY AN ITEM!** Both players received a Raid Boss Orb and guaranteed high-tier loot!")
+                notify_discord(f"🌋 **{boss.name.upper()} ANNIHILATED BY AN ITEM!** Both players received a Raid Boss Orb and guaranteed high-tier loot! A new boss will spawn on Monday.")
                 
         db.session.delete(item)
     elif item.category_target == 'gold':
