@@ -266,8 +266,8 @@ def manage_world_events():
 
 def calculate_90_percent_loot_orb(world_level, event_name=None):
     if event_name == "The Cursed Vault": return round(random.uniform(0.50, 2.00), 2)
-    level_bonus = (world_level - 1) * 0.50
-    base_amt = random.uniform(3.00 + level_bonus, 4.00 + level_bonus) if random.random() <= 0.90 else random.uniform(1.00, 7.00 + level_bonus)
+    level_bonus = (world_level - 1) * 0.25
+    base_amt = random.uniform(3.00 + level_bonus, 4.00 + level_bonus) if random.random() <= 0.95 else random.uniform(2.00, 7.00 + level_bonus)
     return round(base_amt, 2)
 
 def calculate_raid_boss_orb():
