@@ -61,12 +61,12 @@
         .card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 16px; margin-bottom: 16px; position: relative; overflow: hidden; }
         .btn { background: var(--accent-primary); color: #fff; border: none; padding: 12px; font-weight: bold; font-size: var(--base-font-size); border-radius: 6px; width: 100%; cursor: pointer; display: block; text-align: center; text-decoration: none; box-sizing: border-box; transition: opacity 0.2s; }
         .btn:hover { opacity: 0.8; }
-        .flex-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .flex-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
         
         .app-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
         .settings-trigger { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; cursor: pointer; padding: 8px 12px; color: var(--text-muted); font-size: inherit; }
         
-        /* --- SETTINGS MODAL --- */
+        /* --- SETTINGS & POPUP MODALS --- */
         .settings-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 4000; align-items: center; justify-content: center; }
         .settings-modal.open { display: flex; }
         .modal-body { background: var(--bg-card); border: 2px solid var(--accent-primary); border-radius: 14px; padding: 20px; width: 90%; max-width: 380px; box-sizing: border-box; max-height: 85vh; overflow-y: auto; }
@@ -79,7 +79,7 @@
         .boss-bar { background: #0f0f12; border: 1px solid var(--border-color); height: 24px; border-radius: 12px; overflow: hidden; margin: 12px 0; position: relative; }
         .boss-progress { height: 100%; transition: width 0.4s ease; }
         .boss-text { position: absolute; width: 100%; text-align: center; top: 2px; font-weight: bold; font-size: 0.9em; color: white; text-shadow: 1px 1px 2px black; }
-        input, select { background: #0f0f12; color: #fff; border: 1px solid var(--border-color); padding: 12px; border-radius: 6px; width: 100%; margin-bottom: 12px; box-sizing: border-box; font-size: inherit; }
+        .input-field { background: #0f0f12; color: #fff; border: 1px solid var(--border-color); padding: 12px; border-radius: 6px; box-sizing: border-box; font-size: inherit; font-family: inherit; }
         
         /* --- EVENT UI SKINS --- */
         .evt-warrior { background: linear-gradient(135deg, #450a0a, var(--bg-main)) !important; border: 2px solid #ef4444 !important; box-shadow: 0 0 20px rgba(239, 68, 68, 0.4); }
@@ -113,6 +113,7 @@
         <div class="flex-grid">
             <a href="/manual_login/Alaina" class="btn">Alaina</a>
             <a href="/manual_login/Matthew" class="btn">Matthew</a>
+            <a href="/manual_login/Sarah" class="btn">Sarah</a>
         </div>
     </div>
     {% else %}
@@ -170,6 +171,38 @@
             }, 1500);
         }
     </script>
+    {% endif %}
+
+    {% if current_user.offered_quest_1 and not current_user.active_quest_id %}
+    <div id="questModal" class="settings-modal open" style="z-index: 5000;">
+        <div class="modal-body" style="max-width: 500px;">
+            <h2 style="color: var(--accent-primary); margin-top: 0; text-align: center;">📜 Weekly Contracts Available</h2>
+            <p style="text-align: center; color: var(--text-muted); font-size: 0.9em; margin-bottom: 20px;">A new week has begun. Review the bounties below and accept a contract. Choose wisely.</p>
+            
+            {% set options = [current_user.offered_quest_1, current_user.offered_quest_2, current_user.offered_quest_3] %}
+            {% for q_id in options %}
+                {% if q_id %}
+                    {% set q = WEEKLY_QUESTS[q_id] %}
+                    <div style="border: 2px solid {% if q.tier == 'Legendary' %}#f59e0b{% elif q.tier == 'Rare' %}#3b82f6{% elif q.tier == 'Uncommon' %}#10b981{% else %}#a1a1aa{% endif %}; border-radius: 8px; padding: 12px; margin-bottom: 12px; background: rgba(0,0,0,0.5);">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <strong style="color:var(--text-main); font-size: 1.1em;">{{ q.title }}</strong>
+                            <span style="background: rgba(255,255,255,0.1); padding: 4px 8px; border-radius: 4px; font-size:0.85em; font-weight:bold; color: {% if q.tier == 'Legendary' %}#f59e0b{% elif q.tier == 'Rare' %}#3b82f6{% elif q.tier == 'Uncommon' %}#10b981{% else %}#a1a1aa{% endif %};">{{ q.tier }}</span>
+                        </div>
+                        <p style="font-size:0.85em; color:var(--text-muted); margin:8px 0;">{{ q.desc }}</p>
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <span style="color:var(--accent-primary); font-weight:bold;">Reward: +${{ q.gold | int }}</span>
+                            <form action="/select_quest/{{ q_id }}" method="POST" style="margin:0;">
+                                <button type="submit" class="btn" style="padding:6px 16px; width:auto; font-size:0.9em;">Accept</button>
+                            </form>
+                        </div>
+                    </div>
+                {% endif %}
+            {% endfor %}
+            <div style="text-align: center; margin-top: 15px;">
+                <a href="#" onclick="document.getElementById('questModal').classList.remove('open'); return false;" style="color: var(--text-muted); font-size: 0.8em; text-decoration: underline;">I'll decide later</a>
+            </div>
+        </div>
+    </div>
     {% endif %}
 
     <div class="app-header">
@@ -254,10 +287,10 @@
     {% endif %}
 
     <div class="card">
-        <div class="flex-grid">
+        <div class="flex-grid" style="grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));">
             {% for p in players %}
             <div style="border-bottom: 3px solid var(--accent-primary); padding-bottom: 8px;">
-                <small style="color:var(--text-muted);">{{ p.username }}'s Vault</small>
+                <small style="color:var(--text-muted);">{{ p.username }}</small>
                 <div style="font-size:1.5em; font-weight:bold; color:var(--accent-primary);">${{ "%.2f"|format(p.gold_balance) }}</div>
             </div>
             {% endfor %}
@@ -267,8 +300,8 @@
             <summary style="font-size: 1.1em; font-weight: bold; color: var(--accent-primary); cursor: pointer; outline: none;">💸 Cash Out Reward</summary>
             <div style="margin-top: 10px; background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px; border: 1px solid var(--border-color);">
                 <form action="/spend_gold" method="POST" style="margin:0;">
-                    <input type="number" step="0.01" min="0.01" name="amount" placeholder="Amount (e.g. 5.00)" required>
-                    <input type="text" name="reason" placeholder="Personal log: What is this for?" required>
+                    <input type="number" step="0.01" min="0.01" name="amount" class="input-field" placeholder="Amount (e.g. 5.00)" required style="width:100%; margin-bottom:10px;">
+                    <input type="text" name="reason" class="input-field" placeholder="Personal log: What is this for?" required style="width:100%; margin-bottom:10px;">
                     <button type="submit" class="btn" style="margin-top: 5px;">Withdraw Funds</button>
                 </form>
             </div>
@@ -315,10 +348,9 @@
         {% endif %}
     </div>
 
-    <!-- SOLO MONSTER -->
     <div class="card">
         <div style="display:flex; justify-content: space-between; align-items:center;">
-            <h3 style="margin:0;">👤 Solo Adversary</h3>
+            <h3 style="margin:0;">👤 Solo Adversary <span style="color:#f97316; font-size: 0.8em; margin-left: 10px;">🔥 {{ current_user.current_streak }} Day Streak</span></h3>
             <span style="font-size: 0.8em; color: var(--text-muted); border: 1px solid var(--border-color); padding: 2px 6px; border-radius: 4px;">{{ current_user.bosses_killed_today }} Defeated Today</span>
         </div>
         
@@ -336,8 +368,7 @@
             </div>
         </div>
     </div>
-<!-- RAID BOSS -->
-   <!-- RAID BOSS -->
+
     <div class="card">
         <div style="display:flex; justify-content: space-between; align-items:center;">
             <h3 style="margin:0;">🌋 Shared Co-Op Raid</h3>
@@ -348,14 +379,13 @@
             <div style="text-align: center; padding: 30px 10px; background: rgba(239, 68, 68, 0.1); border-radius: 8px; margin-top: 15px; border: 1px dashed #ef4444;">
                 <div style="font-size: 2.5em; margin-bottom: 10px;">✌️</div>
                 <h3 style="color: #ef4444; margin: 0 0 5px 0;">Threat Neutralized!</h3>
-                <p style="color: var(--text-muted); font-size: 0.9em; margin: 0;">You and your partner have successfully defended the realm. Rest and enjoy the peace, a stronger boss will emerge next Monday!</p>
+                <p style="color: var(--text-muted); font-size: 0.9em; margin: 0;">You and your party have successfully defended the realm. Enjoy the peace—a new, stronger boss will emerge next Monday!</p>
             </div>
         {% else %}
             <div style="display: flex; justify-content: center; margin: 10px 0;">
                 <img src="{{ raid_img }}" alt="Raid Boss" style="max-height: 140px; object-fit: contain;">
             </div>
             <div class="boss-bar">
-                <!-- Hardcoded red specifically for the Raid Boss to look dangerous -->
                 <div class="boss-progress" style="width: {{ (boss.current_hp / boss.max_hp) * 100 }}%; background: #ef4444;"></div>
                 <div class="boss-text">
                     {% if server_state.active_event == "Amnesia Fog" %}
@@ -369,29 +399,99 @@
     </div>
 
     <div class="card">
-        <h3>Log Daily Actions</h3>
+        <h3 style="margin:0 0 10px 0;">📜 Weekly Contract</h3>
+        {% if current_user.active_quest_id %}
+            {% set q = WEEKLY_QUESTS[current_user.active_quest_id] %}
+            <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--accent-primary); border-radius: 8px; padding: 12px;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <h4 style="margin:0; color:var(--accent-primary);">{{ q.title }}</h4>
+                    <span style="color:var(--text-muted); font-size:0.8em;">Reward: +${{ q.gold | int }} & {{ q.tier }} Orb</span>
+                </div>
+                <p style="font-size:0.85em; color:var(--text-muted); margin: 6px 0 12px 0;">{{ q.desc }}</p>
+                <div class="boss-bar" style="height:14px; margin:0;">
+                    <div class="boss-progress" style="width: {{ (current_user.quest_progress / q.target) * 100 }}%; background: #10b981;"></div>
+                    <div class="boss-text" style="font-size:0.75em; top:-1px;">{{ current_user.quest_progress | int }} / {{ q.target | int }} Mins</div>
+                </div>
+                {% if current_user.quest_completed %}
+                    <p style="color:#10b981; font-weight:bold; margin: 10px 0 0 0; text-align:center;">✓ Contract Fulfilled! Rewards Claimed.</p>
+                {% endif %}
+            </div>
+        {% else %}
+            {% if current_user.offered_quest_1 %}
+                <p style="font-size:0.9em; color:var(--text-muted); text-align:center;">You have pending contract offers awaiting your signature!</p>
+                <button class="btn" onclick="document.getElementById('questModal').classList.add('open')">View Contract Offers</button>
+            {% else %}
+                <p style="font-size:0.9em; color:var(--text-muted); font-style:italic;">No contracts available right now. Check back on Monday!</p>
+            {% endif %}
+        {% endif %}
+    </div>
+
+    <div class="card">
+        <h3>⚔️ Log Activity & Deal Damage</h3>
         <form action="/stage_activity" method="POST">
-            <select name="type">
-                <option value="workout">Workout Time (1:4.5 Ratio)</option>
-                <option value="hobby">Hobby Tracking (1:7.0 Ratio)</option>
-                <option value="chore">Chore Time (1:5.0 Ratio)</option>
-            </select>
-            <input type="number" step="any" name="minutes" placeholder="Minutes completed" required>
-            
-            <div style="margin: 10px 0; display:flex; align-items:center; gap:10px; background: rgba(0,0,0,0.3); padding: 12px; border-radius: 6px; border: 1px solid var(--border-color);">
-                <input type="checkbox" name="chores" id="chores" style="width:24px; height:24px; margin:0; cursor:pointer;" {% if current_user.chores_completed %}disabled checked{% endif %}>
-                <label for="chores" style="font-size: 0.9em;">
-                    <strong>Initiative Strike: I started a chore!</strong><br>
-                    {% if current_user.chores_completed %}
-                        <span style="color:var(--accent-primary); font-weight:bold;">Active! Strike already deployed today.</span>
-                    {% else %}
-                        <span style="color:var(--text-muted); font-weight:normal;">Instantly deal 50 Flat DMG!</span>
-                    {% endif %}
-                </label>
+            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                <select name="type" id="activityType" class="input-field" style="flex: 1;" onchange="toggleWorkoutFields()">
+                    <option value="workout">Workout</option>
+                    <option value="hobby">Hobby</option>
+                    <option value="chore">Chore</option>
+                </select>
+                <input type="number" step="any" name="minutes" class="input-field" placeholder="Minutes" required style="width: 100px;">
             </div>
             
-            <button type="submit" class="btn">Unleash Damage</button>
+            <input type="text" name="description" class="input-field" placeholder="What did you do? (e.g., Lower body split, meal prep...)" style="margin-bottom: 10px; width: 100%;">
+            
+            <div id="workoutDetails" style="background: rgba(0,0,0,0.2); padding: 10px; border-radius: 6px; margin-bottom: 10px; border: 1px solid var(--border-color);">
+                <p style="margin: 0 0 10px 0; font-size: 0.85em; color: var(--accent-primary);">Workout Diagnostics</p>
+                <textarea name="workout_details" class="input-field" placeholder="Routines & Weights (e.g., RDLs: 4x10 @ 135lbs, 12-3-30 treadmill...)" style="width: 100%; height: 60px; margin-bottom: 10px;"></textarea>
+                
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" name="difficulty" class="input-field" placeholder="Difficulty (1-10 / RPE)" style="flex: 1;">
+                    <input type="text" name="morning_feeling" class="input-field" placeholder="Morning Recovery Feeling" style="flex: 2;">
+                </div>
+            </div>
+
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top: 10px;">
+                <label style="font-size: 0.9em; display:flex; align-items:center; gap: 5px;">
+                    <input type="checkbox" name="chores" value="1" style="width:24px; height:24px; margin:0;" {% if current_user.chores_completed %}checked disabled{% endif %}>
+                    Initiative Strike: Chore started! (50 DMG)
+                </label>
+                <button type="submit" class="btn" style="width:auto; padding: 12px 24px;">Execute Strike</button>
+            </div>
         </form>
+    </div>
+
+    <div class="card">
+        <h3>📖 Activity Journal</h3>
+        {% if activity_logs %}
+            <div style="max-height: 400px; overflow-y: auto; padding-right: 5px;">
+                {% for log in activity_logs %}
+                    <div style="border-left: 3px solid {% if log.activity_type == 'workout' %}#ef4444{% elif log.activity_type == 'hobby' %}#3b82f6{% else %}#10b981{% endif %}; background: rgba(255,255,255,0.02); padding: 10px; margin-bottom: 10px; border-radius: 0 6px 6px 0;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 5px;">
+                            <strong style="color:var(--text-main); text-transform: capitalize;">{{ log.activity_type }} ({{ log.minutes | int }} mins)</strong>
+                            <span style="font-size:0.75em; color:var(--text-muted);">{{ log.timestamp.strftime('%m/%d %I:%M %p') }}</span>
+                        </div>
+                        
+                        {% if log.description %}
+                            <p style="font-size:0.9em; color:var(--text-muted); margin: 0 0 5px 0;">"{{ log.description }}"</p>
+                        {% endif %}
+                        
+                        {% if log.activity_type == 'workout' and (log.workout_details or log.difficulty or log.morning_feeling) %}
+                            <div style="background: rgba(0,0,0,0.3); padding: 8px; border-radius: 4px; font-size: 0.85em; margin-top: 8px;">
+                                {% if log.workout_details %}
+                                    <div style="color: #cbd5e1; margin-bottom: 4px;"><strong>Routine:</strong> {{ log.workout_details }}</div>
+                                {% endif %}
+                                <div style="display:flex; gap: 15px; color: #94a3b8;">
+                                    {% if log.difficulty %}<span><strong>Difficulty:</strong> {{ log.difficulty }}</span>{% endif %}
+                                    {% if log.morning_feeling %}<span><strong>Recovery:</strong> {{ log.morning_feeling }}</span>{% endif %}
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p style="font-size: 0.9em; color: var(--text-muted); text-align: center;">No activities recorded yet. Your chronicles await!</p>
+        {% endif %}
     </div>
 
     <div class="card">
@@ -426,13 +526,16 @@
     </div>
 
     <script>
-        document.getElementById('chores').addEventListener('change', function(e) {
-            if (this.checked && !this.disabled) {
-                if (!confirm("Are you SURE you started a chore? This will instantly deal damage to your boss and cannot be reversed!")) {
-                    this.checked = false;
-                }
+        function toggleWorkoutFields() {
+            var type = document.getElementById('activityType').value;
+            var wFields = document.getElementById('workoutDetails');
+            if (type === 'workout') {
+                wFields.style.display = 'block';
+            } else {
+                wFields.style.display = 'none';
             }
-        });
+        }
+        toggleWorkoutFields();
 
         function applyPref(category, value) {
             document.body.className = document.body.className.replace(new RegExp(`\\b${category}-\\S+`, 'g'), '');
