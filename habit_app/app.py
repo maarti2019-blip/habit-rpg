@@ -794,7 +794,18 @@ def initialize_database():
             db.session.add(RaidBoss(name='Dragon'))
         db.session.commit()
 
-initialize_database()
-
+def initialize_database():
+    with app.app_context():
+        # This command tells SQLAlchemy to look at your models 
+        # (like the User class with __tablename__ = 'users')
+        # and create the corresponding tables in your database.
+        db.create_all() 
+        
+        # Now add the default users if they aren't there
+        for default_user in ['Alaina', 'Matthew']:
+            if not User.query.filter_by(username=default_user).first():
+                db.session.add(User(username=default_user))
+        db.session.commit()
+        
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
