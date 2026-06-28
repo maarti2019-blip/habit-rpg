@@ -188,7 +188,7 @@ LEGENDARY_ITEMS = [
 
 # --- Models ---
 class User(db.Model):
-    __tablename__ = 'user'
+    __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), unique=True, nullable=False)
     gold_balance = db.Column(db.Float, default=0.0)
