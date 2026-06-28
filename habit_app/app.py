@@ -410,7 +410,15 @@ def auto_login_by_ip():
 
 @app.route('/')
 def index():
-    current_user = User.query.get(session['user_id']) if 'user_id' in session else None
+    # Force the database connection to reset if it's currently stuck in an error state
+    try:
+        db.session.rollback()
+    except Exception:
+        pass
+
+    # Now that the transaction is clean, proceed with your queries
+    user_id = session.get('user_id')
+    current_user = User.query.get(user_id) if user_id else None
     boss = RaidBoss.query.first()
     players = User.query.all()
     server_state = ServerState.query.first()
