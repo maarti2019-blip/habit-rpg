@@ -498,7 +498,7 @@ def stage_activity():
     raid_dmg = 0
     kill_cap = 10 if state.active_event == "Colosseum Draft" else 3
 
-    while solo_dmg > 0 and user.bosses_killed_today < kill_cap:
+    while solo_dmg > 0:
         target_hp = 1.0 if (state.active_event == "Necromancer’s Curse" and get_est_now().weekday() == 6) else user.solo_monster_hp
         
         if solo_dmg >= target_hp:
