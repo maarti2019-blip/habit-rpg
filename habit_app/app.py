@@ -534,7 +534,7 @@ def stage_activity():
             difficulty=diff if act_type == 'workout' else None,
             morning_feeling=feeling if act_type == 'workout' else None
         )
-        db.session.add(new_log
+        db.session.add(new_log)
                        
     if not user.has_pet and minutes > 0:
         user.egg_minutes += minutes
