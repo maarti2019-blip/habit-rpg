@@ -315,34 +315,26 @@
         {% endif %}
     </div>
 
+    <!-- SOLO MONSTER -->
     <div class="card">
         <div style="display:flex; justify-content: space-between; align-items:center;">
             <h3 style="margin:0;">👤 Solo Adversary</h3>
-            {% set kill_cap = 10 if server_state.active_event == "Colosseum Draft" else 3 %}
-            <span style="font-size: 0.8em; color: var(--text-muted); border: 1px solid var(--border-color); padding: 2px 6px; border-radius: 4px;">{{ current_user.bosses_killed_today }} / {{ kill_cap }} Killed Today</span>
+            <span style="font-size: 0.8em; color: var(--text-muted); border: 1px solid var(--border-color); padding: 2px 6px; border-radius: 4px;">{{ current_user.bosses_killed_today }} Defeated Today</span>
         </div>
         
-        {% if current_user.bosses_killed_today >= kill_cap %}
-            <div style="text-align: center; padding: 30px 10px; background: var(--bg-main); border-radius: 8px; margin-top: 15px; border: 1px dashed var(--accent-primary);">
-                <div style="font-size: 2.5em; margin-bottom: 10px;">🏆</div>
-                <h3 style="color: var(--accent-primary); margin: 0 0 5px 0;">All Targets Eliminated!</h3>
-                <p style="color: var(--text-muted); font-size: 0.9em; margin: 0;">You've completely wiped out your monster quota for the day! Rest up, warrior—new enemies will spawn at midnight EST.</p>
+        <div style="display: flex; justify-content: center; margin: 10px 0;">
+            <img src="{{ solo_img }}" alt="Monster" style="max-height: 110px; object-fit: contain;">
+        </div>
+        <div class="boss-bar">
+            <div class="boss-progress" style="width: {{ (current_user.solo_monster_hp / current_user.solo_monster_max) * 100 }}%; background: var(--accent-primary);"></div>
+            <div class="boss-text">
+                {% if server_state.active_event == "Amnesia Fog" %}
+                    {{ current_user.solo_monster_name }}: ??? / ??? HP
+                {% else %}
+                    {{ current_user.solo_monster_name }}: {{ current_user.solo_monster_hp | int }} / {{ current_user.solo_monster_max | int }} HP
+                {% endif %}
             </div>
-        {% else %}
-            <div style="display: flex; justify-content: center; margin: 10px 0;">
-                <img src="{{ solo_img }}" alt="Monster" style="max-height: 110px; object-fit: contain;">
-            </div>
-            <div class="boss-bar">
-                <div class="boss-progress" style="width: {{ (current_user.solo_monster_hp / current_user.solo_monster_max) * 100 }}%; background: var(--accent-primary);"></div>
-                <div class="boss-text">
-                    {% if server_state.active_event == "Amnesia Fog" %}
-                        {{ current_user.solo_monster_name }}: ??? / ??? HP
-                    {% else %}
-                        {{ current_user.solo_monster_name }}: {{ current_user.solo_monster_hp | int }} / {{ current_user.solo_monster_max | int }} HP
-                    {% endif %}
-                </div>
-            </div>
-        {% endif %}
+        </div>
     </div>
 <!-- RAID BOSS -->
    <!-- RAID BOSS -->
