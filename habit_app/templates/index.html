@@ -326,41 +326,44 @@
     </div>
 <!-- ACTIVITY JOURNAL -->
     <div class="card">
-    <details>
-        <summary style="cursor: pointer; list-style: none;">
-            <h3>📖 Activity Journal</h3>
+    <details style="cursor: pointer;">
+        <summary style="list-style: none; outline: none; display: block;">
+            <h3 style="margin: 0; display: inline-block;">📖 Activity Journal</h3>
+            <span style="float: right;">▼</span>
         </summary>
 
-        {% if activity_logs %}
-            <div style="max-height: 400px; overflow-y: auto; padding-right: 5px;">
-                {% for log in activity_logs %}
-                    <div style="border-left: 3px solid {% if log.activity_type == 'workout' %}#ef4444{% elif log.activity_type == 'hobby' %}#3b82f6{% else %}#10b981{% endif %}; background: rgba(255,255,255,0.02); padding: 10px; margin-bottom: 10px; border-radius: 0 6px 6px 0;">
-                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 5px;">
-                            <strong style="color:var(--text-main); text-transform: capitalize;">{{ log.activity_type }} ({{ log.minutes | int }} mins)</strong>
-                            <span style="font-size:0.75em; color:var(--text-muted);">{{ log.timestamp.strftime('%m/%d %I:%M %p') }}</span>
-                        </div>
-                        
-                        {% if log.description %}
-                            <p style="font-size:0.9em; color:var(--text-muted); margin: 0 0 5px 0;">"{{ log.description }}"</p>
-                        {% endif %}
-                        
-                        {% if log.activity_type == 'workout' and (log.workout_details or log.difficulty or log.morning_feeling) %}
-                            <div style="background: rgba(0,0,0,0.3); padding: 8px; border-radius: 4px; font-size: 0.85em; margin-top: 8px;">
-                                {% if log.workout_details %}
-                                    <div style="color: #cbd5e1; margin-bottom: 4px;"><strong>Routine:</strong> {{ log.workout_details }}</div>
-                                {% endif %}
-                                <div style="display:flex; gap: 15px; color: #94a3b8;">
-                                    {% if log.difficulty %}<span><strong>Difficulty:</strong> {{ log.difficulty }}</span>{% endif %}
-                                    {% if log.morning_feeling %}<span><strong>Recovery:</strong> {{ log.morning_feeling }}</span>{% endif %}
-                                </div>
+        <div style="margin-top: 15px;">
+            {% if activity_logs %}
+                <div style="max-height: 400px; overflow-y: auto; padding-right: 5px;">
+                    {% for log in activity_logs %}
+                        <div style="border-left: 3px solid {% if log.activity_type == 'workout' %}#ef4444{% elif log.activity_type == 'hobby' %}#3b82f6{% else %}#10b981{% endif %}; background: rgba(255,255,255,0.02); padding: 10px; margin-bottom: 10px; border-radius: 0 6px 6px 0;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 5px;">
+                                <strong style="color:var(--text-main); text-transform: capitalize;">{{ log.activity_type }} ({{ log.minutes | int }} mins)</strong>
+                                <span style="font-size:0.75em; color:var(--text-muted);">{{ log.timestamp.strftime('%m/%d %I:%M %p') }}</span>
                             </div>
-                        {% endif %}
-                    </div>
-                {% endfor %}
-            </div>
-        {% else %}
-            <p style="font-size: 0.9em; color: var(--text-muted); text-align: center;">No activities recorded yet. Your chronicles await!</p>
-        {% endif %}
+                            
+                            {% if log.description %}
+                                <p style="font-size:0.9em; color:var(--text-muted); margin: 0 0 5px 0;">"{{ log.description }}"</p>
+                            {% endif %}
+                            
+                            {% if log.activity_type == 'workout' and (log.workout_details or log.difficulty or log.morning_feeling) %}
+                                <div style="background: rgba(0,0,0,0.3); padding: 8px; border-radius: 4px; font-size: 0.85em; margin-top: 8px;">
+                                    {% if log.workout_details %}
+                                        <div style="color: #cbd5e1; margin-bottom: 4px;"><strong>Routine:</strong> {{ log.workout_details }}</div>
+                                    {% endif %}
+                                    <div style="display:flex; gap: 15px; color: #94a3b8;">
+                                        {% if log.difficulty %}<span><strong>Difficulty:</strong> {{ log.difficulty }}</span>{% endif %}
+                                        {% if log.morning_feeling %}<span><strong>Recovery:</strong> {{ log.morning_feeling }}</span>{% endif %}
+                                    </div>
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p style="font-size: 0.9em; color: var(--text-muted); text-align: center;">No activities recorded yet. Your chronicles await!</p>
+            {% endif %}
+        </div>
     </details>
 </div>
     
