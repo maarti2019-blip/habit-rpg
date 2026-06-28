@@ -35,6 +35,41 @@ RAID_BOSSES = [
     "Wyrm", "Tarrasque", "Cyclops", "Sphinx", "Roc", "Wendigo", "Dullahan", "Juggernaut", "Beholder"
 ]
 
+WEEKLY_QUESTS = {
+    # --- COMMON (Fast, easy week. $5 + Common Loot) ---
+    1: {"title": "The Scout's Warmup", "type": "workout", "target": 60.0, "gold": 5.0, "tier": "Common", "desc": "Complete 60 minutes of light physical movement, walking, or stretching."},
+    2: {"title": "Novice's Curiosity", "type": "hobby", "target": 60.0, "gold": 5.0, "tier": "Common", "desc": "Dedicate 60 minutes to practicing a skill, reading, or learning something new."},
+    3: {"title": "Camp Cleanup", "type": "chore", "target": 60.0, "gold": 5.0, "tier": "Common", "desc": "Spend 60 minutes tidying up your immediate living spaces."},
+    4: {"title": "Morning Patrol", "type": "workout", "target": 75.0, "gold": 5.0, "tier": "Common", "desc": "Log 75 minutes of steady active recovery or general fitness."},
+    5: {"title": "The Tinkerer's Hour", "type": "hobby", "target": 75.0, "gold": 5.0, "tier": "Common", "desc": "Spend 75 minutes working on a personal project or creative outlet."},
+    6: {"title": "Hearth & Home", "type": "chore", "target": 75.0, "gold": 5.0, "tier": "Common", "desc": "Complete 75 minutes of basic daily chores and household upkeep."},
+    
+    # --- UNCOMMON (Steady effort. $10 + Uncommon Loot) ---
+    7: {"title": "Foot-Soldier's March", "type": "workout", "target": 120.0, "gold": 10.0, "tier": "Uncommon", "desc": "Log 120 minutes of steady-state cardio or endurance training."},
+    8: {"title": "The Craftsman's Focus", "type": "hobby", "target": 120.0, "gold": 10.0, "tier": "Uncommon", "desc": "Dedicate 120 minutes to active project building or skill refinement."},
+    9: {"title": "Quartermaster's Run", "type": "chore", "target": 120.0, "gold": 10.0, "tier": "Uncommon", "desc": "Spend 120 minutes running errands or managing household supplies."},
+    10: {"title": "Warrior's Conditioning", "type": "workout", "target": 150.0, "gold": 10.0, "tier": "Uncommon", "desc": "Complete 150 minutes of general strength training and lifting."},
+    11: {"title": "The Scholar's Study", "type": "hobby", "target": 150.0, "gold": 10.0, "tier": "Uncommon", "desc": "Spend 150 minutes in focused study, reading, or dedicated creative practice."},
+    12: {"title": "Armory Organization", "type": "chore", "target": 150.0, "gold": 10.0, "tier": "Uncommon", "desc": "Spend 150 minutes organizing, decluttering, or tackling laundry."},
+    13: {"title": "Amazonian Physique", "type": "workout", "target": 180.0, "gold": 10.0, "tier": "Uncommon", "desc": "Log 180 minutes focusing on building THAT BUTT and legs."},
+    14: {"title": "The Artisan's Grind", "type": "hobby", "target": 180.0, "gold": 10.0, "tier": "Uncommon", "desc": "Spend 180 minutes making tangible progress on a core hobby."},
+    
+    # --- RARE (Heavy grind. $20 + Rare Loot) ---
+    15: {"title": "The Iron Crucible", "type": "workout", "target": 240.0, "gold": 20.0, "tier": "Rare", "desc": "Endure 240 minutes of intense, heavy physical training."},
+    16: {"title": "The Architect's Vision", "type": "hobby", "target": 240.0, "gold": 20.0, "tier": "Rare", "desc": "Dedicate 240 minutes to designing, creating, or building a complex project."},
+    17: {"title": "The Quartermaster's Batch", "type": "chore", "target": 240.0, "gold": 20.0, "tier": "Rare", "desc": "Complete 240 minutes of large-scale meal prep and deep cleaning."},
+    18: {"title": "Gladiator's Split", "type": "workout", "target": 300.0, "gold": 20.0, "tier": "Rare", "desc": "Log 300 minutes of strict, high-volume workout routines."},
+    19: {"title": "Masterpiece Creation", "type": "hobby", "target": 300.0, "gold": 20.0, "tier": "Rare", "desc": "Spend 300 minutes pushing a major personal project toward completion."},
+    20: {"title": "Castle Restoration", "type": "chore", "target": 300.0, "gold": 20.0, "tier": "Rare", "desc": "Log 300 minutes deep-cleaning multiple rooms and tackling neglected tasks."},
+    
+    # --- LEGENDARY (Insane commitment. $40 + Legendary Loot) ---
+    21: {"title": "Ascension to Godhood", "type": "workout", "target": 450.0, "gold": 40.0, "tier": "Legendary", "desc": "A monumental 450 minutes of physical training. Only for the elite."},
+    22: {"title": "The Magnum Opus", "type": "hobby", "target": 450.0, "gold": 40.0, "tier": "Legendary", "desc": "Dedicate 450 minutes to an overarching, legendary personal pursuit."},
+    23: {"title": "Domain Purification", "type": "chore", "target": 450.0, "gold": 40.0, "tier": "Legendary", "desc": "Spend 450 minutes overhauling your entire living space from top to bottom."},
+    24: {"title": "Titan's Awakening", "type": "workout", "target": 600.0, "gold": 40.0, "tier": "Legendary", "desc": "Log an unbelievable 600 minutes of exercise this week."},
+    25: {"title": "Archmage's Dedication", "type": "hobby", "target": 600.0, "gold": 40.0, "tier": "Legendary", "desc": "Spend 600 minutes deeply immersed in mastering your chosen hobby."},
+    26: {"title": "Grand Estate Overhaul", "type": "chore", "target": 600.0, "gold": 40.0, "tier": "Legendary", "desc": "Complete 600 minutes of massive household repair, cleaning, and organization."}
+}
 ALL_EVENTS = [
     ("Frenzy of the Warrior", "Workout DMG is 3.0x, but Hobby DMG is 0.5x!"),
     ("Scholar’s Blessing", "Hobby Time deals 3.0x damage, but Workouts deal 0.5x!"),
@@ -164,6 +199,14 @@ class User(db.Model):
     bosses_killed_today = db.Column(db.Integer, default=0)
     chores_completed = db.Column(db.Boolean, default=False)
     last_active_date = db.Column(db.String(20), nullable=True)
+    current_streak = db.Column(db.Integer, default=0)
+    has_killed_today = db.Column(db.Boolean, default=False)
+    active_quest_id = db.Column(db.Integer, nullable=True)
+    quest_progress = db.Column(db.Float, default=0.0)
+    quest_completed = db.Column(db.Boolean, default=False)
+    offered_quest_1 = db.Column(db.Integer, nullable=True)
+    offered_quest_2 = db.Column(db.Integer, nullable=True)
+    offered_quest_3 = db.Column(db.Integer, nullable=True)
     
     current_week = db.Column(db.Integer, nullable=True)
     wk_workout = db.Column(db.Float, default=0.0)
@@ -227,6 +270,21 @@ class TransactionHistory(db.Model):
     user_id = db.Column(db.Integer, nullable=False)
     amount = db.Column(db.Float, nullable=False)
     reason = db.Column(db.String(255), nullable=True)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    
+class ActivityLog(db.Model):
+    __tablename__ = 'activity_log'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, nullable=False)
+    activity_type = db.Column(db.String(50), nullable=False) # workout, hobby, chore
+    minutes = db.Column(db.Float, nullable=False)
+    description = db.Column(db.String(255), nullable=True) # General notes
+    
+    # Workout Specifics
+    workout_details = db.Column(db.Text, nullable=True) # Sets, weights, routines
+    difficulty = db.Column(db.String(50), nullable=True) # RPE or 1-10 scale
+    morning_feeling = db.Column(db.String(255), nullable=True) # Recovery notes
+    
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
 # --- Discord Notification Helper ---
@@ -308,6 +366,11 @@ def check_resets(user):
     if user.current_week is None: user.current_week = current_iso_week
     
     if user.last_active_date != today_str:
+        # STREAK BREAKER: If they didn't get a kill yesterday, reset the streak to 0.
+        if not user.has_killed_today and user.last_active_date is not None:
+            user.current_streak = 0
+            
+        user.has_killed_today = False
         user.bosses_killed_today = 0
         user.chores_completed = False
         user.last_active_date = today_str
@@ -315,12 +378,19 @@ def check_resets(user):
     if user.current_week != current_iso_week:
         user.prev_wk_workout, user.prev_wk_hobby, user.prev_wk_chore = user.wk_workout, user.wk_hobby, user.wk_chore
         user.prev_wk_bosses, user.prev_wk_gold = user.wk_bosses, user.wk_gold
-        
         user.wk_workout = user.wk_hobby = user.wk_chore = user.wk_gold = 0.0
         user.wk_bosses = 0
-        
         user.current_week = current_iso_week
         user.show_weekly_report = True
+        user.active_quest_id = None
+        user.quest_progress = 0.0
+        user.quest_completed = False
+        
+        quest_keys = list(WEEKLY_QUESTS.keys())
+        choices = random.sample(quest_keys, 3)
+        user.offered_quest_1 = choices[0]
+        user.offered_quest_2 = choices[1]
+        user.offered_quest_3 = choices[2]
         
     db.session.commit()
 
@@ -394,6 +464,8 @@ def index():
     
     transactions = TransactionHistory.query.filter_by(user_id=current_user.id).order_by(TransactionHistory.timestamp.desc()).limit(15).all() if current_user else []
 
+    activity_logs = ActivityLog.query.filter_by(user_id=current_user.id).order_by(ActivityLog.timestamp.desc()).limit(20).all() if current_user else []
+
     if inventory:
         for item in inventory:
             if item.is_active and item.expires_at and get_est_now() > item.expires_at.replace(tzinfo=ZoneInfo("America/New_York")):
@@ -408,8 +480,17 @@ def index():
         current_user.pet_xp = 0
         db.session.commit()
 
-    return render_template('index.html', current_user=current_user, players=players, boss=boss, pending_rewards=pending_rewards, inventory=inventory, solo_img=solo_img, raid_img=raid_img, server_state=server_state, transactions=transactions)
+    return render_template('index.html', current_user=current_user, players=players, boss=boss, pending_rewards=pending_rewards, inventory=inventory, solo_img=solo_img, raid_img=raid_img, server_state=server_state, transactions=transactions, activity_logs=activity_logs, WEEKLY_QUESTS=WEEKLY_QUESTS)
 
+@app.route('/select_quest/<int:q_id>', methods=['POST'])
+def select_quest(q_id):
+    if 'user_id' not in session: return redirect('/')
+    user = User.query.get(session['user_id'])
+    if not user.active_quest_id:
+        user.active_quest_id = q_id
+        db.session.commit()
+    return redirect('/')
+    
 @app.route('/manual_login/<username>')
 def manual_login(username):
     user = User.query.filter_by(username=username).first()
@@ -438,7 +519,23 @@ def stage_activity():
     act_type = request.form.get('type')
     try: minutes = float(request.form.get('minutes', 0))
     except: minutes = 0.0
-
+    desc = request.form.get('description', '')
+    w_details = request.form.get('workout_details', '')
+    diff = request.form.get('difficulty', '')
+    feeling = request.form.get('morning_feeling', '')
+    
+    if minutes > 0:
+        new_log = ActivityLog(
+            user_id=user.id,
+            activity_type=act_type,
+            minutes=minutes,
+            description=desc,
+            workout_details=w_details if act_type == 'workout' else None,
+            difficulty=diff if act_type == 'workout' else None,
+            morning_feeling=feeling if act_type == 'workout' else None
+        )
+        db.session.add(new_log
+                       
     if not user.has_pet and minutes > 0:
         user.egg_minutes += minutes
         if user.egg_minutes >= 100.0:
@@ -476,6 +573,25 @@ def stage_activity():
     elif act_type == 'hobby': base_dmg = minutes * hobby_mult; user.wk_hobby += minutes
     elif act_type == 'chore': base_dmg = minutes * chore_mult; user.wk_chore += minutes
 
+    # ... inside stage_activity, right after calculating base_dmg ...
+    
+    # QUEST PROGRESSION
+    if user.active_quest_id and not user.quest_completed:
+        quest = WEEKLY_QUESTS.get(user.active_quest_id)
+        if quest and act_type == quest["type"]:
+            user.quest_progress += minutes
+            if user.quest_progress >= quest["target"]:
+                user.quest_completed = True
+                user.gold_balance += quest["gold"]
+                user.wk_gold += quest["gold"]
+                
+                # Grant the exact tier promised in the quest
+                loot_pool = LEGENDARY_ITEMS if quest["tier"] == "Legendary" else RARE_ITEMS
+                q_name, q_cat, q_mult, q_desc = random.choice(loot_pool)
+                
+                db.session.add(UserInventory(user_id=user.id, item_name=q_name, category_target=q_cat, multiplier=q_mult, description=q_desc, rarity=quest["tier"]))
+                db.session.add(PendingReward(user_id=user.id, gold_amount=quest["gold"], item_name=f"[Contract Fulfilled!] [{quest['tier']}] {q_name}"))
+                
     if 'chores' in request.form and not user.chores_completed:
         user.chores_completed = True
         base_dmg += 300.0 if state.active_event == "The Maid's Crusade" else 50.0
@@ -502,6 +618,17 @@ def stage_activity():
         target_hp = 1.0 if (state.active_event == "Necromancer’s Curse" and get_est_now().weekday() == 6) else user.solo_monster_hp
         
         if solo_dmg >= target_hp:
+            if not user.has_killed_today:
+                user.has_killed_today = True
+                user.current_streak += 1
+                
+                # Check for Milestone Loot Chests
+                if user.current_streak in [3, 7, 14, 30, 60, 100]:
+                    streak_gold = user.current_streak * 2.0  # Massive gold scaling
+                    s_name, s_cat, s_mult, s_desc = random.choice(LEGENDARY_ITEMS if user.current_streak >= 14 else RARE_ITEMS)
+                    db.session.add(UserInventory(user_id=user.id, item_name=s_name, category_target=s_cat, multiplier=s_mult, description=s_desc, rarity="Legendary" if user.current_streak >= 14 else "Rare"))
+                    db.session.add(PendingReward(user_id=user.id, gold_amount=streak_gold, item_name=f"[{user.current_streak}-Day Streak Chest!] {s_name}"))
+
             solo_dmg -= target_hp
             user.bosses_killed_today += 1
             user.wk_bosses += 1
