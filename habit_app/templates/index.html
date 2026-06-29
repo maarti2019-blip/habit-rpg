@@ -81,36 +81,6 @@
         .boss-text { position: absolute; width: 100%; text-align: center; top: 2px; font-weight: bold; font-size: 0.9em; color: white; text-shadow: 1px 1px 2px black; }
         input, select { background: #0f0f12; color: #fff; border: 1px solid var(--border-color); padding: 12px; border-radius: 6px; width: 100%; margin-bottom: 12px; box-sizing: border-box; font-size: inherit; }
         
-        <!-- QUEST SELECTION MODAL POP-UP -->
-        <div class="modal-body" style="max-width: 500px;">
-            <h2 style="color: var(--accent-primary); margin-top: 0; text-align: center;">📜 Weekly Contracts Available</h2>
-            <p style="text-align: center; color: var(--text-muted); font-size: 0.9em; margin-bottom: 20px;">A new week has begun. Review the bounties below and accept a contract. Choose wisely.</p>
-            
-            {% set options = [current_user.offered_quest_1, current_user.offered_quest_2, current_user.offered_quest_3] %}
-            {% for q_id in options %}
-                {% if q_id %}
-                    {% set q = WEEKLY_QUESTS[q_id] %}
-                    <div style="border: 2px solid {% if q.tier == 'Legendary' %}#f59e0b{% elif q.tier == 'Rare' %}#3b82f6{% elif q.tier == 'Uncommon' %}#10b981{% else %}#a1a1aa{% endif %}; border-radius: 8px; padding: 12px; margin-bottom: 12px; background: rgba(0,0,0,0.5);">
-                        <div style="display:flex; justify-content:space-between; align-items:center;">
-                            <strong style="color:var(--text-main); font-size: 1.1em;">{{ q.title }}</strong>
-                            <span style="background: rgba(255,255,255,0.1); padding: 4px 8px; border-radius: 4px; font-size:0.85em; font-weight:bold; color: {% if q.tier == 'Legendary' %}#f59e0b{% elif q.tier == 'Rare' %}#3b82f6{% elif q.tier == 'Uncommon' %}#10b981{% else %}#a1a1aa{% endif %};">{{ q.tier }}</span>
-                        </div>
-                        <p style="font-size:0.85em; color:var(--text-muted); margin:8px 0;">{{ q.desc }}</p>
-                        <div style="display:flex; justify-content:space-between; align-items:center;">
-                            <span style="color:var(--accent-primary); font-weight:bold;">Reward: +${{ q.gold | int }}</span>
-                            <form action="/select_quest/{{ q_id }}" method="POST" style="margin:0;">
-                                <button type="submit" class="btn" style="padding:6px 16px; width:auto; font-size:0.9em;">Accept</button>
-                            </form>
-                        </div>
-                    </div>
-                {% endif %}
-            {% endfor %}
-            <div style="text-align: center; margin-top: 15px;">
-                <a href="#" onclick="document.getElementById('questModal').classList.remove('open'); return false;" style="color: var(--text-muted); font-size: 0.8em; text-decoration: underline;">I'll decide later</a>
-            </div>
-        </div>
-    </div>
-        
         /* --- EVENT UI SKINS --- */
         .evt-warrior { background: linear-gradient(135deg, #450a0a, var(--bg-main)) !important; border: 2px solid #ef4444 !important; box-shadow: 0 0 20px rgba(239, 68, 68, 0.4); }
         .evt-blessing { background: linear-gradient(135deg, #1e1b4b, var(--bg-main)) !important; border: 2px solid #6366f1 !important; box-shadow: 0 0 20px rgba(99, 102, 241, 0.4); }
@@ -168,12 +138,15 @@
     </div>
     {% endif %}
     
+       {% if not current_user %}
+    <div class="card" style="text-align: center; margin-top: 40px;">
         <h2>Device Profile Allocation</h2>
         <div class="flex-grid">
             <a href="/manual_login/Alaina" class="btn">Alaina</a>
             <a href="/manual_login/Matthew" class="btn">Matthew</a>
         </div>
     </div>
+    {% else %}
 
     {% if current_user.show_weekly_report %}
     <div class="card" style="position: fixed; top: 10%; left: 5%; width: 90%; z-index: 3000; box-sizing: border-box; border-color: var(--accent-primary); box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);">
