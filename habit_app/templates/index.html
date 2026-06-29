@@ -82,8 +82,6 @@
         input, select { background: #0f0f12; color: #fff; border: 1px solid var(--border-color); padding: 12px; border-radius: 6px; width: 100%; margin-bottom: 12px; box-sizing: border-box; font-size: inherit; }
         
         <!-- QUEST SELECTION MODAL POP-UP -->
-    {% if current_user.offered_quest_1 and not current_user.active_quest_id %}
-    <div id="questModal" class="settings-modal open" style="z-index: 5000;">
         <div class="modal-body" style="max-width: 500px;">
             <h2 style="color: var(--accent-primary); margin-top: 0; text-align: center;">📜 Weekly Contracts Available</h2>
             <p style="text-align: center; color: var(--text-muted); font-size: 0.9em; margin-bottom: 20px;">A new week has begun. Review the bounties below and accept a contract. Choose wisely.</p>
@@ -139,7 +137,13 @@
     </style>
 </head>
 <body>
+{% if current_user.offered_quest_1 and not current_user.active_quest_id %}
+    <div id="questModal" class="settings-modal open" style="z-index: 5000;">
+        </div>
+    {% endif %}
 
+    {% if not current_user %}
+    <div class="card" style="text-align: center; margin-top: 40px;">
     {% if not current_user %}
     <div class="card" style="text-align: center; margin-top: 40px;">
         <h2>Device Profile Allocation</h2>
