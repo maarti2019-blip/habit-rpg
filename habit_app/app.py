@@ -356,7 +356,9 @@ def get_next_monday_midnight():
     now = get_est_now()
     days_ahead = 0 - now.weekday()
     if days_ahead <= 0: days_ahead += 7
-    return (now + timedelta(days=days_ahead)).replace(hour=0, minute=1, second=0, microsecond=0)
+    target = (now + timedelta(days=days_ahead)).replace(hour=0, minute=1, second=0, microsecond=0)
+    # Strip the timezone so Postgres saves the literal 00:01 time
+    return target.replace(tzinfo=None)
 
 def check_resets(user):
     now = get_est_now()
@@ -431,13 +433,14 @@ def index():
     manage_world_events()
     if current_user: check_resets(current_user)
 
-    # --- WEEKLY RAID BOSS RESET LOGIC ---
+   # --- WEEKLY RAID BOSS RESET LOGIC ---
     if boss:
         # Failsafe for older DBs to ensure the timer works
         if boss.next_spawn_date is None:
-            boss.next_spawn_date = get_est_now() - timedelta(days=1)
+            # Strip the timezone here too
+            boss.next_spawn_date = (get_est_now() - timedelta(days=1)).replace(tzinfo=None)
             db.session.commit()
-
+            
         spawn_time = boss.next_spawn_date
         if spawn_time.tzinfo is None:
             spawn_time = spawn_time.replace(tzinfo=ZoneInfo("America/New_York"))
