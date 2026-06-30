@@ -697,6 +697,17 @@ def stage_activity():
                 db.session.add(PendingReward(user_id=u.id, gold_amount=raid_drop, item_name=f"[Raid Boss Kill] [{r_tier}] {r_name}"))
                 u.gold_balance += raid_drop
                 u.wk_gold += raid_drop
+
+            raid_active = boss and boss.is_active and boss.current_hp > 0
+        
+        # Only deal damage if the raid boss is dead OR you haven't hit the cap
+        if not raid_active or user.bosses_killed_today < 3:
+            
+            # YOUR EXISTING SOLO BOSS LOGIC
+            user.solo_monster_hp -= total_dmg
+            if user.solo_monster_hp <= 0:
+                user.bosses_killed_today += 1
+                # ... (rest of your existing solo boss death/respawn logic) ...
             
             notify_discord(f"🌋 **{boss.name.upper()} DESTROYED!** Both players received a Raid Boss Orb and guaranteed high-tier loot! A new boss will spawn on Monday.")
 
