@@ -705,7 +705,7 @@ def stage_activity():
                 u.gold_balance += raid_drop
                 u.wk_gold += raid_drop
 
-            raid_active = boss and boss.is_active and boss.current_hp > 0
+        raid_active = boss and boss.is_active and boss.current_hp > 0
         
         # Only deal damage if the raid boss is dead OR you haven't hit the cap
         if not raid_active or user.bosses_killed_today < 3:
