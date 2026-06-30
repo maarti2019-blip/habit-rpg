@@ -279,14 +279,13 @@ class ActivityLog(db.Model):
     activity_type = db.Column(db.String(50), nullable=False) # workout, hobby, chore
     minutes = db.Column(db.Float, nullable=False)
     description = db.Column(db.String(255), nullable=True) # General notes
-    timestamp = db.Column(db.DateTime, default=lambda: get_est_now().replace(tzinfo=None))
     
     # Workout Specifics
     workout_details = db.Column(db.Text, nullable=True) # Sets, weights, routines
     difficulty = db.Column(db.String(50), nullable=True) # RPE or 1-10 scale
     morning_feeling = db.Column(db.String(255), nullable=True) # Recovery notes
     
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    timestamp = db.Column(db.DateTime, default=lambda: get_est_now().replace(tzinfo=None))
 
 # --- Discord Notification Helper ---
 def notify_discord(message):
