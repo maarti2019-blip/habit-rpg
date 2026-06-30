@@ -207,6 +207,11 @@ class User(db.Model):
     offered_quest_1 = db.Column(db.Integer, nullable=True)
     offered_quest_2 = db.Column(db.Integer, nullable=True)
     offered_quest_3 = db.Column(db.Integer, nullable=True)
+    theme_base = db.Column(db.String(50), default='base-obsidian')
+    theme_accent = db.Column(db.String(50), default='accent-blue')
+    theme_font = db.Column(db.String(50), default='font-standard')
+    theme_size = db.Column(db.String(50), default='size-md')
+    theme_bg = db.Column(db.String(50), default='bg-solid')
     
     current_week = db.Column(db.Integer, nullable=True)
     wk_workout = db.Column(db.Float, default=0.0)
@@ -518,6 +523,25 @@ def dismiss_report():
         user.show_weekly_report = False
         db.session.commit()
     return redirect('/')
+
+@app.route('/save_theme', methods=['POST'])
+def save_theme():
+    if 'user_id' not in session: return {"status": "error"}, 401
+    
+    user = User.query.get(session['user_id'])
+    data = request.json
+    
+    if user and data:
+        # Update the database with whatever classes the body currently has
+        user.theme_base = data.get('base', 'base-obsidian')
+        user.theme_accent = data.get('accent', 'accent-blue')
+        user.theme_font = data.get('font', 'font-standard')
+        user.theme_size = data.get('size', 'size-md')
+        user.theme_bg = data.get('bg', 'bg-solid')
+        
+        db.session.commit()
+        return {"status": "success"}
+    return {"status": "error"}, 400
 
 @app.route('/stage_activity', methods=['POST'])
 def stage_activity():
