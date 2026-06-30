@@ -388,13 +388,18 @@
         {% endif %}
     </div>
 
-    <!-- SOLO MONSTER -->
-    <div class="card">
-        <div style="display:flex; justify-content: space-between; align-items:center;">
-            <h3 style="margin:0;">👤 Solo Adversary <span style="color:#f97316; font-size: 0.8em; margin-left: 10px;">🔥 {{ current_user.current_streak }} Day Streak</span></h3>
-            <span style="font-size: 0.8em; color: var(--text-muted); border: 1px solid var(--border-color); padding: 2px 6px; border-radius: 4px;">{{ current_user.bosses_killed_today }} Defeated Today</span>
+   <!-- SOLO MONSTER CARD -->
+<div class="card">
+    <h3 style="margin-top:0;">🐺 Solo Monster</h3>
+    
+    {% if boss and boss.is_active and boss.current_hp > 0 and current_user.bosses_killed_today >= 3 %}
+        <!-- AREA SECURED MESSAGE -->
+        <div style="text-align: center; padding: 20px; background: rgba(16, 185, 129, 0.1); border-radius: 8px; margin-top: 15px; border: 1px dashed #10b981;">
+            <h3 style="color: #10b981; margin: 0 0 5px 0;">🛡️ Area Secured!</h3>
+            <p style="color: var(--text-muted); font-size: 0.9em; margin: 0;">You have defeated 3 solo monsters today. All attacks are now focused on the Weekly Raid Boss!</p>
         </div>
-        
+    {% else %}
+        <!-- MONSTER IMAGE & HEALTH BAR -->
         <div style="display: flex; justify-content: center; margin: 10px 0;">
             <img src="{{ solo_img }}" alt="Monster" style="max-height: 110px; object-fit: contain;">
         </div>
@@ -408,7 +413,9 @@
                 {% endif %}
             </div>
         </div>
-    </div>
+    {% endif %}
+</div>
+    
 <!-- WEEKLY QUESTS / CONTRACTS -->
     <div class="card">
         <h3 style="margin:0 0 10px 0;">📜 Weekly Contract</h3>
