@@ -626,6 +626,13 @@ def stage_activity():
     kill_cap = 10 if state.active_event == "Colosseum Draft" else 3
 
     while solo_dmg > 0:
+        # --- NEW FIX: DIVERT DAMAGE TO RAID BOSS IF CAP IS MET ---
+        if boss and boss.is_active and user.bosses_killed_today >= kill_cap:
+            if state.active_event != "Titan’s Shield":
+                raid_dmg += solo_dmg
+            solo_dmg = 0  # Zero out solo damage to stop the loop
+            break         # Break out of the solo monster loop
+        # ---------------------------------------------------------
         target_hp = 1.0 if (state.active_event == "Necromancer’s Curse" and get_est_now().weekday() == 6) else user.solo_monster_hp
         
         if solo_dmg >= target_hp:
