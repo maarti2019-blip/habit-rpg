@@ -559,25 +559,28 @@
     </div>
 
     <script>
-        document.getElementById('chores').addEventListener('change', function(e) {
-            if (this.checked && !this.disabled) {
-                if (!confirm("Are you SURE you started a chore? This will instantly deal damage to your boss and cannot be reversed!")) {
-                    this.checked = false;
-                }
+        // 1. CHORE CHECKBOX CONFIRMATION FIX
+        // We wait for the page to load, then find the checkbox by its 'name' attribute
+        document.addEventListener('DOMContentLoaded', function() {
+            const choreCheckbox = document.querySelector('input[name="chores"]');
+            if (choreCheckbox) {
+                choreCheckbox.addEventListener('change', function(e) {
+                    if (this.checked && !this.disabled) {
+                        if (!confirm("Are you SURE you started a chore? This will instantly deal damage to your boss and cannot be reversed!")) {
+                            this.checked = false;
+                        }
+                    }
+                });
             }
         });
 
-        function applyPref(category, value) {
-            document.body.className = document.body.className.replace(new RegExp(`\\b${category}-\\S+`, 'g'), '');
-            document.body.classList.add(value);
-            document.body.dataset[category] = value;
-        }
-
+        // 2. SETTINGS MODAL FUNCTIONS
         function toggleSettings(show) {
             const modal = document.getElementById('settingsModal');
+            if (!modal) return;
+            
             if (show) {
                 modal.classList.add('open');
-                // Sync internal datasets with current body classes
                 const classes = document.body.className;
                 document.body.dataset.base = classes.match(/\bbase-\S+/)?.[0] || 'base-obsidian';
                 document.body.dataset.accent = classes.match(/\baccent-\S+/)?.[0] || 'accent-blue';
@@ -603,7 +606,20 @@
                 })
             }).then(res => {
                 if (!res.ok) alert("Network error: Theme did not save to profile.");
+                else location.reload(); // Refresh to apply changes from the database
             });
+        }
+
+        // This instantly applies the CSS class for a real-time preview
+        function applyPref(category, value) {
+            document.body.className = document.body.className.replace(new RegExp(`\\b${category}-\\S+`, 'g'), '');
+            document.body.classList.add(value);
+            document.body.dataset[category] = value;
+        }
+
+        // 3. SERVICE WORKER REGISTRATION
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/static/sw.js');
         }
     </script>
     {% endif %}
