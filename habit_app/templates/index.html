@@ -105,7 +105,7 @@
         .gold-text { color: var(--accent-primary); font-size: 2em; font-weight: bold; margin: 15px 0; text-shadow: 0 0 10px rgba(0, 0, 0, 0.5); }
     </style>
 </head>
-<body class="{% if current_user %}{{ current_user.theme_base }} {{ current_user.accent_color }} {{ current_user.font_style }} {{ current_user.font_size }} {{ current_user.bg_pattern }}{% else %}base-obsidian accent-blue font-standard size-md bg-solid{% endif %}">
+<body class="{% if current_user %}{{ current_user.theme_base }} {{ current_user.theme_accent }} {{ current_user.theme_font }} {{ current_user.theme_size }} {{ current_user.theme_bg }}{% else %}base-obsidian accent-blue font-standard size-md bg-solid{% endif %}">
 {% if current_user.offered_quest_1 and not current_user.active_quest_id %}
     <div id="questModal" class="settings-modal open" style="z-index: 5000;">
         <div class="modal-body" style="max-width: 500px;">
