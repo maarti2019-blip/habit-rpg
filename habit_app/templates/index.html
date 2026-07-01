@@ -105,7 +105,7 @@
         .gold-text { color: var(--accent-primary); font-size: 2em; font-weight: bold; margin: 15px 0; text-shadow: 0 0 10px rgba(0, 0, 0, 0.5); }
     </style>
 </head>
-<body>
+<body class="{% if current_user %}{{ current_user.theme_base }} {{ current_user.accent_color }} {{ current_user.font_style }} {{ current_user.font_size }} {{ current_user.bg_pattern }}{% else %}base-obsidian accent-blue font-standard size-md bg-solid{% endif %}">
 {% if current_user.offered_quest_1 and not current_user.active_quest_id %}
     <div id="questModal" class="settings-modal open" style="z-index: 5000;">
         <div class="modal-body" style="max-width: 500px;">
@@ -570,27 +570,40 @@
         function applyPref(category, value) {
             document.body.className = document.body.className.replace(new RegExp(`\\b${category}-\\S+`, 'g'), '');
             document.body.classList.add(value);
-            localStorage.setItem(`rpg-pref-${category}`, value);
-        }
-
-        function loadPrefs() {
-            applyPref('base', localStorage.getItem('rpg-pref-base') || 'base-obsidian');
-            applyPref('accent', localStorage.getItem('rpg-pref-accent') || 'accent-blue');
-            applyPref('font', localStorage.getItem('rpg-pref-font') || 'font-standard');
-            applyPref('size', localStorage.getItem('rpg-pref-size') || 'size-md');
-            applyPref('bg', localStorage.getItem('rpg-pref-bg') || 'bg-solid');
+            document.body.dataset[category] = value;
         }
 
         function toggleSettings(show) {
             const modal = document.getElementById('settingsModal');
-            if (show) modal.classList.add('open');
-            else modal.classList.remove('open');
+            if (show) {
+                modal.classList.add('open');
+                // Sync internal datasets with current body classes
+                const classes = document.body.className;
+                document.body.dataset.base = classes.match(/\bbase-\S+/)?.[0] || 'base-obsidian';
+                document.body.dataset.accent = classes.match(/\baccent-\S+/)?.[0] || 'accent-blue';
+                document.body.dataset.font = classes.match(/\bfont-\S+/)?.[0] || 'font-standard';
+                document.body.dataset.size = classes.match(/\bsize-\S+/)?.[0] || 'size-md';
+                document.body.dataset.bg = classes.match(/\bbg-\S+/)?.[0] || 'bg-solid';
+            } else {
+                modal.classList.remove('open');
+            }
         }
 
-        loadPrefs();
-
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/static/sw.js');
+        function saveAndCloseSettings() {
+            toggleSettings(false);
+            fetch('/save_theme', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    base: document.body.dataset.base,
+                    accent: document.body.dataset.accent,
+                    font: document.body.dataset.font,
+                    size: document.body.dataset.size,
+                    bg: document.body.dataset.bg
+                })
+            }).then(res => {
+                if (!res.ok) alert("Network error: Theme did not save to profile.");
+            });
         }
     </script>
     {% endif %}
