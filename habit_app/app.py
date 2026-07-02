@@ -690,7 +690,9 @@ def stage_activity():
 
     if current_event == "Gambler’s Fallacy" and int(minutes) == 7:
         loot = roll_equipment(current_event)
-        if loot:
+        if not loot:
+            loot = ("Common", random.choice(COMMON_ITEMS))
+            
             tier, item_data = loot
             i_name, i_cat, i_mult, i_desc = item_data
             db.session.add(UserInventory(user_id=user.id, item_name=i_name, category_target=i_cat, multiplier=i_mult, description=i_desc, rarity=tier))
