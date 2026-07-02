@@ -390,7 +390,17 @@
 
    <!-- SOLO MONSTER CARD -->
 <div class="card">
-    <h3 style="margin-top:0;">🐺 Solo Monster</h3>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <h3 style="margin: 0;">🐺 Solo Monster</h3>
+        
+        <div style="font-size: 0.85em; background: rgba(0,0,0,0.4); padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border-color); color: var(--text-muted);">
+            💀 {% if boss and boss.is_active %}
+                Kills: <span style="color: white; font-weight: bold;">{{ current_user.bosses_killed_today }} / 3</span>
+            {% else %}
+                Kills: <span style="color: white; font-weight: bold;">{{ current_user.bosses_killed_today }}</span> (Endless)
+            {% endif %}
+        </div>
+    </div>
     
     {% if boss and boss.is_active and boss.current_hp > 0 and current_user.bosses_killed_today >= 3 %}
         <!-- AREA SECURED MESSAGE -->
