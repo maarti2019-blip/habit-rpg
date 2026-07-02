@@ -340,7 +340,7 @@ def manage_world_events():
     state = ServerState.query.first()
     if not state: return
     now = get_est_now()
-    is_event_active(est_now) = (now.weekday() == 4 and now.hour >= 17) or now.weekday() in [5, 6]
+    is_event_active(est_now) == (now.weekday() == 4 and now.hour >= 17) or now.weekday() in [5, 6]
     
     # 1. Check if the event should be active right now using our new logic
     event_should_be_active = is_event_active(get_est_now())
