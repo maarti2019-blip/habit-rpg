@@ -529,12 +529,12 @@ def index():
         current_user.pet_xp = 0
         db.session.commit()
 
-    return render_template('index.html', current_user=current_user, players=players, boss=boss, pending_rewards=pending_rewards, inventory=inventory, solo_img=solo_img, raid_img=raid_img, server_state=server_state, transactions=transactions, activity_logs=activity_logs, WEEKLY_QUESTS=WEEKLY_QUESTS. event_active_now=event_active_now)
+    return render_template('index.html', current_user=current_user, players=players, boss=boss, pending_rewards=pending_rewards, inventory=inventory, solo_img=solo_img, raid_img=raid_img, server_state=server_state, transactions=transactions, activity_logs=activity_logs, WEEKLY_QUESTS=WEEKLY_QUESTS, event_active_now=event_active_now)
 
 @app.route('/select_quest/<int:q_id>', methods=['POST'])
 def select_quest(q_id):
     if 'user_id' not in session: return redirect('/')
-    user = User.query.get(session['user_id'])
+    user = User.query.get(session['user_id'],
     if not user.active_quest_id:
         user.active_quest_id = q_id
         db.session.commit()
