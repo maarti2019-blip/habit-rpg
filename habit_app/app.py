@@ -85,7 +85,7 @@ ALL_EVENTS = [
     ("Slime Outbreak", "All new Solo Bosses spawn as Frail Slimes with only 50 Max HP!"),
     ("Titan’s Shield", "Raid Boss ignores activity overflow damage! It can only be wounded by Consumable Items!"),
     ("Necromancer’s Curse", "Defeated Solo Bosses respawn on Sunday with exactly 1 HP!"),
-    ("Colosseum Draft", "The daily Solo Boss kill limit cap is shattered from 3 up to 10!"),
+    ("Colosseum Champion", "Your first 3 Solo Boss kills of the day grant a massive 5x Gold Multiplier!"),
     ("Amnesia Fog", "All exact enemy health values are hidden behind dark fog! ??? / ??? HP"),
     ("The Early Bird Wormhole", "Logging any activity before 10:00 AM grants a 1.5x global multiplier for the day!"),
     ("The Shadow Clone", "A dark shadow copy takes over! Defeat it by letting your partner deal 70% of the damage!"),
@@ -649,24 +649,31 @@ def stage_activity():
     raid_dmg = 0
     kill_cap = 10 if state.active_event == "Colosseum Draft" else 3
 
+   solo_dmg = base_dmg
+    raid_dmg = 0
+    kill_cap = 3 # Lock the cap to 3 permanently
+
     while solo_dmg > 0:
-        # --- NEW FIX: DIVERT DAMAGE TO RAID BOSS IF CAP IS MET ---
+        # 1. DIVERT TO RAID BOSS IF ALIVE AND CAP IS MET
         if boss and boss.is_active and user.bosses_killed_today >= kill_cap:
             if state.active_event != "Titan’s Shield":
                 raid_dmg += solo_dmg
-            solo_dmg = 0  # Zero out solo damage to stop the loop
-            break         # Break out of the solo monster loop
-        # ---------------------------------------------------------
-        target_hp = 1.0 if (state.active_event == "Necromancer’s Curse" and get_est_now().weekday() == 6) else user.solo_monster_hp
+            solo_dmg = 0  
+            break         
+
+        # 2. NECROMANCER FIX: Only 1 HP if they haven't hit the cap
+        if state.active_event == "Necromancer’s Curse" and get_est_now().weekday() == 6 and user.bosses_killed_today < kill_cap:
+            target_hp = 1.0
+        else:
+            target_hp = user.solo_monster_hp
         
         if solo_dmg >= target_hp:
             if not user.has_killed_today:
                 user.has_killed_today = True
                 user.current_streak += 1
                 
-                # Check for Milestone Loot Chests
                 if user.current_streak in [3, 7, 14, 30, 60, 100]:
-                    streak_gold = user.current_streak * 2.0  # Massive gold scaling
+                    streak_gold = user.current_streak * 2.0 
                     s_name, s_cat, s_mult, s_desc = random.choice(LEGENDARY_ITEMS if user.current_streak >= 14 else RARE_ITEMS)
                     db.session.add(UserInventory(user_id=user.id, item_name=s_name, category_target=s_cat, multiplier=s_mult, description=s_desc, rarity="Legendary" if user.current_streak >= 14 else "Rare"))
                     db.session.add(PendingReward(user_id=user.id, gold_amount=streak_gold, item_name=f"[{user.current_streak}-Day Streak Chest!] {s_name}"))
@@ -678,6 +685,11 @@ def stage_activity():
             gold_drop = calculate_90_percent_loot_orb(boss.world_level, state.active_event)
             if state.active_event == "Goblin Merchant's Crash": gold_drop *= 2.0
             if state.active_event == "Treasure Mimic Infestation": gold_drop = 10.00
+            
+            # --- NEW EVENT: COLOSSEUM CHAMPION ---
+            if state.active_event == "Colosseum Champion" and user.bosses_killed_today <= 3:
+                gold_drop *= 5.0
+            # -------------------------------------
 
             user.gold_balance += gold_drop; user.wk_gold += gold_drop
             
@@ -728,18 +740,8 @@ def stage_activity():
                 db.session.add(PendingReward(user_id=u.id, gold_amount=raid_drop, item_name=f"[Raid Boss Kill] [{r_tier}] {r_name}"))
                 u.gold_balance += raid_drop
                 u.wk_gold += raid_drop
-
-        raid_active = boss and boss.is_active and boss.current_hp > 0
-        
-        # Only deal damage if the raid boss is dead OR you haven't hit the cap
-        if not raid_active or user.bosses_killed_today < 3:
             
-            # YOUR EXISTING SOLO BOSS LOGIC
-            user.solo_monster_hp -= total_dmg
-            if user.solo_monster_hp <= 0:
-                user.bosses_killed_today += 1
-                # ... (rest of your existing solo boss death/respawn logic) ...
-            
+            # The Discord notification belongs HERE, right after the loot drops!
             notify_discord(f"🌋 **{boss.name.upper()} DESTROYED!** Both players received a Raid Boss Orb and guaranteed high-tier loot! A new boss will spawn on Monday.")
 
     db.session.commit()
