@@ -1,7 +1,8 @@
 import os
 import requests
 import random
-from datetime import datetime, timedelta
+import holidays
+from datetime import datetime, timedelta 
 from zoneinfo import ZoneInfo
 from flask import Flask, render_template, request, redirect, session
 from flask_sqlalchemy import SQLAlchemy
@@ -92,6 +93,29 @@ ALL_EVENTS = [
     ("Broken Seal", "Active inventory item buffs have their remaining durations expanded to a flat 72 hours!"),
     ("Gambler’s Fallacy", "Logging exactly 7 minutes of any action rewards a guaranteed equipment item box!")
 ]
+
+def is_event_active(est_now):
+    """
+    Returns True if:
+    - It is Saturday or Sunday.
+    - It is a US Federal Holiday.
+    - It is the day BEFORE a weekend or holiday AND it is past 5:00 PM (17:00).
+    """
+    us_holidays = holidays.US(years=est_now.year)
+    
+    if est_now.weekday() in [5, 6]:
+        return True
+        
+    if est_now.date() in us_holidays:
+        return True
+        
+    tomorrow = est_now.date() + timedelta(days=1)
+    is_tomorrow_off = (tomorrow.weekday() == 5 or tomorrow in us_holidays)
+    
+    if is_tomorrow_off and est_now.hour >= 17:
+        return True
+        
+    return False
 
 # --- THE FULL 80-ITEM LOOT TABLE ---
 COMMON_ITEMS = [
@@ -316,13 +340,19 @@ def manage_world_events():
     state = ServerState.query.first()
     if not state: return
     now = get_est_now()
-    is_weekend = (now.weekday() == 4 and now.hour >= 17) or now.weekday() in [5, 6]
+    is_event_active(est_now) = (now.weekday() == 4 and now.hour >= 17) or now.weekday() in [5, 6]
     
-    if is_weekend and not state.active_event:
+    # 1. Check if the event should be active right now using our new logic
+    event_should_be_active = is_event_active(get_est_now())
+
+    # 2. If it's time for an event but we don't have one, roll a new one!
+    if event_should_be_active and not state.active_event:
         evt = random.choice(ALL_EVENTS)
         state.active_event, state.event_description = evt
         db.session.commit()
-    elif not is_weekend and state.active_event:
+        
+    # 3. If the weekend/holiday is over but an event is still lingering, wipe it!
+    elif not event_should_be_active and state.active_event:
         state.active_event = None
         state.event_description = None
         db.session.commit()
@@ -438,6 +468,9 @@ def index():
     manage_world_events()
     if current_user: check_resets(current_user)
 
+    est_now = get_est_now()
+    event_active_now = is_event_active(est_now)
+    
    # --- WEEKLY RAID BOSS RESET LOGIC ---
     if boss:
         # Failsafe for older DBs to ensure the timer works
@@ -496,7 +529,7 @@ def index():
         current_user.pet_xp = 0
         db.session.commit()
 
-    return render_template('index.html', current_user=current_user, players=players, boss=boss, pending_rewards=pending_rewards, inventory=inventory, solo_img=solo_img, raid_img=raid_img, server_state=server_state, transactions=transactions, activity_logs=activity_logs, WEEKLY_QUESTS=WEEKLY_QUESTS)
+    return render_template('index.html', current_user=current_user, players=players, boss=boss, pending_rewards=pending_rewards, inventory=inventory, solo_img=solo_img, raid_img=raid_img, server_state=server_state, transactions=transactions, activity_logs=activity_logs, WEEKLY_QUESTS=WEEKLY_QUESTS. event_active_now=event_active_now)
 
 @app.route('/select_quest/<int:q_id>', methods=['POST'])
 def select_quest(q_id):
@@ -551,6 +584,9 @@ def stage_activity():
     state = ServerState.query.first()
     check_resets(user)
     
+    est_now = get_est_now()
+    current_event = state.active_event if is_event_active(est_now) else None
+    
     act_type = request.form.get('type')
     try: minutes = float(request.form.get('minutes', 0))
     except: minutes = 0.0
@@ -590,14 +626,14 @@ def stage_activity():
             hobby_mult *= buff.multiplier
             chore_mult *= buff.multiplier
 
-    if state.active_event == "Frenzy of the Warrior":
+    if current_event == "Frenzy of the Warrior":
         workout_mult *= 3.0
         hobby_mult *= 0.5
-    elif state.active_event == "Scholar’s Blessing":
+    elif current_event == "Scholar’s Blessing":
         hobby_mult *= 3.0
         workout_mult *= 0.5
     
-    if state.active_event == "The Early Bird Wormhole" and get_est_now().hour < 10:
+    if current_event == "The Early Bird Wormhole" and get_est_now().hour < 10:
         workout_mult *= 1.5; hobby_mult *= 1.5; chore_mult *= 1.5
 
     pet_multiplier = 1.0 + (user.pet_level * 0.01) if user.has_pet else 1.0
@@ -607,8 +643,6 @@ def stage_activity():
     if act_type == 'workout': base_dmg = minutes * workout_mult; user.wk_workout += minutes
     elif act_type == 'hobby': base_dmg = minutes * hobby_mult; user.wk_hobby += minutes
     elif act_type == 'chore': base_dmg = minutes * chore_mult; user.wk_chore += minutes
-
-    # ... inside stage_activity, right after calculating base_dmg ...
     
     # QUEST PROGRESSION
     if user.active_quest_id and not user.quest_completed:
@@ -629,25 +663,25 @@ def stage_activity():
                 
     if 'chores' in request.form and not user.chores_completed:
         user.chores_completed = True
-        base_dmg += 300.0 if state.active_event == "The Maid's Crusade" else 50.0
+        base_dmg += 300.0 if current_event == "The Maid's Crusade" else 50.0
 
     if base_dmg <= 0: return redirect('/')
 
-    if state.active_event == "Synergy Link" and state.last_logged_activity_type == act_type and state.last_logged_user_id != user.id:
+    if current_event == "Synergy Link" and state.last_logged_activity_type == act_type and state.last_logged_user_id != user.id:
         if boss.is_active: boss.current_hp -= 500.0
 
     state.last_logged_activity_type = act_type
     state.last_logged_user_id = user.id
 
-    if state.active_event == "Critical Strike Weekend" and random.random() <= 0.25:
+    if current_event == "Critical Strike Weekend" and random.random() <= 0.25:
         base_dmg = user.solo_monster_hp
 
-    if state.active_event == "Gambler’s Fallacy" and int(minutes) == 7:
+    if current_event == "Gambler’s Fallacy" and int(minutes) == 7:
         db.session.add(UserInventory(user_id=user.id, item_name="Gambler's Box", category_target="gold", multiplier=5.0, description="Guaranteed Box from the system!", rarity="Uncommon"))
 
     solo_dmg = base_dmg
     raid_dmg = 0
-    kill_cap = 10 if state.active_event == "Colosseum Draft" else 3
+    kill_cap = 10 if current_event == "Colosseum Draft" else 3
 
     solo_dmg = base_dmg
     raid_dmg = 0
@@ -656,13 +690,13 @@ def stage_activity():
     while solo_dmg > 0:
         # 1. DIVERT TO RAID BOSS IF ALIVE AND CAP IS MET
         if boss and boss.is_active and user.bosses_killed_today >= kill_cap:
-            if state.active_event != "Titan’s Shield":
+            if current_event != "Titan’s Shield":
                 raid_dmg += solo_dmg
             solo_dmg = 0  
             break         
 
         # 2. NECROMANCER FIX: Only 1 HP if they haven't hit the cap
-        if state.active_event == "Necromancer’s Curse" and get_est_now().weekday() == 6 and user.bosses_killed_today < kill_cap:
+        if current_event == "Necromancer’s Curse" and get_est_now().weekday() == 6 and user.bosses_killed_today < kill_cap:
             target_hp = 1.0
         else:
             target_hp = user.solo_monster_hp
@@ -682,19 +716,19 @@ def stage_activity():
             user.bosses_killed_today += 1
             user.wk_bosses += 1
             
-            gold_drop = calculate_90_percent_loot_orb(boss.world_level, state.active_event)
-            if state.active_event == "Goblin Merchant's Crash": gold_drop *= 2.0
-            if state.active_event == "Treasure Mimic Infestation": gold_drop = 10.00
+            gold_drop = calculate_90_percent_loot_orb(boss.world_level, current_event)
+            if current_event == "Goblin Merchant's Crash": gold_drop *= 2.0
+            if current_event == "Treasure Mimic Infestation": gold_drop = 10.00
             
             # --- NEW EVENT: COLOSSEUM CHAMPION ---
-            if state.active_event == "Colosseum Champion" and user.bosses_killed_today <= 3:
+            if current_event == "Colosseum Champion" and user.bosses_killed_today <= 3:
                 gold_drop *= 5.0
             # -------------------------------------
 
             user.gold_balance += gold_drop; user.wk_gold += gold_drop
             
-            if state.active_event != "Goblin Merchant's Crash":
-                loot = roll_equipment(state.active_event)
+            if current_event != "Goblin Merchant's Crash":
+                loot = roll_equipment(current_event)
                 if loot:
                     tier, item_data = loot
                     i_name, i_cat, i_mult, i_desc = item_data
@@ -703,8 +737,8 @@ def stage_activity():
                 else:
                     db.session.add(PendingReward(user_id=user.id, gold_amount=gold_drop, item_name=None))
                     
-                if state.active_event == "Meteor Shower":
-                    loot2 = roll_equipment(state.active_event)
+                if current_event == "Meteor Shower":
+                    loot2 = roll_equipment(current_event)
                     if loot2:
                         tier2, item_data2 = loot2
                         i_name2, i_cat2, i_mult2, i_desc2 = item_data2
@@ -713,18 +747,18 @@ def stage_activity():
             else:
                 db.session.add(PendingReward(user_id=user.id, gold_amount=gold_drop, item_name=None))
 
-            user.solo_monster_max = 50.0 if state.active_event == "Slime Outbreak" else 300.0
+            user.solo_monster_max = 50.0 if current_event == "Slime Outbreak" else 300.0
             user.solo_monster_hp = user.solo_monster_max
-            user.solo_monster_name = "Slime" if state.active_event == "Slime Outbreak" else random.choice(SOLO_ENEMIES)
+            user.solo_monster_name = "Slime" if current_event == "Slime Outbreak" else random.choice(SOLO_ENEMIES)
         else:
             user.solo_monster_hp -= solo_dmg
             solo_dmg = 0
 
-    if solo_dmg > 0 and state.active_event != "Titan’s Shield":
+    if solo_dmg > 0 and current_event != "Titan’s Shield":
         raid_dmg += solo_dmg
 
     if boss.is_active and raid_dmg > 0:
-        if state.active_event == "The Shadow Clone":
+        if current_event == "The Shadow Clone":
             pass
         boss.current_hp -= raid_dmg
         
@@ -796,14 +830,14 @@ def use_item(item_id):
     item = UserInventory.query.filter_by(id=item_id, user_id=user.id).first()
     if not item or item.is_active: return redirect('/')
     
-    if state.active_event == "Alchemist’s Bazaar":
+    if current_event == "Alchemist’s Bazaar":
         user.gold_balance += 2.00; user.wk_gold += 2.00
 
     if item.category_target.startswith('buff'):
         item.is_active = True
-        duration = 72 if state.active_event == "Broken Seal" else 24
+        duration = 72 if current_event == "Broken Seal" else 24
         item.expires_at = get_est_now() + timedelta(hours=duration)
-    elif item.category_target == 'damage_raid' or state.active_event == "Titan’s Shield":
+    elif item.category_target == 'damage_raid' or current_event == "Titan’s Shield":
         boss = RaidBoss.query.first()
         if boss.is_active: 
             boss.current_hp -= item.multiplier
