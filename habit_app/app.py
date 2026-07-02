@@ -515,7 +515,7 @@ def index():
             
             # Spawn the new boss and reset the timer for NEXT Monday
             boss.name = random.choice(RAID_BOSSES)
-            boss.current_hp = boss.max_hp
+            boss.current_hp = boss.max_hp * 2.0 if event_active_now and server_state.active_event == "Raid Boss Enrage" else boss.max_hp
             boss.is_active = True
             boss.next_spawn_date = get_next_monday_midnight()
             db.session.commit()
@@ -686,10 +686,15 @@ def stage_activity():
     state.last_logged_user_id = user.id
 
     if current_event == "Critical Strike Weekend" and random.random() <= 0.25:
-        base_dmg = user.solo_monster_hp
+        base_dmg += user.solo_monster_hp # Instantly kills the solo boss without deleting overflow damage!
 
     if current_event == "Gambler’s Fallacy" and int(minutes) == 7:
-        db.session.add(UserInventory(user_id=user.id, item_name="Gambler's Box", category_target="gold", multiplier=5.0, description="Guaranteed Box from the system!", rarity="Uncommon"))
+        loot = roll_equipment(current_event)
+        if loot:
+            tier, item_data = loot
+            i_name, i_cat, i_mult, i_desc = item_data
+            db.session.add(UserInventory(user_id=user.id, item_name=i_name, category_target=i_cat, multiplier=i_mult, description=i_desc, rarity=tier))
+            db.session.add(PendingReward(user_id=user.id, gold_amount=0.0, item_name=f"[{tier}] {i_name} (Lucky 7s!)"))
 
     solo_dmg = base_dmg
     raid_dmg = 0
@@ -770,16 +775,15 @@ def stage_activity():
         raid_dmg += solo_dmg
 
     if boss.is_active and raid_dmg > 0:
-        if current_event == "The Shadow Clone":
-            pass
-        boss.current_hp -= raid_dmg
+        if current_event != "The Shadow Clone":
+            boss.current_hp -= raid_dmg
         
         # Boss dies mid-week. It stays dead until Monday reset.
         if boss.current_hp <= 0:
             boss.is_active = False
             for u in User.query.all():
                 raid_drop = calculate_raid_boss_orb()
-                raid_loot = roll_raid_equipment()
+                raid_loot = ("Legendary", random.choice(LEGENDARY_ITEMS)) if current_event == "Raid Boss Enrage" else roll_raid_equipment()
                 r_tier, r_data = raid_loot
                 r_name, r_cat, r_mult, r_desc = r_data
                 db.session.add(UserInventory(user_id=u.id, item_name=r_name, category_target=r_cat, multiplier=r_mult, description=r_desc, rarity=r_tier))
@@ -862,7 +866,7 @@ def use_item(item_id):
                 boss.is_active = False
                 for u in User.query.all():
                     raid_drop = calculate_raid_boss_orb()
-                    raid_loot = roll_raid_equipment()
+                    raid_loot = ("Legendary", random.choice(LEGENDARY_ITEMS)) if current_event == "Raid Boss Enrage" else roll_raid_equipment()
                     r_tier, r_data = raid_loot
                     r_name, r_cat, r_mult, r_desc = r_data
                     db.session.add(UserInventory(user_id=u.id, item_name=r_name, category_target=r_cat, multiplier=r_mult, description=r_desc, rarity=r_tier))
