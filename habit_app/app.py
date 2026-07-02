@@ -649,7 +649,7 @@ def stage_activity():
     raid_dmg = 0
     kill_cap = 10 if state.active_event == "Colosseum Draft" else 3
 
-   solo_dmg = base_dmg
+    solo_dmg = base_dmg
     raid_dmg = 0
     kill_cap = 3 # Lock the cap to 3 permanently
 
