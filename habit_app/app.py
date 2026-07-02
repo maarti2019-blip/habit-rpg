@@ -534,7 +534,7 @@ def index():
 @app.route('/select_quest/<int:q_id>', methods=['POST'])
 def select_quest(q_id):
     if 'user_id' not in session: return redirect('/')
-    user = User.query.get(session['user_id'],
+    user = User.query.get(session['user_id']),
     if not user.active_quest_id:
         user.active_quest_id = q_id
         db.session.commit()
