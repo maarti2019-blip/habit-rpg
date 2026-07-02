@@ -269,20 +269,20 @@
         </div>
     </div>
 
-    {% if server_state and server_state.active_event %}
-        {% set skin_class = "" %}
-        {% if "Warrior" in server_state.active_event %}{% set skin_class = "evt-warrior" %}{% endif %}
-        {% if "Blessing" in server_state.active_event %}{% set skin_class = "evt-blessing" %}{% endif %}
-        {% if "Crusade" in server_state.active_event %}{% set skin_class = "evt-crusade" %}{% endif %}
-        {% if "Shower" in server_state.active_event or "Vault" in server_state.active_event %}{% set skin_class = "evt-gacha" %}{% endif %}
-        {% if "Fog" in server_state.active_event %}{% set skin_class = "evt-fog" %}{% endif %}
+    {% if event_active_now and server_state and server_state.active_event %}
+    {% set skin_class = "" %}
+    {% if "Warrior" in server_state.active_event %}{% set skin_class = "evt-warrior" %}{% endif %}
+    {% if "Blessing" in server_state.active_event %}{% set skin_class = "evt-blessing" %}{% endif %}
+    {% if "Crusade" in server_state.active_event %}{% set skin_class = "evt-crusade" %}{% endif %}
+    {% if "Shower" in server_state.active_event or "Vault" in server_state.active_event %}{% set skin_class = "evt-gacha" %}{% endif %}
+    {% if "Fog" in server_state.active_event %}{% set skin_class = "evt-fog" %}{% endif %}
 
-        <div class="card {{ skin_class }}" style="text-align: center; padding: 20px;">
-            <h2 style="margin: 0; color: var(--accent-primary); text-transform: uppercase; letter-spacing: 1px;">⚡ WORLD EVENT ACTIVE ⚡</h2>
-            <h3 style="margin: 8px 0; color: #fff;">{{ server_state.active_event }}</h3>
-            <p style="margin: 0; color: #e2e8f0; font-style: italic;">{{ server_state.event_description }}</p>
-        </div>
-    {% endif %}
+    <div class="card {{ skin_class }}" style="text-align: center; padding: 20px;">
+        <h2 style="margin: 0; color: var(--accent-primary); text-transform: uppercase; letter-spacing: 1px;">⚡ WORLD EVENT ACTIVE ⚡</h2>
+        <h3 style="margin: 8px 0; color: #fff;">{{ server_state.active_event }}</h3>
+        <p style="margin: 0; color: #e2e8f0; font-style: italic;">{{ server_state.event_description }}</p>
+    </div>
+{% endif %}
 
     <div class="card">
         <div class="flex-grid">
