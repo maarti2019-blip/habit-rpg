@@ -100,18 +100,30 @@ def is_event_active(est_now):
     - It is Saturday or Sunday.
     - It is a US Federal Holiday.
     - It is the day BEFORE a weekend or holiday AND it is past 5:00 PM (17:00).
+    - It is Friday AND Thursday was a holiday (bridges 4-day weekends).
     """
-    us_holidays = holidays.US(years=est_now.year)
+    # Fix 1: Remove the years= limitation so New Year's Eve doesn't break
+    us_holidays = holidays.US() 
     
+    # 1. Is today a weekend? (5 = Saturday, 6 = Sunday)
     if est_now.weekday() in [5, 6]:
         return True
         
+    # 2. Is today a Federal Holiday?
     if est_now.date() in us_holidays:
         return True
         
+    # 3. Fix 2: Bridge the "Friday Gap" 
+    # If yesterday was a Thursday holiday, keep event active all day Friday
+    yesterday = est_now.date() - timedelta(days=1)
+    if est_now.weekday() == 4 and yesterday in us_holidays:
+        return True
+        
+    # 4. Is tomorrow a weekend or holiday?
     tomorrow = est_now.date() + timedelta(days=1)
     is_tomorrow_off = (tomorrow.weekday() == 5 or tomorrow in us_holidays)
     
+    # 5. Turn on at 5 PM the day before
     if is_tomorrow_off and est_now.hour >= 17:
         return True
         
@@ -829,6 +841,9 @@ def use_item(item_id):
     state = ServerState.query.first()
     item = UserInventory.query.filter_by(id=item_id, user_id=user.id).first()
     if not item or item.is_active: return redirect('/')
+
+    est_now = get_est_now()
+    current_event = state.active_event if is_event_active(est_now) else None
     
     if current_event == "Alchemist’s Bazaar":
         user.gold_balance += 2.00; user.wk_gold += 2.00
@@ -883,18 +898,5 @@ def initialize_database():
             db.session.add(RaidBoss(name='Dragon'))
         db.session.commit()
 
-def initialize_database():
-    with app.app_context():
-        # This command tells SQLAlchemy to look at your models 
-        # (like the User class with __tablename__ = 'users')
-        # and create the corresponding tables in your database.
-        db.create_all() 
-        
-        # Now add the default users if they aren't there
-        for default_user in ['Alaina', 'Matthew']:
-            if not User.query.filter_by(username=default_user).first():
-                db.session.add(User(username=default_user))
-        db.session.commit()
-        
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
