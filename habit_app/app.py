@@ -338,20 +338,20 @@ def get_monster_image(monster_name):
 
 def manage_world_events():
     state = ServerState.query.first()
-    if not state: return
-    now = get_est_now()
-    is_event_active(est_now) == (now.weekday() == 4 and now.hour >= 17) or now.weekday() in [5, 6]
-    
-    # 1. Check if the event should be active right now using our new logic
-    event_should_be_active = is_event_active(get_est_now())
+    if not state:
+        return
 
-    # 2. If it's time for an event but we don't have one, roll a new one!
+    # Use your new helper function to determine if an event should be active
+    est_now = get_est_now()
+    event_should_be_active = is_event_active(est_now)
+
+    # If it's time for an event but we don't have one, roll for it
     if event_should_be_active and not state.active_event:
         evt = random.choice(ALL_EVENTS)
         state.active_event, state.event_description = evt
         db.session.commit()
-        
-    # 3. If the weekend/holiday is over but an event is still lingering, wipe it!
+    
+    # If the time is up but an event is still active, clear it
     elif not event_should_be_active and state.active_event:
         state.active_event = None
         state.event_description = None
