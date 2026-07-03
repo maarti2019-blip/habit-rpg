@@ -677,6 +677,19 @@ def stage_activity():
         user.chores_completed = True
         base_dmg += 300.0 if current_event == "The Maid's Crusade" else 50.0
 
+    if current_event == "Gambler’s Fallacy" and int(minutes) == 7:
+        loot = roll_equipment(current_event)
+        if not loot:
+            loot = ("Common", random.choice(COMMON_ITEMS))
+            
+        tier, item_data = loot
+        i_name, i_cat, i_mult, i_desc = item_data
+        db.session.add(UserInventory(user_id=user.id, item_name=i_name, category_target=i_cat, multiplier=i_mult, description=i_desc, rarity=tier))
+        db.session.add(PendingReward(user_id=user.id, gold_amount=0.0, item_name=f"[{tier}] {i_name} (Lucky 7s!)"))
+        
+        # Save the item to the database immediately so it isn't lost if damage is 0!
+        db.session.commit()
+        
     if base_dmg <= 0: return redirect('/')
 
     if current_event == "Synergy Link" and state.last_logged_activity_type == act_type and state.last_logged_user_id != user.id:
@@ -687,16 +700,6 @@ def stage_activity():
 
     if current_event == "Critical Strike Weekend" and random.random() <= 0.25:
         base_dmg += user.solo_monster_hp # Instantly kills the solo boss without deleting overflow damage!
-
-    if current_event == "Gambler’s Fallacy" and int(minutes) == 7:
-        loot = roll_equipment(current_event)
-        if not loot:
-            loot = ("Common", random.choice(COMMON_ITEMS))
-            
-            tier, item_data = loot
-            i_name, i_cat, i_mult, i_desc = item_data
-            db.session.add(UserInventory(user_id=user.id, item_name=i_name, category_target=i_cat, multiplier=i_mult, description=i_desc, rarity=tier))
-            db.session.add(PendingReward(user_id=user.id, gold_amount=0.0, item_name=f"[{tier}] {i_name} (Lucky 7s!)"))
 
     solo_dmg = base_dmg
     raid_dmg = 0
