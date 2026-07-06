@@ -495,9 +495,12 @@ def index():
         if spawn_time.tzinfo is None:
             spawn_time = spawn_time.replace(tzinfo=ZoneInfo("America/New_York"))
 
-        # If it's time for the Monday reset (or past due)
+# If it's time for the Monday reset (or past due)
         if get_est_now() >= spawn_time:
             was_defeated = (boss.current_hp <= 0 or not boss.is_active)
+            
+            # 1. Roll the new boss name exactly ONCE
+            new_boss_name = random.choice(RAID_BOSSES)
             
             if was_defeated:
                 boss.world_level += 1
@@ -509,16 +512,19 @@ def index():
                     if player.solo_monster_hp > player.solo_monster_max:
                         player.solo_monster_hp = player.solo_monster_max
                         
-                notify_discord(f"🔄 **NEW WEEK!** You defeated the previous boss. The world grows stronger! A new **{random.choice(RAID_BOSSES)}** (Lvl {boss.world_level}) has arrived!")
+                # 2. Pass the saved variable to the webhook
+                notify_discord(f"🔄 **NEW WEEK!** You defeated the previous boss. The world grows stronger! A new **{new_boss_name}** (Lvl {boss.world_level}) has arrived!")
             else:
-                notify_discord(f"🔄 **NEW WEEK!** The previous boss fled before you could defeat it! The World Level remains at {boss.world_level}. A new **{random.choice(RAID_BOSSES)}** has appeared!")
+                # 2. Pass the saved variable to the webhook
+                notify_discord(f"🔄 **NEW WEEK!** The previous boss fled before you could defeat it! The World Level remains at {boss.world_level}. A new **{new_boss_name}** has appeared!")
             
-            # Spawn the new boss and reset the timer for NEXT Monday
-            boss.name = random.choice(RAID_BOSSES)
+            # 3. Save that exact same name to the database and reset the timer
+            boss.name = new_boss_name
             boss.current_hp = boss.max_hp * 2.0 if event_active_now and server_state.active_event == "Raid Boss Enrage" else boss.max_hp
             boss.is_active = True
             boss.next_spawn_date = get_next_monday_midnight()
             db.session.commit()
+            
 
     pending_rewards = PendingReward.query.filter_by(user_id=current_user.id).all() if current_user else []
     inventory = UserInventory.query.filter_by(user_id=current_user.id).all() if current_user else []
@@ -546,7 +552,7 @@ def index():
 @app.route('/select_quest/<int:q_id>', methods=['POST'])
 def select_quest(q_id):
     if 'user_id' not in session: return redirect('/')
-    user = User.query.get(session['user_id']),
+    user = User.query.get(session['user_id'])
     if not user.active_quest_id:
         user.active_quest_id = q_id
         db.session.commit()
