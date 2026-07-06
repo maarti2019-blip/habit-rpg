@@ -553,6 +553,9 @@ def index():
 def select_quest(q_id):
     if 'user_id' not in session: return redirect('/')
     user = User.query.get(session['user_id'])
+    if not user:
+        session.pop('user_id', None) # Clear the dead session cookie
+        return redirect('/')
     if not user.active_quest_id:
         user.active_quest_id = q_id
         db.session.commit()
