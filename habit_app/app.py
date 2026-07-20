@@ -626,6 +626,8 @@ def index():
         current_user.pet_xp = 0
         db.session.commit()
 
+    active_spoils = RaidSpoils.query.filter_by(is_active=True).first()
+    
     return render_template('index.html', current_user=current_user, players=players, boss=boss, pending_rewards=pending_rewards, inventory=inventory, solo_img=solo_img, raid_img=raid_img, server_state=server_state, transactions=transactions, activity_logs=activity_logs, WEEKLY_QUESTS=WEEKLY_QUESTS, event_active_now=event_active_now, active_spoils=active_spoils)
 
 @app.route('/select_quest/<int:q_id>', methods=['POST'])
