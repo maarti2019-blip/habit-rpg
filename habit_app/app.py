@@ -859,7 +859,8 @@ def stage_activity():
             else:
                 db.session.add(PendingReward(user_id=user.id, gold_amount=gold_drop, item_name=None))
 
-            user.solo_monster_max = 50.0 if current_event == "Slime Outbreak" else 300.0
+            scaled_hp = round(300.0 * (1.03 ** (boss.world_level - 1)), 1)
+            user.solo_monster_max = 50.0 if current_event == "Slime Outbreak" else scaled_hp
             user.solo_monster_hp = user.solo_monster_max
             user.solo_monster_name = "Slime" if current_event == "Slime Outbreak" else random.choice(SOLO_ENEMIES)
         else:
@@ -876,7 +877,7 @@ def stage_activity():
         
         # Boss dies mid-week. It stays dead until Monday reset.
         if boss.current_hp <= 0:
-            boss.is_active = False
+            handle_boss_death(current_event)
             for u in User.query.all():
                 raid_drop = calculate_raid_boss_orb()
                 raid_loot = ("Legendary", random.choice(LEGENDARY_ITEMS)) if current_event == "Raid Boss Enrage" else roll_raid_equipment()
@@ -999,7 +1000,7 @@ def use_item(item_id):
             
             # Boss dies mid-week. It stays dead until Monday reset.
             if boss.current_hp <= 0:
-                boss.is_active = False
+                handle_boss_death(current_event)
                 for u in User.query.all():
                     raid_drop = calculate_raid_boss_orb()
                     raid_loot = ("Legendary", random.choice(LEGENDARY_ITEMS)) if current_event == "Raid Boss Enrage" else roll_raid_equipment()
