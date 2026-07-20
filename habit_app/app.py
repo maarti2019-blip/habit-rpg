@@ -502,7 +502,7 @@ def handle_boss_death(current_event):
     # Shuffle so the guaranteed good item isn't always choice #3
     choices = [loot1, loot2, loot3]
     random.shuffle(choices)
-    golds = [round(random.uniform(15.0, 40.0), 2) for _ in range(3)]
+    golds = [round(random.uniform(15.0, 30.0), 2) for _ in range(3)]
     
     # Create the Spoils entry
     if winner and loser:
