@@ -268,6 +268,8 @@ class User(db.Model):
     pet_level = db.Column(db.Integer, default=1)
     pet_xp = db.Column(db.Float, default=0.0)
 
+    raid_dmg_contributed = db.Column(db.Float, default=0.0)
+
 class RaidBoss(db.Model):
     __tablename__ = 'raid_boss'
     id = db.Column(db.Integer, primary_key=True)
@@ -292,6 +294,29 @@ class PendingReward(db.Model):
     user_id = db.Column(db.Integer, nullable=False)
     gold_amount = db.Column(db.Float, default=0.0)
     item_name = db.Column(db.String(100), nullable=True)
+
+class RaidSpoils(db.Model):
+    __tablename__ = 'raid_spoils'
+    id = db.Column(db.Integer, primary_key=True)
+    is_active = db.Column(db.Boolean, default=True)
+    winner_id = db.Column(db.Integer)
+    loser_id = db.Column(db.Integer)
+    winner_picks_left = db.Column(db.Integer, default=2)
+    
+    c1_gold = db.Column(db.Float)
+    c1_tier = db.Column(db.String(50))
+    c1_item = db.Column(db.String(100))
+    c1_claimed_by = db.Column(db.Integer, nullable=True)
+
+    c2_gold = db.Column(db.Float)
+    c2_tier = db.Column(db.String(50))
+    c2_item = db.Column(db.String(100))
+    c2_claimed_by = db.Column(db.Integer, nullable=True)
+
+    c3_gold = db.Column(db.Float)
+    c3_tier = db.Column(db.String(50))
+    c3_item = db.Column(db.String(100))
+    c3_claimed_by = db.Column(db.Integer, nullable=True)
 
 class UserInventory(db.Model):
     __tablename__ = 'user_inventory'
@@ -443,6 +468,60 @@ def check_resets(user):
         
     db.session.commit()
 
+def handle_boss_death(current_event):
+    boss = RaidBoss.query.first()
+    boss.is_active = False
+    
+    users = User.query.all()
+    
+    # --- 1. THE REGULAR ORB & LOOT (For Everyone) ---
+    for u in users:
+        raid_drop = calculate_raid_boss_orb()
+        raid_loot = ("Legendary", random.choice(LEGENDARY_ITEMS)) if current_event == "Raid Boss Enrage" else roll_raid_equipment()
+        r_tier, r_data = raid_loot
+        r_name, r_cat, r_mult, r_desc = r_data
+        
+        db.session.add(UserInventory(user_id=u.id, item_name=r_name, category_target=r_cat, multiplier=r_mult, description=r_desc, rarity=r_tier))
+        db.session.add(PendingReward(user_id=u.id, gold_amount=raid_drop, item_name=f"[Raid Boss Kill] [{r_tier}] {r_name}"))
+        u.gold_balance += raid_drop
+        u.wk_gold += raid_drop
+
+    # --- 2. THE NEW SPOILS OF WAR BONUS (Damage Based) ---
+    sorted_users = sorted(users, key=lambda u: u.raid_dmg_contributed, reverse=True)
+    winner = sorted_users[0] if len(sorted_users) > 0 else None
+    loser = sorted_users[1] if len(sorted_users) > 1 else winner
+
+    # Roll 3 items. Force one to be at least Rare.
+    loot1 = roll_raid_equipment()
+    loot2 = roll_raid_equipment()
+    loot3 = random.choice([
+        ("Rare", random.choice(RARE_ITEMS)), 
+        ("Legendary", random.choice(LEGENDARY_ITEMS))
+    ])
+    
+    # Shuffle so the guaranteed good item isn't always choice #3
+    choices = [loot1, loot2, loot3]
+    random.shuffle(choices)
+    golds = [round(random.uniform(15.0, 40.0), 2) for _ in range(3)]
+    
+    # Create the Spoils entry
+    if winner and loser:
+        spoils = RaidSpoils(
+            winner_id=winner.id, loser_id=loser.id,
+            c1_tier=choices[0][0], c1_item=choices[0][1][0], c1_gold=golds[0],
+            c2_tier=choices[1][0], c2_item=choices[1][1][0], c2_gold=golds[1],
+            c3_tier=choices[2][0], c3_item=choices[2][1][0], c3_gold=golds[2]
+        )
+        db.session.add(spoils)
+
+    # Reset damage trackers for the next boss
+    for u in users:
+        u.raid_dmg_contributed = 0.0
+
+    notify_discord(f"🌋 **{boss.name.upper()} DESTROYED!** Both players received a Raid Boss Orb! {winner.username} dealt the most damage and gets first pick of the Bonus Loot Chests!")
+    db.session.commit()
+# -----------------------------------
+
 # --- Routes ---
 def get_client_ip():
     if request.headers.get('X-Forwarded-For'): return request.headers.get('X-Forwarded-For').split(',')[0].strip()
@@ -547,7 +626,7 @@ def index():
         current_user.pet_xp = 0
         db.session.commit()
 
-    return render_template('index.html', current_user=current_user, players=players, boss=boss, pending_rewards=pending_rewards, inventory=inventory, solo_img=solo_img, raid_img=raid_img, server_state=server_state, transactions=transactions, activity_logs=activity_logs, WEEKLY_QUESTS=WEEKLY_QUESTS, event_active_now=event_active_now)
+    return render_template('index.html', current_user=current_user, players=players, boss=boss, pending_rewards=pending_rewards, inventory=inventory, solo_img=solo_img, raid_img=raid_img, server_state=server_state, transactions=transactions, activity_logs=activity_logs, WEEKLY_QUESTS=WEEKLY_QUESTS, event_active_now=event_active_now, active_spoils=active_spoils)
 
 @app.route('/select_quest/<int:q_id>', methods=['POST'])
 def select_quest(q_id):
@@ -791,6 +870,7 @@ def stage_activity():
     if boss.is_active and raid_dmg > 0:
         if current_event != "The Shadow Clone":
             boss.current_hp -= raid_dmg
+            user.raid_dmg_contributed += raid_dmg
         
         # Boss dies mid-week. It stays dead until Monday reset.
         if boss.current_hp <= 0:
@@ -831,6 +911,45 @@ def claim_gacha():
         total_gold = sum(r.gold_amount for r in rewards)
         PendingReward.query.filter_by(user_id=user.id).delete()
         db.session.commit()
+    return redirect('/')
+
+@app.route('/claim_spoil/<int:choice_num>', methods=['POST'])
+def claim_spoil(choice_num):
+    if 'user_id' not in session: return redirect('/')
+    user = User.query.get(session['user_id'])
+    spoils = RaidSpoils.query.filter_by(is_active=True).first()
+    
+    if not spoils: return redirect('/')
+    
+    # Enforce Turn Order: Loser cannot pick while winner still has picks left
+    if user.id == spoils.loser_id and spoils.winner_picks_left > 0:
+        return redirect('/')
+        
+    # Map the choice to the correct database column
+    if choice_num == 1 and spoils.c1_claimed_by is None:
+        spoils.c1_claimed_by = user.id
+        db.session.add(UserInventory(user_id=user.id, item_name=spoils.c1_item, category_target="Spoils", rarity=spoils.c1_tier))
+        db.session.add(PendingReward(user_id=user.id, gold_amount=spoils.c1_gold, item_name=f"[{spoils.c1_tier}] {spoils.c1_item}"))
+    elif choice_num == 2 and spoils.c2_claimed_by is None:
+        spoils.c2_claimed_by = user.id
+        db.session.add(UserInventory(user_id=user.id, item_name=spoils.c2_item, category_target="Spoils", rarity=spoils.c2_tier))
+        db.session.add(PendingReward(user_id=user.id, gold_amount=spoils.c2_gold, item_name=f"[{spoils.c2_tier}] {spoils.c2_item}"))
+    elif choice_num == 3 and spoils.c3_claimed_by is None:
+        spoils.c3_claimed_by = user.id
+        db.session.add(UserInventory(user_id=user.id, item_name=spoils.c3_item, category_target="Spoils", rarity=spoils.c3_tier))
+        db.session.add(PendingReward(user_id=user.id, gold_amount=spoils.c3_gold, item_name=f"[{spoils.c3_tier}] {spoils.c3_item}"))
+    else:
+        return redirect('/')
+
+    # Deduct winner pick count
+    if user.id == spoils.winner_id:
+        spoils.winner_picks_left -= 1
+        
+    # Close event if all three chests are claimed
+    if spoils.c1_claimed_by and spoils.c2_claimed_by and spoils.c3_claimed_by:
+        spoils.is_active = False
+
+    db.session.commit()
     return redirect('/')
 
 @app.route('/spend_gold', methods=['POST'])
@@ -874,6 +993,7 @@ def use_item(item_id):
         boss = RaidBoss.query.first()
         if boss.is_active: 
             boss.current_hp -= item.multiplier
+            user.raid_dmg_contributed += item.multiplier
             
             # Boss dies mid-week. It stays dead until Monday reset.
             if boss.current_hp <= 0:
