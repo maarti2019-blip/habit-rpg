@@ -490,11 +490,21 @@
         <h2>🎁 RAID SPOILS OF WAR AVAILABLE! 🎁</h2>
         <p>The Raid Boss has fallen! Choose your rewards below.</p>
     
-        {% if current_user.id == active_spoils.loser_id and active_spoils.winner_picks_left > 0 %}
-            <p style="color: #ff6b6b;">⏳ Waiting for the your friend to finish their picks...</p>
+        <!-- Dynamic Status Message -->
+        {% if current_user.id == active_spoils.winner_id and active_spoils.winner_picks_left > 0 %}
+            <p style="color: #4ade80; font-weight: bold;">👑 You dealt the most damage! Picks remaining: {{ active_spoils.winner_picks_left }}</p>
+        {% elif current_user.id == active_spoils.winner_id and active_spoils.winner_picks_left == 0 %}
+            <p style="color: #cbd5e1;">✅ You have claimed your 2 bonus chests! Waiting for your partner to take the final chest...</p>
+        {% elif current_user.id == active_spoils.loser_id and active_spoils.winner_picks_left > 0 %}
+            <p style="color: #ff6b6b;">⏳ Waiting for your partner to finish their 2 picks...</p>
+        {% elif current_user.id == active_spoils.loser_id and active_spoils.winner_picks_left == 0 %}
+            <p style="color: #4ade80; font-weight: bold;">🎯 It's your turn! Claim the final remaining chest below.</p>
         {% endif %}
 
-        <div style="display: flex; justify-content: center; gap: 20px; margin-top: 15px;">
+        <!-- Check if the current user is allowed to make a pick right now -->
+        {% set can_pick = (current_user.id == active_spoils.winner_id and active_spoils.winner_picks_left > 0) or (current_user.id == active_spoils.loser_id and active_spoils.winner_picks_left == 0) %}
+
+        <div style="display: flex; justify-content: center; gap: 20px; margin-top: 15px; flex-wrap: wrap;">
             <!-- Choice 1 -->
             <div style="background: #222; padding: 15px; border-radius: 8px; width: 250px; border: 1px solid {% if active_spoils.c1_claimed_by %}#555{% else %}gold{% endif %};">
                 <h3>Choice 1</h3>
@@ -503,9 +513,11 @@
                 {% else %}
                     <p>💰 ${{ "%.2f"|format(active_spoils.c1_gold) }}</p>
                     <p>📦 <strong>[{{ active_spoils.c1_tier }}]</strong><br>{{ active_spoils.c1_item }}</p>
-                    <form action="/claim_spoil/1" method="POST">
-                        <button type="submit" style="background: gold; color: black; font-weight: bold; padding: 8px 15px; border: none; border-radius: 5px; cursor: pointer;">Select Chest 1</button>
-                    </form>
+                    {% if can_pick %}
+                        <form action="/claim_spoil/1" method="POST">
+                            <button type="submit" style="background: gold; color: black; font-weight: bold; padding: 8px 15px; border: none; border-radius: 5px; cursor: pointer;">Select Chest 1</button>
+                        </form>
+                    {% endif %}
                 {% endif %}
             </div>
 
@@ -517,9 +529,11 @@
                 {% else %}
                     <p>💰 ${{ "%.2f"|format(active_spoils.c2_gold) }}</p>
                     <p>📦 <strong>[{{ active_spoils.c2_tier }}]</strong><br>{{ active_spoils.c2_item }}</p>
-                    <form action="/claim_spoil/2" method="POST">
-                        <button type="submit" style="background: gold; color: black; font-weight: bold; padding: 8px 15px; border: none; border-radius: 5px; cursor: pointer;">Select Chest 2</button>
-                    </form>
+                    {% if can_pick %}
+                        <form action="/claim_spoil/2" method="POST">
+                            <button type="submit" style="background: gold; color: black; font-weight: bold; padding: 8px 15px; border: none; border-radius: 5px; cursor: pointer;">Select Chest 2</button>
+                        </form>
+                    {% endif %}
                 {% endif %}
             </div>
 
@@ -531,9 +545,11 @@
                 {% else %}
                     <p>💰 ${{ "%.2f"|format(active_spoils.c3_gold) }}</p>
                     <p>📦 <strong>[{{ active_spoils.c3_tier }}]</strong><br>{{ active_spoils.c3_item }}</p>
-                    <form action="/claim_spoil/3" method="POST">
-                        <button type="submit" style="background: gold; color: black; font-weight: bold; padding: 8px 15px; border: none; border-radius: 5px; cursor: pointer;">Select Chest 3</button>
-                    </form>
+                    {% if can_pick %}
+                        <form action="/claim_spoil/3" method="POST">
+                            <button type="submit" style="background: gold; color: black; font-weight: bold; padding: 8px 15px; border: none; border-radius: 5px; cursor: pointer;">Select Chest 3</button>
+                        </form>
+                    {% endif %}
                 {% endif %}
             </div>
         </div>
