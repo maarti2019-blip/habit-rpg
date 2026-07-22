@@ -417,6 +417,14 @@ def roll_equipment(event_name=None):
         elif roll <= 26.5: return ("Common", random.choice(COMMON_ITEMS))
     return None
 
+def get_item_data_by_name(target_name):
+    # Searches all master loot lists to recover missing stats
+    for loot_pool in [COMMON_ITEMS, UNCOMMON_ITEMS, RARE_ITEMS, LEGENDARY_ITEMS]:
+        for item in loot_pool:
+            if item[0] == target_name:
+                return item[1], item[2], item[3] # Returns: category, multiplier, description
+    return "unknown", 1.0, "A mysterious item with unknown origins."
+
 def roll_raid_equipment():
     roll = random.random() * 100
     if roll <= 10.0: return ("Legendary", random.choice(LEGENDARY_ITEMS))
@@ -918,19 +926,25 @@ def claim_spoil(choice_num):
     if user.id == spoils.loser_id and spoils.winner_picks_left > 0:
         return redirect('/')
         
-    # Map the choice to the correct database column
+    # Map the choice to the correct database column and recover missing data
     if choice_num == 1 and spoils.c1_claimed_by is None:
         spoils.c1_claimed_by = user.id
-        db.session.add(UserInventory(user_id=user.id, item_name=spoils.c1_item, category_target="Spoils", rarity=spoils.c1_tier))
+        cat, mult, desc = get_item_data_by_name(spoils.c1_item)
+        db.session.add(UserInventory(user_id=user.id, item_name=spoils.c1_item, category_target=cat, multiplier=mult, description=desc, rarity=spoils.c1_tier))
         db.session.add(PendingReward(user_id=user.id, gold_amount=spoils.c1_gold, item_name=f"[{spoils.c1_tier}] {spoils.c1_item}"))
+        
     elif choice_num == 2 and spoils.c2_claimed_by is None:
         spoils.c2_claimed_by = user.id
-        db.session.add(UserInventory(user_id=user.id, item_name=spoils.c2_item, category_target="Spoils", rarity=spoils.c2_tier))
+        cat, mult, desc = get_item_data_by_name(spoils.c2_item)
+        db.session.add(UserInventory(user_id=user.id, item_name=spoils.c2_item, category_target=cat, multiplier=mult, description=desc, rarity=spoils.c2_tier))
         db.session.add(PendingReward(user_id=user.id, gold_amount=spoils.c2_gold, item_name=f"[{spoils.c2_tier}] {spoils.c2_item}"))
+        
     elif choice_num == 3 and spoils.c3_claimed_by is None:
         spoils.c3_claimed_by = user.id
-        db.session.add(UserInventory(user_id=user.id, item_name=spoils.c3_item, category_target="Spoils", rarity=spoils.c3_tier))
+        cat, mult, desc = get_item_data_by_name(spoils.c3_item)
+        db.session.add(UserInventory(user_id=user.id, item_name=spoils.c3_item, category_target=cat, multiplier=mult, description=desc, rarity=spoils.c3_tier))
         db.session.add(PendingReward(user_id=user.id, gold_amount=spoils.c3_gold, item_name=f"[{spoils.c3_tier}] {spoils.c3_item}"))
+        
     else:
         return redirect('/')
 
