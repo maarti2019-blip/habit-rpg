@@ -690,6 +690,7 @@ def stage_activity():
     current_event = state.active_event if is_event_active(est_now) else None
     
     act_type = request.form.get('type')
+    if 'chores' in request.form: act_type = 'chore'
     try: minutes = float(request.form.get('minutes', 0))
     except: minutes = 0.0
     desc = request.form.get('description', '')
@@ -878,17 +879,6 @@ def stage_activity():
         # Boss dies mid-week. It stays dead until Monday reset.
         if boss.current_hp <= 0:
             handle_boss_death(current_event)
-            for u in User.query.all():
-                raid_drop = calculate_raid_boss_orb()
-                raid_loot = ("Legendary", random.choice(LEGENDARY_ITEMS)) if current_event == "Raid Boss Enrage" else roll_raid_equipment()
-                r_tier, r_data = raid_loot
-                r_name, r_cat, r_mult, r_desc = r_data
-                db.session.add(UserInventory(user_id=u.id, item_name=r_name, category_target=r_cat, multiplier=r_mult, description=r_desc, rarity=r_tier))
-                db.session.add(PendingReward(user_id=u.id, gold_amount=raid_drop, item_name=f"[Raid Boss Kill] [{r_tier}] {r_name}"))
-                u.gold_balance += raid_drop
-                u.wk_gold += raid_drop
-            
-            # The Discord notification belongs HERE, right after the loot drops!
             notify_discord(f"🌋 **{boss.name.upper()} DESTROYED!** Both players received a Raid Boss Orb and guaranteed high-tier loot! A new boss will spawn on Monday.")
 
     db.session.commit()
@@ -1001,15 +991,6 @@ def use_item(item_id):
             # Boss dies mid-week. It stays dead until Monday reset.
             if boss.current_hp <= 0:
                 handle_boss_death(current_event)
-                for u in User.query.all():
-                    raid_drop = calculate_raid_boss_orb()
-                    raid_loot = ("Legendary", random.choice(LEGENDARY_ITEMS)) if current_event == "Raid Boss Enrage" else roll_raid_equipment()
-                    r_tier, r_data = raid_loot
-                    r_name, r_cat, r_mult, r_desc = r_data
-                    db.session.add(UserInventory(user_id=u.id, item_name=r_name, category_target=r_cat, multiplier=r_mult, description=r_desc, rarity=r_tier))
-                    db.session.add(PendingReward(user_id=u.id, gold_amount=raid_drop, item_name=f"[Raid Boss Kill] [{r_tier}] {r_name}"))
-                    u.gold_balance += raid_drop
-                    u.wk_gold += raid_drop
                 notify_discord(f"🌋 **{boss.name.upper()} ANNIHILATED BY AN ITEM!** Both players received a Raid Boss Orb and guaranteed high-tier loot! A new boss will spawn on Monday.")
                 
         db.session.delete(item)
