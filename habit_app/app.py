@@ -933,17 +933,26 @@ def claim_spoil(choice_num):
         db.session.add(UserInventory(user_id=user.id, item_name=spoils.c1_item, category_target=cat, multiplier=mult, description=desc, rarity=spoils.c1_tier))
         db.session.add(PendingReward(user_id=user.id, gold_amount=spoils.c1_gold, item_name=f"[{spoils.c1_tier}] {spoils.c1_item}"))
         
+        user.gold_balance += spoils.c1_gold
+        user.wk_gold += spoils.c1_gold
+        
     elif choice_num == 2 and spoils.c2_claimed_by is None:
         spoils.c2_claimed_by = user.id
         cat, mult, desc = get_item_data_by_name(spoils.c2_item)
         db.session.add(UserInventory(user_id=user.id, item_name=spoils.c2_item, category_target=cat, multiplier=mult, description=desc, rarity=spoils.c2_tier))
         db.session.add(PendingReward(user_id=user.id, gold_amount=spoils.c2_gold, item_name=f"[{spoils.c2_tier}] {spoils.c2_item}"))
+                
+        user.gold_balance += spoils.c1_gold
+        user.wk_gold += spoils.c1_gold
         
     elif choice_num == 3 and spoils.c3_claimed_by is None:
         spoils.c3_claimed_by = user.id
         cat, mult, desc = get_item_data_by_name(spoils.c3_item)
         db.session.add(UserInventory(user_id=user.id, item_name=spoils.c3_item, category_target=cat, multiplier=mult, description=desc, rarity=spoils.c3_tier))
         db.session.add(PendingReward(user_id=user.id, gold_amount=spoils.c3_gold, item_name=f"[{spoils.c3_tier}] {spoils.c3_item}"))
+                
+        user.gold_balance += spoils.c1_gold
+        user.wk_gold += spoils.c1_gold
         
     else:
         return redirect('/')
