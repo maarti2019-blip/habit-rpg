@@ -396,8 +396,16 @@ def manage_world_events():
 
 def calculate_90_percent_loot_orb(world_level, event_name=None):
     if event_name == "The Cursed Vault": return round(random.uniform(0.50, 2.00), 2)
-    level_bonus = (world_level - 1) * 0.25
-    base_amt = random.uniform(3.00 + level_bonus, 4.00 + level_bonus) if random.random() <= 0.95 else random.uniform(2.00, 7.00 + level_bonus)
+    
+    # Calculate the 3% compounding multiplier (same math as boss HP)
+    multiplier = 1.03 ** (world_level - 1)
+    
+    # Apply the multiplier to both the floor and the ceiling of the base drops
+    if random.random() <= 0.95:
+        base_amt = random.uniform(3.00 * multiplier, 4.00 * multiplier)
+    else:
+        base_amt = random.uniform(2.00 * multiplier, 7.00 * multiplier)
+        
     return round(base_amt, 2)
 
 def calculate_raid_boss_orb():
@@ -629,9 +637,11 @@ def index():
     solo_img = get_monster_image(current_user.solo_monster_name) if current_user else None
     raid_img = get_monster_image(boss.name) if boss else None
 
-    if current_user and current_user.has_pet and current_user.pet_xp >= 100:
-        current_user.pet_level += 1
-        current_user.pet_xp = 0
+if current_user and current_user.has_pet and current_user.pet_xp >= 100:
+        # Loop handles multiple level-ups if an item pushes XP past 200, 300, etc.
+        while current_user.pet_xp >= 100:
+            current_user.pet_level += 1
+            current_user.pet_xp -= 100
         db.session.commit()
 
     active_spoils = RaidSpoils.query.filter_by(is_active=True).first()
