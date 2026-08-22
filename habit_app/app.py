@@ -637,16 +637,16 @@ def index():
     solo_img = get_monster_image(current_user.solo_monster_name) if current_user else None
     raid_img = get_monster_image(boss.name) if boss else None
 
-if current_user and current_user.has_pet and current_user.pet_xp >= 100:
+    if current_user and current_user.has_pet and current_user.pet_xp >= 100:
         # Loop handles multiple level-ups if an item pushes XP past 200, 300, etc.
         while current_user.pet_xp >= 100:
             current_user.pet_level += 1
             current_user.pet_xp -= 100
         db.session.commit()
 
-active_spoils = RaidSpoils.query.filter_by(is_active=True).first()
+    active_spoils = RaidSpoils.query.filter_by(is_active=True).first()
     
-return render_template('index.html', current_user=current_user, players=players, boss=boss, pending_rewards=pending_rewards, inventory=inventory, solo_img=solo_img, raid_img=raid_img, server_state=server_state, transactions=transactions, activity_logs=activity_logs, WEEKLY_QUESTS=WEEKLY_QUESTS, event_active_now=event_active_now, active_spoils=active_spoils)
+    return render_template('index.html', current_user=current_user, players=players, boss=boss, pending_rewards=pending_rewards, inventory=inventory, solo_img=solo_img, raid_img=raid_img, server_state=server_state, transactions=transactions, activity_logs=activity_logs, WEEKLY_QUESTS=WEEKLY_QUESTS, event_active_now=event_active_now, active_spoils=active_spoils)
 
 @app.route('/select_quest/<int:q_id>', methods=['POST'])
 def select_quest(q_id):
