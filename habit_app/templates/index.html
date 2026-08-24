@@ -237,32 +237,6 @@
             </form>
         </div>
     </div>
-
-    <!-- 4. The Trigger Script -->
-    <script>
-        function triggerGacha() {
-            const orb = document.getElementById('orbContainer');
-            const text = document.getElementById('gachaText');
-            orb.classList.add('shake');
-            text.innerText = "Extracting Loot...";
-            
-            setTimeout(() => {
-                orb.style.display = 'none';
-                text.style.display = 'none';
-                document.getElementById('burstFlash').classList.add('flash-anim');
-                
-                // Fire the loot beam
-                const beam = document.getElementById('lootBeam');
-                beam.classList.add('beam-active');
-                
-                // Reveal the floating items inside the beam
-                setTimeout(() => {
-                    const results = document.getElementById('rewardResults');
-                    results.style.display = 'flex';
-                }, 300); 
-            }, 1100);
-        }
-    </script>
     {% endif %}
 
     <div class="app-header">
@@ -658,21 +632,6 @@
         </form>
     </div>
 
-    <!-- Script to toggle the structured workout fields -->
-    <script>
-        function toggleWorkoutFields() {
-            var type = document.getElementById('activityType').value;
-            var wFields = document.getElementById('workoutDetails');
-            if (type === 'workout') {
-                wFields.style.display = 'block';
-            } else {
-                wFields.style.display = 'none';
-            }
-        }
-        // Run once on load
-        toggleWorkoutFields();
-    </script>
-    
     <div class="card">
         <h3 style="margin: 0 0 10px 0;">🎒 Your Vault Inventory</h3>
         {% if not inventory %}
@@ -705,26 +664,96 @@
     </div>
 
     <script>
-        // 1. CHORE CHECKBOX CONFIRMATION FIX
-        // We wait for the page to load, then find the checkbox by its 'name' attribute
-        document.addEventListener('DOMContentLoaded', function() {
-            const choreCheckbox = document.querySelector('input[name="chores"]');
-            if (choreCheckbox) {
-                choreCheckbox.addEventListener('change', function(e) {
-                    if (this.checked && !this.disabled) {
-                        if (!confirm("Are you SURE you started a chore? This will instantly deal damage to your boss and cannot be reversed!")) {
-                            this.checked = false;
-                        }
+       // 1. GACHA ORB TRIGGER (Moved to global scope!)
+        window.triggerGacha = function() {
+            const orb = document.getElementById('orbContainer');
+            const text = document.getElementById('gachaText');
+            if (!orb) return;
+            
+            orb.classList.add('shake');
+            text.innerText = "Extracting Loot...";
+            
+            setTimeout(() => {
+                orb.style.display = 'none';
+                text.style.display = 'none';
+                document.getElementById('burstFlash').classList.add('flash-anim');
+                
+                const beam = document.getElementById('lootBeam');
+                if (beam) beam.classList.add('beam-active');
+                
+                setTimeout(() => {
+                    const results = document.getElementById('rewardResults');
+                    if (results) results.style.display = 'flex';
+                }, 300); 
+            }, 1100);
+        };
+
+        // 2. WORKOUT FIELDS TOGGLE (Moved to global scope!)
+        window.toggleWorkoutFields = function() {
+            const type = document.getElementById('activityType')?.value;
+            const wFields = document.getElementById('workoutDetails');
+            if (wFields) {
+                wFields.style.display = (type === 'workout') ? 'block' : 'none';
+            }
+        };
+
+        // 3. DYNAMIC CHORE CONFIRMATION 
+        document.addEventListener('change', function(e) {
+            if (e.target && e.target.name === 'chores') {
+                if (e.target.checked && !e.target.disabled) {
+                    if (!confirm("Are you SURE you started a chore? This will instantly deal damage to your boss and cannot be reversed!")) {
+                        e.target.checked = false;
                     }
-                });
+                }
             }
         });
 
-        // 2. SETTINGS MODAL FUNCTIONS
-        function toggleSettings(show) {
+        // 4. SEAMLESS COMBAT SUBMISSION (No Page Reload)
+        document.addEventListener('submit', async function(e) {
+            if (e.target && e.target.id === 'activityForm') {
+                e.preventDefault(); 
+                
+                const form = e.target;
+                const submitBtn = form.querySelector('button[type="submit"]');
+                submitBtn.disabled = true; 
+                submitBtn.innerText = "Attacking...";
+
+                const targetContainer = document.querySelector('img[alt="Monster"]')?.parentElement || 
+                                        document.querySelector('img[alt="Raid Boss"]')?.parentElement;
+                
+                if (targetContainer) {
+                    targetContainer.style.position = 'relative'; 
+                    const img = targetContainer.querySelector('img');
+                    if (img) img.classList.add('monster-hit');
+                    
+                    const dmgText = document.createElement('div');
+                    dmgText.className = 'floating-dmg';
+                    dmgText.innerText = "💥 STRIKE!";
+                    targetContainer.appendChild(dmgText);
+                }
+
+                const formData = new FormData(form);
+                const response = await fetch('/stage_activity', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const newHtml = await response.text();
+
+                setTimeout(() => {
+                    const newDoc = new DOMParser().parseFromString(newHtml, 'text/html');
+                    document.body.innerHTML = newDoc.body.innerHTML;
+                    
+                    // Re-initialize the workout toggle on the newly swapped HTML!
+                    window.toggleWorkoutFields();
+                }, 1000); 
+            }
+        });
+
+        // 5. SETTINGS MODAL FUNCTIONS
+        window.toggleSettings = function(show) {
             const modal = document.getElementById('settingsModal');
             if (!modal) return;
-            
             if (show) {
                 modal.classList.add('open');
                 const classes = document.body.className;
@@ -736,10 +765,10 @@
             } else {
                 modal.classList.remove('open');
             }
-        }
+        };
 
-        function saveAndCloseSettings() {
-            toggleSettings(false);
+        window.saveAndCloseSettings = function() {
+            window.toggleSettings(false);
             fetch('/save_theme', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -752,21 +781,23 @@
                 })
             }).then(res => {
                 if (!res.ok) alert("Network error: Theme did not save to profile.");
-                else location.reload(); // Refresh to apply changes from the database
+                else location.reload();
             });
-        }
+        };
 
-        // This instantly applies the CSS class for a real-time preview
-        function applyPref(category, value) {
+        window.applyPref = function(category, value) {
             document.body.className = document.body.className.replace(new RegExp(`\\b${category}-\\S+`, 'g'), '');
             document.body.classList.add(value);
             document.body.dataset[category] = value;
-        }
+        };
 
-        // 3. SERVICE WORKER REGISTRATION
+        // 6. SERVICE WORKER REGISTRATION
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('/static/sw.js');
         }
+        
+        // Run once on initial load
+        window.toggleWorkoutFields();
     </script>
     {% endif %}
 </body>
