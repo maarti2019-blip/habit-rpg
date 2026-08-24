@@ -348,7 +348,7 @@
     </div>
 {% endif %}
 
-    <div class="card">
+    <div class="card" id="vault-card">
         <div class="flex-grid">
             {% for p in players %}
             <div style="border-bottom: 3px solid var(--accent-primary); padding-bottom: 8px;">
@@ -387,7 +387,7 @@
         </details>
     </div>
 <!-- ACTIVITY JOURNAL -->
-    <div class="card">
+    <div class="card" id="journal-card">
     <details style="cursor: pointer;">
         <summary style="list-style: none; outline: none; display: block;">
             <h3 style="margin: 0; display: inline-block;">📖 Activity Journal</h3>
@@ -429,7 +429,7 @@
     </details>
 </div>
     
-    <div class="card">
+    <div class="card" id="pet-card">
         <h3 style="margin:0 0 10px 0;">🐾 Companion Pet</h3>
         {% if not current_user.has_pet %}
             <p style="color:var(--text-muted); font-size: 0.9em;">An unhatched Mystery Egg is warming up. Log minutes to hatch it!</p>
@@ -453,7 +453,7 @@
     </div>
 
    <!-- SOLO MONSTER CARD -->
-<div class="card">
+<div class="card" id="solo-card">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
         <h3 style="margin: 0;">🐺 Solo Monster</h3>
         
@@ -491,7 +491,7 @@
 </div>
     
 <!-- WEEKLY QUESTS / CONTRACTS -->
-    <div class="card">
+    <div class="card" id="quest-card">
         <h3 style="margin:0 0 10px 0;">📜 Weekly Contract</h3>
         {% if current_user.active_quest_id %}
             {% set q = WEEKLY_QUESTS[current_user.active_quest_id] %}
@@ -519,7 +519,7 @@
         {% endif %}
     </div>
    <!-- RAID BOSS -->
-    <div class="card">
+    <div class="card" id="boss-card">
         <div style="display:flex; justify-content: space-between; align-items:center;">
             <h3 style="margin:0;">🌋 Shared Co-Op Raid</h3>
             <span style="font-size: 0.8em; color: var(--text-muted); border: 1px solid var(--border-color); padding: 2px 6px; border-radius: 4px;">World Lvl {{ boss.world_level }}</span>
@@ -660,7 +660,7 @@
         </form>
     </div>
 
-    <div class="card">
+    <div class="card" id="inventory-card">
         <h3 style="margin: 0 0 10px 0;">🎒 Your Vault Inventory</h3>
         {% if not inventory %}
             <p style="color: var(--text-muted); font-size: 0.9em; font-style: italic; margin: 0;">Your inventory is empty. Defeat solo bosses to earn drops!</p>
@@ -770,10 +770,42 @@
 
                 setTimeout(() => {
                     const newDoc = new DOMParser().parseFromString(newHtml, 'text/html');
-                    document.body.innerHTML = newDoc.body.innerHTML;
                     
-                    // Re-initialize the workout toggle on the newly swapped HTML!
+                    // 1. Only update the specific cards, leaving the screen completely still!
+                    const cardIds = ['vault-card', 'journal-card', 'pet-card', 'solo-card', 'quest-card', 'boss-card', 'inventory-card'];
+                    cardIds.forEach(id => {
+                        const oldCard = document.getElementById(id);
+                        const newCard = newDoc.getElementById(id);
+                        if (oldCard && newCard) oldCard.innerHTML = newCard.innerHTML;
+                    });
+
+                    // 2. Check if a new Gacha Orb dropped and inject it if it did
+                    const oldGacha = document.getElementById('gacha-overlay');
+                    const newGacha = newDoc.getElementById('gacha-overlay');
+                    if (newGacha) {
+                        if (oldGacha) {
+                            oldGacha.outerHTML = newGacha.outerHTML;
+                        } else {
+                            document.body.insertAdjacentHTML('afterbegin', newGacha.outerHTML);
+                        }
+                    }
+                    
+                    // 3. Cleanly reset the attack button and form
+                    submitBtn.disabled = false; 
+                    submitBtn.innerText = "Execute Strike";
+                    
+                    // Note: If you want the form to KEEP what you typed, delete the line below!
+                    form.reset(); 
+                    
                     window.toggleWorkoutFields();
+                    
+                    // 4. Remove the hit animations from the monster so it can be hit again
+                    if (targetContainer) {
+                        const img = targetContainer.querySelector('img');
+                        if (img) img.classList.remove('monster-hit');
+                        const oldDmgText = targetContainer.querySelector('.floating-dmg');
+                        if (oldDmgText) oldDmgText.remove();
+                    }
                 }, 1000); 
             }
         });
