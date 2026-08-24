@@ -56,6 +56,34 @@
         body.bg-scan { --bg-pattern: repeating-linear-gradient(0deg, transparent, transparent 2px, var(--border-color) 2px, var(--border-color) 4px); }
         body.bg-stripes { --bg-pattern: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,0.02) 10px, rgba(255,255,255,0.02) 20px); }
 
+        /* --- COMBAT ANIMATIONS --- */
+        .monster-hit {
+            animation: hitShake 0.4s ease-in-out;
+            filter: drop-shadow(0 0 20px red) brightness(1.5) sepia(1) hue-rotate(-50deg) saturate(5);
+        }
+        @keyframes hitShake {
+            0% { transform: translate(0, 0) scale(1); }
+            20% { transform: translate(-10px, 5px) scale(0.95); }
+            40% { transform: translate(10px, -5px) scale(0.95); }
+            60% { transform: translate(-10px, -5px) scale(1.05); }
+            80% { transform: translate(10px, 5px) scale(1.05); }
+            100% { transform: translate(0, 0) scale(1); }
+        }
+        .floating-dmg {
+            position: absolute;
+            color: #ef4444;
+            font-size: 2.5em;
+            font-weight: bold;
+            text-shadow: 2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000;
+            pointer-events: none;
+            animation: floatUp 1s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+            z-index: 100;
+        }
+        @keyframes floatUp {
+            0% { opacity: 0; transform: translateY(20px) scale(0.5); }
+            20% { opacity: 1; transform: translateY(-10px) scale(1.2); }
+            100% { opacity: 0; transform: translateY(-80px) scale(1); }
+        }
         /* --- GENERAL LAYOUT --- */
         body { font-family: var(--font-family); font-size: var(--base-font-size); background-color: var(--bg-main); background-image: var(--bg-pattern); color: var(--text-main); padding: 15px; margin: 0; transition: all 0.3s ease; }
         .card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 16px; margin-bottom: 16px; position: relative; overflow: hidden; }
@@ -598,7 +626,7 @@
    <!-- STAGE ACTIVITY CARD -->
     <div class="card">
         <h3>⚔️ Log Activity & Deal Damage</h3>
-        <form action="/stage_activity" method="POST">
+        <form id="activityForm" action="/stage_activity" method="POST">
             <div style="display: flex; gap: 10px; margin-bottom: 15px;">
                 <select name="type" id="activityType" class="input-field" style="flex: 1;" onchange="toggleWorkoutFields()">
                     <option value="workout">Workout</option>
