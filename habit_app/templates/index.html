@@ -195,7 +195,7 @@
     </div>
     {% endif %}
 
-    {% if pending_rewards %}
+{% if pending_rewards %}
     <!-- 1. Identify the highest rarity to color the beam -->
     {% set highest = namespace(color='#e2e8f0', shadow='rgba(226, 232, 240, 0.5)') %}
     {% for r in pending_rewards %}
@@ -210,35 +210,36 @@
         {% endif %}
     {% endfor %}
 
-    <!-- 2. Self-Contained RPG Styles -->
-    <style>
-        #gacha-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.92); z-index: 2000; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; }
-        .gacha-text { font-size: 1.5em; font-weight: bold; color: white; margin-bottom: 40px; text-shadow: 0 0 10px var(--accent-primary); z-index: 2005; }
-        .orb-container { position: relative; width: 120px; height: 120px; cursor: pointer; z-index: 2005; }
-        .orb { width: 100%; height: 100%; border-radius: 50%; background: radial-gradient(circle at 30% 30%, #ffffff, var(--accent-primary), #000000); box-shadow: 0 0 30px var(--accent-primary); transition: transform 0.2s; }
-        .orb:active { transform: scale(0.9); }
-        .shake { animation: shakeOrb 0.4s infinite; }
-        @keyframes shakeOrb { 0%, 100% { transform: translate(2px, 1px) rotate(0deg); } 25% { transform: translate(-2px, -2px) rotate(-5deg); } 50% { transform: translate(1px, 2px) rotate(5deg); } 75% { transform: translate(-2px, 1px) rotate(-2deg); } }
-        
-        .burst-flash { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 2010; opacity: 0; pointer-events: none; }
-        .flash-anim { animation: flashScreen 0.8s ease-out forwards; }
-        @keyframes flashScreen { 0% { opacity: 1; } 100% { opacity: 0; } }
-        
-        /* The Dynamic Loot Beam */
-        .loot-beam { position: absolute; bottom: 0; width: 120px; height: 0; background: linear-gradient(to top, transparent, {{ highest.color }}, #ffffff); box-shadow: 0 0 60px {{ highest.shadow }}; opacity: 0; z-index: 2001; pointer-events: none; transition: height 0.2s ease-out, opacity 0.3s; }
-        .beam-active { height: 100vh; opacity: 0.85; animation: pulseBeam 2s infinite alternate; }
-        @keyframes pulseBeam { 0% { opacity: 0.7; width: 100px; } 100% { opacity: 1; width: 140px; box-shadow: 0 0 100px {{ highest.shadow }}; } }
-
-        /* Floating Loot Containers */
-        .reward-results.rpg-style { display: none; flex-direction: column; align-items: center; z-index: 2002; width: 90%; max-width: 350px; animation: floatLoot 4s infinite ease-in-out; }
-        @keyframes floatLoot { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
-        
-        .item-card { background: rgba(0,0,0,0.85); border: 2px solid {{ highest.color }}; padding: 15px 25px; border-radius: 8px; margin-bottom: 12px; text-shadow: 0 0 8px {{ highest.color }}; box-shadow: 0 0 20px {{ highest.shadow }}; width: 100%; text-align: center; }
-        .gold-card { background: rgba(0,0,0,0.85); border: 2px solid gold; padding: 15px 25px; border-radius: 8px; margin-bottom: 20px; color: gold; text-shadow: 0 0 8px gold; box-shadow: 0 0 20px rgba(255,215,0,0.4); font-size: 1.5em; font-weight: bold; width: 100%; text-align: center; }
-    </style>
-
     <!-- 3. The UI Structure -->
     <div id="gacha-overlay">
+        
+        <!-- 2. Self-Contained RPG Styles (MOVED INSIDE!) -->
+        <style>
+            #gacha-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.92); z-index: 2000; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; }
+            .gacha-text { font-size: 1.5em; font-weight: bold; color: white; margin-bottom: 40px; text-shadow: 0 0 10px var(--accent-primary); z-index: 2005; }
+            .orb-container { position: relative; width: 120px; height: 120px; cursor: pointer; z-index: 2005; }
+            .orb { width: 100%; height: 100%; border-radius: 50%; background: radial-gradient(circle at 30% 30%, #ffffff, var(--accent-primary), #000000); box-shadow: 0 0 30px var(--accent-primary); transition: transform 0.2s; }
+            .orb:active { transform: scale(0.9); }
+            .shake { animation: shakeOrb 0.4s infinite; }
+            @keyframes shakeOrb { 0%, 100% { transform: translate(2px, 1px) rotate(0deg); } 25% { transform: translate(-2px, -2px) rotate(-5deg); } 50% { transform: translate(1px, 2px) rotate(5deg); } 75% { transform: translate(-2px, 1px) rotate(-2deg); } }
+            
+            .burst-flash { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 2010; opacity: 0; pointer-events: none; }
+            .flash-anim { animation: flashScreen 0.8s ease-out forwards; }
+            @keyframes flashScreen { 0% { opacity: 1; } 100% { opacity: 0; } }
+            
+            /* The Dynamic Loot Beam */
+            .loot-beam { position: absolute; bottom: 0; width: 120px; height: 0; background: linear-gradient(to top, transparent, {{ highest.color }}, #ffffff); box-shadow: 0 0 60px {{ highest.shadow }}; opacity: 0; z-index: 2001; pointer-events: none; transition: height 0.2s ease-out, opacity 0.3s; }
+            .beam-active { height: 100vh; opacity: 0.85; animation: pulseBeam 2s infinite alternate; }
+            @keyframes pulseBeam { 0% { opacity: 0.7; width: 100px; } 100% { opacity: 1; width: 140px; box-shadow: 0 0 100px {{ highest.shadow }}; } }
+
+            /* Floating Loot Containers */
+            .reward-results.rpg-style { display: none; flex-direction: column; align-items: center; z-index: 2002; width: 90%; max-width: 350px; animation: floatLoot 4s infinite ease-in-out; }
+            @keyframes floatLoot { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
+            
+            .item-card { background: rgba(0,0,0,0.85); border: 2px solid {{ highest.color }}; padding: 15px 25px; border-radius: 8px; margin-bottom: 12px; text-shadow: 0 0 8px {{ highest.color }}; box-shadow: 0 0 20px {{ highest.shadow }}; width: 100%; text-align: center; }
+            .gold-card { background: rgba(0,0,0,0.85); border: 2px solid gold; padding: 15px 25px; border-radius: 8px; margin-bottom: 20px; color: gold; text-shadow: 0 0 8px gold; box-shadow: 0 0 20px rgba(255,215,0,0.4); font-size: 1.5em; font-weight: bold; width: 100%; text-align: center; }
+        </style>
+
         <div class="burst-flash" id="burstFlash"></div>
         <div class="loot-beam" id="lootBeam"></div>
         
