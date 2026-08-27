@@ -891,8 +891,26 @@ def stage_activity():
 
     if boss.is_active and raid_dmg > 0:
         if current_event != "The Shadow Clone":
-            boss.current_hp -= raid_dmg
-            user.raid_dmg_contributed += raid_dmg
+            # 1. Cap the damage to whatever health the boss actually has left
+            actual_dmg = min(raid_dmg, boss.current_hp)
+            overflow = raid_dmg - actual_dmg
+            
+            # 2. Apply ONLY the real damage to the boss and your stats
+            boss.current_hp -= actual_dmg
+            user.raid_dmg_contributed += actual_dmg
+            
+            # 3. Dump the remaining overflow into your solo monster
+            if overflow > 0:
+                user.solo_monster_hp -= overflow
+                
+                # Loop just in case the overflow is big enough to one-shot multiple solo monsters
+                while user.solo_monster_hp <= 0:
+                    user.bosses_killed_today += 1
+                    
+                    # Reset the solo monster's HP for the next loop
+                    user.solo_monster_hp += user.solo_monster_max
+                    
+                    # Note: If your solo monsters drop loot upon death, make sure to add your loot generation code right here!
         
         # Boss dies mid-week. It stays dead until Monday reset.
         if boss.current_hp <= 0:
