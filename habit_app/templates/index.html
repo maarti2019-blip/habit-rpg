@@ -56,6 +56,47 @@
         body.bg-scan { --bg-pattern: repeating-linear-gradient(0deg, transparent, transparent 2px, var(--border-color) 2px, var(--border-color) 4px); }
         body.bg-stripes { --bg-pattern: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,0.02) 10px, rgba(255,255,255,0.02) 20px); }
 
+        /* 1. HARDWARE-ACCELERATED STARDUST */
+        body::before, body::after {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; /* Touches pass right through */
+            z-index: 9999;
+            background-image: 
+                radial-gradient(2px 2px at 10% 20%, var(--accent-primary), rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 30% 60%, #ffffff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 70% 40%, var(--accent-primary), rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 90% 80%, #ffffff, rgba(0,0,0,0));
+            background-repeat: repeat;
+            background-size: 150px 150px;
+            animation: stardustDrift 20s linear infinite;
+            opacity: 0.25;
+            /* translate3d forces mobile GPU rendering for zero lag */
+            transform: translate3d(0, 0, 0); 
+        }
+
+        body::after {
+            background-size: 250px 250px;
+            animation: stardustDrift 35s linear infinite;
+            opacity: 0.15;
+        }
+
+        @keyframes stardustDrift {
+            0% { transform: translate3d(0, 0, 0); }
+            100% { transform: translate3d(0, -300px, 0); }
+        }
+
+        /* 3. BREATHING GLOWS (Raid Boss) */
+        #boss-card {
+            border-color: #ef4444 !important;
+            animation: bossBreathe 2.5s ease-in-out infinite alternate;
+        }
+
+        @keyframes bossBreathe {
+            0% { box-shadow: 0 0 5px rgba(239, 68, 68, 0.1); }
+            100% { box-shadow: 0 0 25px rgba(239, 68, 68, 0.5); }
+        }
         /* --- COMBAT ANIMATIONS --- */
         .monster-hit {
             animation: hitShake 0.4s ease-in-out;
@@ -779,6 +820,12 @@
                         const newCard = newDoc.getElementById(id);
                         if (oldCard && newCard) oldCard.innerHTML = newCard.innerHTML;
                     });
+
+                    const oldCheckbox = document.querySelector('input[name="chores"]');
+                    const newCheckbox = newDoc.querySelector('input[name="chores"]');
+                    if (oldCheckbox && newCheckbox) {
+                        oldCheckbox.outerHTML = newCheckbox.outerHTML;
+                    }
 
                     // 2. Check if a new Gacha Orb dropped and inject it if it did
                     const oldGacha = document.getElementById('gacha-overlay');
