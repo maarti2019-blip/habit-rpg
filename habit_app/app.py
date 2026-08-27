@@ -903,9 +903,34 @@ def stage_activity():
             if overflow > 0:
                 user.solo_monster_hp -= overflow
                 
-                # Loop just in case the overflow is big enough to one-shot multiple solo monsters
                 while user.solo_monster_hp <= 0:
+                    # 1. Update stats and streaks
                     user.bosses_killed_today += 1
+                    user.wk_bosses += 1
+                    if not user.has_killed_today:
+                        user.has_killed_today = True
+                        user.current_streak += 1
+                    
+                    # 2. Grant Gold (10.00 if Mimic event, otherwise normal calc)
+                    gold_drop = 10.00 if current_event == "Treasure Mimic Infestation" else calculate_90_percent_loot_orb(boss.world_level, current_event)
+                    if current_event == "Goblin Merchant's Crash": gold_drop *= 2.0
+                    user.gold_balance += gold_drop
+                    user.wk_gold += gold_drop
+                    
+                    # 3. Roll for Items (Unless Goblin Merchant event)
+                    if current_event != "Goblin Merchant's Crash":
+                        loot = roll_equipment(current_event)
+                        if loot:
+                            tier, item_data = loot
+                            db.session.add(UserInventory(user_id=user.id, item_name=item_data[0], category_target=item_data[1], multiplier=item_data[2], description=item_data[3], rarity=tier))
+                            db.session.add(PendingReward(user_id=user.id, gold_amount=gold_drop, item_name=f"[{tier}] {item_data[0]}"))
+                        else:
+                            db.session.add(PendingReward(user_id=user.id, gold_amount=gold_drop, item_name=None))
+                    else:
+                        db.session.add(PendingReward(user_id=user.id, gold_amount=gold_drop, item_name=None))
+
+                    # 4. Reset Solo Monster HP for the next potential loop
+                    user.solo_monster_hp += user.solo_monster_max
                     
                     # Reset the solo monster's HP for the next loop
                     user.solo_monster_hp += user.solo_monster_max
@@ -970,8 +995,8 @@ def claim_spoil(choice_num):
         db.session.add(UserInventory(user_id=user.id, item_name=spoils.c2_item, category_target=cat, multiplier=mult, description=desc, rarity=spoils.c2_tier))
         db.session.add(PendingReward(user_id=user.id, gold_amount=spoils.c2_gold, item_name=f"[{spoils.c2_tier}] {spoils.c2_item}"))
                 
-        user.gold_balance += spoils.c1_gold
-        user.wk_gold += spoils.c1_gold
+        user.gold_balance += spoils.c2_gold
+        user.wk_gold += spoils.c2_gold
         
     elif choice_num == 3 and spoils.c3_claimed_by is None:
         spoils.c3_claimed_by = user.id
@@ -979,8 +1004,8 @@ def claim_spoil(choice_num):
         db.session.add(UserInventory(user_id=user.id, item_name=spoils.c3_item, category_target=cat, multiplier=mult, description=desc, rarity=spoils.c3_tier))
         db.session.add(PendingReward(user_id=user.id, gold_amount=spoils.c3_gold, item_name=f"[{spoils.c3_tier}] {spoils.c3_item}"))
                 
-        user.gold_balance += spoils.c1_gold
-        user.wk_gold += spoils.c1_gold
+        user.gold_balance += spoils.c3_gold
+        user.wk_gold += spoils.c3_gold
         
     else:
         return redirect('/')
