@@ -222,10 +222,8 @@
         {% endif %}
     {% endfor %}
 
-    <!-- 3. The UI Structure -->
+    <!-- 2. The UI Structure & Embedded Styles -->
     <div id="gacha-overlay">
-        
-        <!-- 2. Self-Contained RPG Styles (MOVED INSIDE!) -->
         <style>
             #gacha-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.92); z-index: 2000; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; }
             .gacha-text { font-size: 1.5em; font-weight: bold; color: white; margin-bottom: 40px; text-shadow: 0 0 10px var(--accent-primary); z-index: 2005; }
@@ -239,12 +237,10 @@
             .flash-anim { animation: flashScreen 0.8s ease-out forwards; }
             @keyframes flashScreen { 0% { opacity: 1; } 100% { opacity: 0; } }
             
-            /* The Dynamic Loot Beam */
             .loot-beam { position: absolute; bottom: 0; width: 120px; height: 0; background: linear-gradient(to top, transparent, {{ highest.color }}, #ffffff); box-shadow: 0 0 60px {{ highest.shadow }}; opacity: 0; z-index: 2001; pointer-events: none; transition: height 0.2s ease-out, opacity 0.3s; }
             .beam-active { height: 100vh; opacity: 0.85; animation: pulseBeam 2s infinite alternate; }
             @keyframes pulseBeam { 0% { opacity: 0.7; width: 100px; } 100% { opacity: 1; width: 140px; box-shadow: 0 0 100px {{ highest.shadow }}; } }
 
-            /* Floating Loot Containers */
             .reward-results.rpg-style { display: none; flex-direction: column; align-items: center; z-index: 2002; width: 90%; max-width: 350px; animation: floatLoot 4s infinite ease-in-out; }
             @keyframes floatLoot { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
             
@@ -258,8 +254,7 @@
         <div class="gacha-text" id="gachaText">Tap to Crack Orb!</div>
         <div class="orb-container" id="orbContainer" onclick="triggerGacha()"><div class="orb"></div></div>
         
-                <div class="reward-results rpg-style" id="rewardResults">
-            <<div class="reward-results rpg-style" id="rewardResults">
+        <div class="reward-results rpg-style" id="rewardResults">
             <!-- Scrollable wrapper for the loot list -->
             <div style="width: 100%; max-height: 55vh; overflow-y: auto; padding-right: 5px; box-sizing: border-box;">
                 {% set total_gold = namespace(value=0) %}
@@ -284,7 +279,7 @@
         </div>
     </div>
     {% endif %}
-
+    
     <div class="app-header">
         <div>
             <span style="font-size: 1.1em;">Profile: <strong>{{ current_user.username }}</strong></span><br>
