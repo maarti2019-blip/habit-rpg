@@ -258,14 +258,29 @@
         <div class="gacha-text" id="gachaText">Tap to Crack Orb!</div>
         <div class="orb-container" id="orbContainer" onclick="triggerGacha()"><div class="orb"></div></div>
         
-        <div class="reward-results rpg-style" id="rewardResults">
-            {% set total_gold = namespace(value=0) %}
-            {% for r in pending_rewards %}
-                {% set total_gold.value = total_gold.value + r.gold_amount %}
-                {% if r.item_name %}
-                    <div class="item-card">
-                        <strong style="font-size: 1.1em; color: white;">✨ {{ r.item_name }} ✨</strong>
-                    </div>
+                <div class="reward-results rpg-style" id="rewardResults">
+            <!-- NEW: Scrollable wrapper for the loot list -->
+            <div style="width: 100%; max-height: 55vh; overflow-y: auto; padding-right: 5px; box-sizing: border-box;">
+                {% set total_gold = namespace(value=0) %}
+                {% for r in pending_rewards %}
+                    {% set total_gold.value = total_gold.value + r.gold_amount %}
+                    {% if r.item_name %}
+                        <div class="item-card">
+                            <strong style="font-size: 1.1em; color: white;">✨ {{ r.item_name }} ✨</strong>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if total_gold.value > 0 %}
+                    <div class="gold-card">+${{ "%.2f"|format(total_gold.value) }}</div>
+                {% endif %}
+            </div>
+            
+            <!-- Pinned Claim Button -->
+            <form action="/claim_gacha" method="POST" style="margin-top: 15px; width: 100%; flex-shrink: 0;">
+                <button type="submit" class="btn" style="background: {{ highest.color }}; color: black; font-size: 1.1em; box-shadow: 0 0 15px {{ highest.shadow }};">Claim to Vault</button>
+            </form>
+        </div>
                 {% endif %}
             {% endfor %}
             
