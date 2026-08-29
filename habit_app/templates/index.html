@@ -259,7 +259,8 @@
         <div class="orb-container" id="orbContainer" onclick="triggerGacha()"><div class="orb"></div></div>
         
                 <div class="reward-results rpg-style" id="rewardResults">
-            <!-- NEW: Scrollable wrapper for the loot list -->
+            <<div class="reward-results rpg-style" id="rewardResults">
+            <!-- Scrollable wrapper for the loot list -->
             <div style="width: 100%; max-height: 55vh; overflow-y: auto; padding-right: 5px; box-sizing: border-box;">
                 {% set total_gold = namespace(value=0) %}
                 {% for r in pending_rewards %}
@@ -278,17 +279,6 @@
             
             <!-- Pinned Claim Button -->
             <form action="/claim_gacha" method="POST" style="margin-top: 15px; width: 100%; flex-shrink: 0;">
-                <button type="submit" class="btn" style="background: {{ highest.color }}; color: black; font-size: 1.1em; box-shadow: 0 0 15px {{ highest.shadow }};">Claim to Vault</button>
-            </form>
-        </div>
-                {% endif %}
-            {% endfor %}
-            
-            {% if total_gold.value > 0 %}
-                <div class="gold-card">+${{ "%.2f"|format(total_gold.value) }}</div>
-            {% endif %}
-            
-            <form action="/claim_gacha" method="POST" style="margin-top: 10px; width: 100%;">
                 <button type="submit" class="btn" style="background: {{ highest.color }}; color: black; font-size: 1.1em; box-shadow: 0 0 15px {{ highest.shadow }};">Claim to Vault</button>
             </form>
         </div>
