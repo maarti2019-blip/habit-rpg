@@ -749,37 +749,50 @@
             }
         });
 
-        // 4. SEAMLESS COMBAT SUBMISSION (No Page Reload)
+        // 4. SEAMLESS COMBAT & INVENTORY SUBMISSION (No Page Reload)
         document.addEventListener('submit', async function(e) {
-            if (e.target && e.target.id === 'activityForm') {
+            const isActivity = e.target && e.target.id === 'activityForm';
+            const isInventory = e.target && e.target.closest('#inventory-card');
+            
+            // Intercept both the attack button AND inventory buttons
+            if (isActivity || isInventory) {
                 e.preventDefault(); 
                 
                 const form = e.target;
                 const submitBtn = form.querySelector('button[type="submit"]');
-                submitBtn.disabled = true; 
-                submitBtn.innerText = "Attacking...";
-
-                const targetContainer = document.querySelector('img[alt="Monster"]')?.parentElement || 
-                                        document.querySelector('img[alt="Raid Boss"]')?.parentElement;
                 
-                if (targetContainer) {
-                    targetContainer.style.position = 'relative'; 
-                    const img = targetContainer.querySelector('img');
-                    if (img) img.classList.add('monster-hit');
+                if (submitBtn) {
+                    submitBtn.disabled = true; 
+                    submitBtn.innerText = isActivity ? "Attacking..." : "Using...";
+                }
+
+                // Only play the screen-shake combat animation for attacks
+                if (isActivity) {
+                    const targetContainer = document.querySelector('img[alt="Monster"]')?.parentElement || 
+                                            document.querySelector('img[alt="Raid Boss"]')?.parentElement;
                     
-                    const dmgText = document.createElement('div');
-                    dmgText.className = 'floating-dmg';
-                    dmgText.innerText = "💥 STRIKE!";
-                    targetContainer.appendChild(dmgText);
+                    if (targetContainer) {
+                        targetContainer.style.position = 'relative'; 
+                        const img = targetContainer.querySelector('img');
+                        if (img) img.classList.add('monster-hit');
+                        
+                        const dmgText = document.createElement('div');
+                        dmgText.className = 'floating-dmg';
+                        dmgText.innerText = "💥 STRIKE!";
+                        targetContainer.appendChild(dmgText);
+                    }
                 }
 
                 const formData = new FormData(form);
-                const response = await fetch('/stage_activity', {
-                    method: 'POST',
+                const response = await fetch(form.action, {
+                    method: form.method,
                     body: formData
                 });
                 
                 const newHtml = await response.text();
+
+                // Wait 1 second for combat animations to finish, but update inventory instantly (100ms)
+                const delay = isActivity ? 1000 : 100;
 
                 setTimeout(() => {
                     const newDoc = new DOMParser().parseFromString(newHtml, 'text/html');
@@ -792,6 +805,7 @@
                         if (oldCard && newCard) oldCard.innerHTML = newCard.innerHTML;
                     });
 
+                    // 1.5 Surgically update the Chore checkbox so it visually locks without wiping your text!
                     const oldCheckbox = document.querySelector('input[name="chores"]');
                     const newCheckbox = newDoc.querySelector('input[name="chores"]');
                     if (oldCheckbox && newCheckbox) {
@@ -809,23 +823,26 @@
                         }
                     }
                     
-                    // 3. Cleanly reset the attack button and form
-                    submitBtn.disabled = false; 
-                    submitBtn.innerText = "Execute Strike";
-                    
-                    // Note: If you want the form to KEEP what you typed, delete the line below!
-                    form.reset(); 
-                    
-                    window.toggleWorkoutFields();
-                    
-                    // 4. Remove the hit animations from the monster so it can be hit again
-                    if (targetContainer) {
-                        const img = targetContainer.querySelector('img');
-                        if (img) img.classList.remove('monster-hit');
-                        const oldDmgText = targetContainer.querySelector('.floating-dmg');
-                        if (oldDmgText) oldDmgText.remove();
+                    // 3. Cleanly reset the attack form (Inventory buttons delete themselves upon use)
+                    if (isActivity) {
+                        if (submitBtn) {
+                            submitBtn.disabled = false; 
+                            submitBtn.innerText = "Execute Strike";
+                        }
+                        form.reset(); 
+                        window.toggleWorkoutFields();
+                        
+                        // 4. Remove the hit animations from the monster so it can be hit again
+                        const targetContainer = document.querySelector('img[alt="Monster"]')?.parentElement || 
+                                                document.querySelector('img[alt="Raid Boss"]')?.parentElement;
+                        if (targetContainer) {
+                            const img = targetContainer.querySelector('img');
+                            if (img) img.classList.remove('monster-hit');
+                            const oldDmgText = targetContainer.querySelector('.floating-dmg');
+                            if (oldDmgText) oldDmgText.remove();
+                        }
                     }
-                }, 1000); 
+                }, delay); 
             }
         });
 
