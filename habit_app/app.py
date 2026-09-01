@@ -330,6 +330,32 @@ class UserInventory(db.Model):
     expires_at = db.Column(db.DateTime, nullable=True)
     rarity = db.Column(db.String(50), default="Common")
 
+class GuildHall(db.Model):
+    __tablename__ = 'guild_hall'
+    id = db.Column(db.Integer, primary_key=True)
+    workout_lvl = db.Column(db.Integer, default=1)
+    workout_donated = db.Column(db.Float, default=0.0)
+    chore_lvl = db.Column(db.Integer, default=1)
+    chore_donated = db.Column(db.Float, default=0.0)
+    hobby_lvl = db.Column(db.Integer, default=1)
+    hobby_donated = db.Column(db.Float, default=0.0)
+    gold_lvl = db.Column(db.Integer, default=1)
+    gold_donated = db.Column(db.Float, default=0.0)
+    luck_lvl = db.Column(db.Integer, default=1)
+    luck_donated = db.Column(db.Float, default=0.0)
+
+class DailyShopItem(db.Model):
+    __tablename__ = 'daily_shop_item'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100))
+    category = db.Column(db.String(50))
+    multiplier = db.Column(db.Float)
+    desc = db.Column(db.String(255))
+    rarity = db.Column(db.String(50))
+    price = db.Column(db.Float)
+    is_sold = db.Column(db.Boolean, default=False)
+    date_seeded = db.Column(db.String(20)) # Tracks the day it was generated
+    
 class TransactionHistory(db.Model):
     __tablename__ = 'transaction_history'
     id = db.Column(db.Integer, primary_key=True)
@@ -360,6 +386,74 @@ def notify_discord(message):
         try: requests.post(webhook_url, json={"content": message})
         except: pass
 
+def get_guild_stats():
+    g = GuildHall.query.first()
+    if not g: return None
+    
+    # Exponential Math Algorithms
+    return {
+        "workout_lvl": g.workout_lvl,
+        "workout_donated": g.workout_donated,
+        "workout_target": 50.0 * (1.5 ** (g.workout_lvl - 1)),
+        "workout_cur": 3.5 + ((g.workout_lvl - 1) * 0.1),
+        
+        "chore_lvl": g.chore_lvl,
+        "chore_donated": g.chore_donated,
+        "chore_target": 100.0 * (1.5 ** (g.chore_lvl - 1)),
+        "chore_cur": 5.0 + ((g.chore_lvl - 1) * 0.1),
+        
+        "hobby_lvl": g.hobby_lvl,
+        "hobby_donated": g.hobby_donated,
+        "hobby_target": 150.0 * (1.5 ** (g.hobby_lvl - 1)),
+        "hobby_cur": 7.0 + ((g.hobby_lvl - 1) * 0.1),
+        
+        "gold_lvl": g.gold_lvl,
+        "gold_donated": g.gold_donated,
+        "gold_target": 250.0 * (1.6 ** (g.gold_lvl - 1)),
+        "gold_cur": (g.gold_lvl - 1) * 5.0, # 5% increments
+        
+        "luck_lvl": g.luck_lvl,
+        "luck_donated": g.luck_donated,
+        "luck_target": 500.0 * (1.7 ** (g.luck_lvl - 1)),
+        "luck_cur": (g.luck_lvl - 1) * 2.0, # 2% increments
+    }
+
+def refresh_daily_shop():
+    today_str = get_est_now().strftime('%Y-%m-%d')
+    existing = DailyShopItem.query.first()
+    
+    if existing and existing.date_seeded == today_str:
+        return # Shop is already up to date for today
+        
+    # Delete yesterday's shop
+    DailyShopItem.query.delete()
+    
+    # Roll 4 new items with strict rarity chances
+    for _ in range(4):
+        roll = random.random() * 100
+        if roll <= 10.0:  # 10% Legendary
+            rarity = "Legendary"
+            item_data = random.choice(LEGENDARY_ITEMS)
+            price = round(random.uniform(200.0, 350.0), 2)
+        elif roll <= 25.0: # 15% Rare
+            rarity = "Rare"
+            item_data = random.choice(RARE_ITEMS)
+            price = round(random.uniform(75.0, 150.0), 2)
+        elif roll <= 50.0: # 25% Uncommon
+            rarity = "Uncommon"
+            item_data = random.choice(UNCOMMON_ITEMS)
+            price = round(random.uniform(25.0, 60.0), 2)
+        else: # 50% Common
+            rarity = "Common"
+            item_data = random.choice(COMMON_ITEMS)
+            price = round(random.uniform(5.0, 15.0), 2)
+            
+        db.session.add(DailyShopItem(
+            name=item_data[0], category=item_data[1], multiplier=item_data[2],
+            desc=item_data[3], rarity=rarity, price=price, date_seeded=today_str
+        ))
+    db.session.commit()
+    
 # --- Helpers & Core Event Interceptors ---
 def get_monster_image(monster_name):
     safe_name = monster_name.lower().replace(" ", "_").replace("'", "")
@@ -412,17 +506,21 @@ def calculate_raid_boss_orb():
     return round(max(10.0, min(50.0, random.gauss(25.0, 10.0))), 2)
 
 def roll_equipment(event_name=None):
+    # Fetch the live guild stats to get the luck bonus
+    guild_stats = get_guild_stats()
+    luck_bonus = guild_stats['luck_cur'] if guild_stats else 0.0
+    
     roll = random.random() * 100
     if event_name == "The Cursed Vault":
-        if roll <= 5.0: return ("Legendary", random.choice(LEGENDARY_ITEMS))
-        elif roll <= 20.0: return ("Rare", random.choice(RARE_ITEMS))
-        elif roll <= 40.0: return ("Uncommon", random.choice(UNCOMMON_ITEMS))
+        if roll <= (5.0 + luck_bonus): return ("Legendary", random.choice(LEGENDARY_ITEMS))
+        elif roll <= (20.0 + luck_bonus): return ("Rare", random.choice(RARE_ITEMS))
+        elif roll <= (40.0 + luck_bonus): return ("Uncommon", random.choice(UNCOMMON_ITEMS))
         else: return ("Common", random.choice(COMMON_ITEMS))
     else:
-        if roll <= 0.5: return ("Legendary", random.choice(LEGENDARY_ITEMS))
-        elif roll <= 3.5: return ("Rare", random.choice(RARE_ITEMS))
-        elif roll <= 11.5: return ("Uncommon", random.choice(UNCOMMON_ITEMS))
-        elif roll <= 26.5: return ("Common", random.choice(COMMON_ITEMS))
+        if roll <= (0.5 + luck_bonus): return ("Legendary", random.choice(LEGENDARY_ITEMS))
+        elif roll <= (3.5 + luck_bonus): return ("Rare", random.choice(RARE_ITEMS))
+        elif roll <= (11.5 + luck_bonus): return ("Uncommon", random.choice(UNCOMMON_ITEMS))
+        elif roll <= (26.5 + luck_bonus): return ("Common", random.choice(COMMON_ITEMS))
     return None
 
 def get_item_data_by_name(target_name):
@@ -646,7 +744,7 @@ def index():
 
     active_spoils = RaidSpoils.query.filter_by(is_active=True).first()
     
-    return render_template('index.html', current_user=current_user, players=players, boss=boss, pending_rewards=pending_rewards, inventory=inventory, solo_img=solo_img, raid_img=raid_img, server_state=server_state, transactions=transactions, activity_logs=activity_logs, WEEKLY_QUESTS=WEEKLY_QUESTS, event_active_now=event_active_now, active_spoils=active_spoils)
+    return render_template('index.html', current_user=current_user, players=players, boss=boss, pending_rewards=pending_rewards, inventory=inventory, solo_img=solo_img, raid_img=raid_img, server_state=server_state, transactions=transactions, activity_logs=activity_logs, WEEKLY_QUESTS=WEEKLY_QUESTS, event_active_now=event_active_now, active_spoils=active_spoils, daily_shop=daily_shop, guild_stats=guild_stats))
 
 @app.route('/select_quest/<int:q_id>', methods=['POST'])
 def select_quest(q_id):
@@ -733,9 +831,10 @@ def stage_activity():
         if user.egg_minutes >= 100.0:
             user.has_pet = True
 
-    workout_mult = 4.5
-    hobby_mult = 7.0
-    chore_mult = 5.0
+    guild_stats = get_guild_stats()
+    workout_mult = guild_stats['workout_cur']
+    hobby_mult = guild_stats['hobby_cur']
+    chore_mult = guild_stats['chore_cur']
     
     active_buffs = UserInventory.query.filter_by(user_id=user.id, is_active=True).all()
     for buff in active_buffs:
@@ -848,6 +947,9 @@ def stage_activity():
             user.wk_bosses += 1
             
             gold_drop = calculate_90_percent_loot_orb(boss.world_level, current_event)
+            guild_stats = get_guild_stats()
+            bonus_multiplier = 1.0 + (guild_stats['gold_cur'] / 100.0)
+            return round(base_amt * bonus_multiplier, 2)
             if current_event == "Goblin Merchant's Crash": gold_drop *= 2.0
             if current_event == "Treasure Mimic Infestation": gold_drop = 10.00
             
@@ -1084,12 +1186,78 @@ def use_item(item_id):
     db.session.commit()
     return redirect('/')
 
+@app.route('/donate_guild', methods=['POST'])
+def donate_guild():
+    if 'user_id' not in session: return redirect('/')
+    user = User.query.get(session['user_id'])
+    amount = float(request.form.get('amount', 0))
+    u_type = request.form.get('upgrade_type')
+    
+    if user.gold_balance >= amount and amount > 0:
+        user.gold_balance -= amount
+        guild = GuildHall.query.first()
+        stats = get_guild_stats()
+        
+        # Route to the correct attribute and check for level-ups
+        if u_type == 'workout':
+            guild.workout_donated += amount
+            if guild.workout_donated >= stats['workout_target']:
+                guild.workout_donated -= stats['workout_target']
+                guild.workout_lvl += 1
+        elif u_type == 'chore':
+            guild.chore_donated += amount
+            if guild.chore_donated >= stats['chore_target']:
+                guild.chore_donated -= stats['chore_target']
+                guild.chore_lvl += 1
+        elif u_type == 'hobby':
+            guild.hobby_donated += amount
+            if guild.hobby_donated >= stats['hobby_target']:
+                guild.hobby_donated -= stats['hobby_target']
+                guild.hobby_lvl += 1
+        elif u_type == 'gold':
+            guild.gold_donated += amount
+            if guild.gold_donated >= stats['gold_target']:
+                guild.gold_donated -= stats['gold_target']
+                guild.gold_lvl += 1
+        elif u_type == 'luck':
+            guild.luck_donated += amount
+            if guild.luck_donated >= stats['luck_target']:
+                guild.luck_donated -= stats['luck_target']
+                guild.luck_lvl += 1
+                
+        db.session.add(TransactionHistory(user_id=user.id, amount=amount, reason=f"Guild Hall Donation: {u_type.capitalize()}"))
+        db.session.commit()
+        
+    return redirect('/')
+
+@app.route('/buy_shop_item', methods=['POST'])
+def buy_shop_item():
+    if 'user_id' not in session: return redirect('/')
+    user = User.query.get(session['user_id'])
+    item_id = request.form.get('shop_item_id')
+    
+    shop_item = DailyShopItem.query.get(item_id)
+    if shop_item and not shop_item.is_sold and user.gold_balance >= shop_item.price:
+        user.gold_balance -= shop_item.price
+        shop_item.is_sold = True
+        
+        db.session.add(UserInventory(
+            user_id=user.id, item_name=shop_item.name, category_target=shop_item.category,
+            multiplier=shop_item.multiplier, description=shop_item.desc, rarity=shop_item.rarity
+        ))
+        db.session.add(TransactionHistory(user_id=user.id, amount=shop_item.price, reason=f"Snivels Shop: {shop_item.name}"))
+        db.session.commit()
+        
+    return redirect('/')
+    
 def initialize_database():
     with app.app_context():
         os.makedirs(os.path.join(basedir, 'instance'), exist_ok=True)
         db.create_all()
         if not ServerState.query.first():
             db.session.add(ServerState())
+        if not GuildHall.query.first():
+            db.session.add(GuildHall())
         if not User.query.first():
             db.session.add(User(username='Alaina', solo_monster_name='Slime'))
             db.session.add(User(username='Matthew', solo_monster_name='Slime'))
