@@ -953,7 +953,8 @@ def stage_activity():
             gold_drop = calculate_90_percent_loot_orb(boss.world_level, current_event)
             guild_stats = get_guild_stats()
             bonus_multiplier = 1.0 + (guild_stats['gold_cur'] / 100.0)
-            return round(base_amt * bonus_multiplier, 2)
+            gold_drop = round(base_amt * bonus_multiplier, 2)
+            
             if current_event == "Goblin Merchant's Crash": gold_drop *= 2.0
             if current_event == "Treasure Mimic Infestation": gold_drop = 10.00
             
@@ -1038,11 +1039,6 @@ def stage_activity():
                     # 4. Reset Solo Monster HP for the next potential loop
                     user.solo_monster_hp += user.solo_monster_max
                     
-                    # Reset the solo monster's HP for the next loop
-                    user.solo_monster_hp += user.solo_monster_max
-                    
-                    # Note: If your solo monsters drop loot upon death, make sure to add your loot generation code right here!
-        
         # Boss dies mid-week. It stays dead until Monday reset.
         if boss.current_hp <= 0:
             handle_boss_death(current_event)
@@ -1267,6 +1263,8 @@ def initialize_database():
             db.session.add(User(username='Matthew', solo_monster_name='Slime'))
             db.session.add(RaidBoss(name='Dragon'))
         db.session.commit()
+        
+initialize_database()
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
