@@ -716,18 +716,203 @@
     <!-- MAIN GAME VIEW WRAPPER ENDS HERE           -->
     <!-- ========================================== -->
 
-
-    <!-- ========================================== -->
+<!-- ========================================== -->
     <!-- MARKETPLACE VIEW STARTS HERE               -->
     <!-- ========================================== -->
     <div id="marketplace-view" style="display: none;">
-        <div class="card" style="border-color: gold;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <h2 style="margin: 0; color: gold;">🏪 The Guild Quartermaster</h2>
-                <button class="btn" style="width: auto; background: var(--border-color);" onclick="toggleView('main')">⬅️ Back to Battle</button>
-            </div>
-            <p style="color: var(--text-muted); text-align: center;">Marketplace features under construction...</p>
+        
+        <!-- Header & Return Button -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <h2 style="margin: 0; color: gold;">🏪 The Marketplace</h2>
+            <button class="btn" style="width: auto; background: #ef4444; box-shadow: 0 4px 10px rgba(239, 68, 68, 0.4);" onclick="toggleView('main')">↩ Return</button>
         </div>
+
+        <!-- THE GUILD HALL -->
+        <div class="card" id="guild-hall">
+            <h3 style="margin: 0 0 15px 0; color: #3b82f6;">🏰 The Guild Hall</h3>
+            
+            <div class="kobold-container">
+                <div class="kobold-avatar" style="border-color: #3b82f6;">👷🦎</div>
+                <div class="kobold-speech" id="krag-speech">"Grab a hammer! Pool your gold here for permanent upgrades. Don't skimp on materials!" - Krag</div>
+            </div>
+            
+            <!-- Scrollable Upgrade Container -->
+            <div style="max-height: 50vh; overflow-y: auto; padding-right: 5px;">
+                
+                <!-- Workout Upgrade (Cheapest) -->
+                <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; margin-bottom: 10px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                        <strong style="color: #ef4444;">Workout Efficiency (Lvl 1)</strong>
+                        <span style="font-size: 0.8em; color: var(--text-muted);">Current: 3.5x ➔ <span style="color: #fff;">Next: 3.6x</span></span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 0.85em; font-weight: bold; margin-bottom: 5px;">
+                        <span style="color: #ef4444;">Target: $50.00</span>
+                        <span>$0.00 / $50.00</span>
+                    </div>
+                    <div class="boss-bar" style="height: 10px; margin: 0 0 10px 0;">
+                        <div class="boss-progress" style="width: 0%; background: #ef4444;"></div>
+                    </div>
+                    <div style="display: flex; gap: 5px;">
+                        <button class="btn" style="flex: 1; padding: 8px 4px; background: #22c55e;" onclick="submitDonation('workout', 5)">+$5</button>
+                        <button class="btn" style="flex: 1; padding: 8px 4px; background: #16a34a;" onclick="submitDonation('workout', 10)">+$10</button>
+                        <button class="btn" style="flex: 1; padding: 8px 4px; background: #15803d;" onclick="submitDonation('workout', 25)">+$25</button>
+                        <button class="btn" style="flex: 1; padding: 8px 4px; background: #166534;" onclick="submitDonation('workout', 50)">+$50</button>
+                        <button class="btn" style="flex: 1; padding: 8px 4px; background: #14532d;" onclick="submitDonation('workout', 100)">+$100</button>
+                    </div>
+                </div>
+
+                <!-- Chore Upgrade (Moderate, 0.1x Increment) -->
+                <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; margin-bottom: 10px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                        <strong style="color: #10b981;">Chore Efficiency (Lvl 1)</strong>
+                        <span style="font-size: 0.8em; color: var(--text-muted);">Current: 5.0x ➔ <span style="color: #fff;">Next: 5.1x</span></span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 0.85em; font-weight: bold; margin-bottom: 5px;">
+                        <span style="color: #10b981;">Target: $100.00</span>
+                        <span>$0.00 / $100.00</span>
+                    </div>
+                    <div class="boss-bar" style="height: 10px; margin: 0 0 10px 0;">
+                        <div class="boss-progress" style="width: 0%; background: #10b981;"></div>
+                    </div>
+                    <div style="display: flex; gap: 5px;">
+                        <button class="btn" style="flex: 1; padding: 8px 4px; background: #22c55e;" onclick="submitDonation('chore', 5)">+$5</button>
+                        <button class="btn" style="flex: 1; padding: 8px 4px; background: #16a34a;" onclick="submitDonation('chore', 10)">+$10</button>
+                        <button class="btn" style="flex: 1; padding: 8px 4px; background: #15803d;" onclick="submitDonation('chore', 25)">+$25</button>
+                        <button class="btn" style="flex: 1; padding: 8px 4px; background: #166534;" onclick="submitDonation('chore', 50)">+$50</button>
+                        <button class="btn" style="flex: 1; padding: 8px 4px; background: #14532d;" onclick="submitDonation('chore', 100)">+$100</button>
+                    </div>
+                </div>
+
+                <!-- Hobby Upgrade (Moderate/High, $150 Target, 0.1x Increment) -->
+                <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; margin-bottom: 10px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                        <strong style="color: #3b82f6;">Hobby Efficiency (Lvl 1)</strong>
+                        <span style="font-size: 0.8em; color: var(--text-muted);">Current: 7.0x ➔ <span style="color: #fff;">Next: 7.1x</span></span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 0.85em; font-weight: bold; margin-bottom: 5px;">
+                        <span style="color: #3b82f6;">Target: $150.00</span>
+                        <span>$0.00 / $150.00</span>
+                    </div>
+                    <div class="boss-bar" style="height: 10px; margin: 0 0 10px 0;">
+                        <div class="boss-progress" style="width: 0%; background: #3b82f6;"></div>
+                    </div>
+                    <div style="display: flex; gap: 5px;">
+                        <button class="btn" style="flex: 1; padding: 8px 4px; background: #22c55e;" onclick="submitDonation('hobby', 5)">+$5</button>
+                        <button class="btn" style="flex: 1; padding: 8px 4px; background: #16a34a;" onclick="submitDonation('hobby', 10)">+$10</button>
+                        <button class="btn" style="flex: 1; padding: 8px 4px; background: #15803d;" onclick="submitDonation('hobby', 25)">+$25</button>
+                        <button class="btn" style="flex: 1; padding: 8px 4px; background: #166534;" onclick="submitDonation('hobby', 50)">+$50</button>
+                        <button class="btn" style="flex: 1; padding: 8px 4px; background: #14532d;" onclick="submitDonation('hobby', 100)">+$100</button>
+                    </div>
+                </div>
+
+                <!-- Orb Gold Upgrade (Expensive, 5% Increment) -->
+                <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; margin-bottom: 10px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                        <strong style="color: #f59e0b;">Orb Gold Yield (Lvl 1)</strong>
+                        <span style="font-size: 0.8em; color: var(--text-muted);">Current: +0% ➔ <span style="color: #fff;">Next: +5%</span></span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 0.85em; font-weight: bold; margin-bottom: 5px;">
+                        <span style="color: #f59e0b;">Target: $250.00</span>
+                        <span>$0.00 / $250.00</span>
+                    </div>
+                    <div class="boss-bar" style="height: 10px; margin: 0 0 10px 0;">
+                        <div class="boss-progress" style="width: 0%; background: #f59e0b;"></div>
+                    </div>
+                    <div style="display: flex; gap: 5px;">
+                        <button class="btn" style="flex: 1; padding: 8px 4px; background: #22c55e;" onclick="submitDonation('gold', 5)">+$5</button>
+                        <button class="btn" style="flex: 1; padding: 8px 4px; background: #16a34a;" onclick="submitDonation('gold', 10)">+$10</button>
+                        <button class="btn" style="flex: 1; padding: 8px 4px; background: #15803d;" onclick="submitDonation('gold', 25)">+$25</button>
+                        <button class="btn" style="flex: 1; padding: 8px 4px; background: #166534;" onclick="submitDonation('gold', 50)">+$50</button>
+                        <button class="btn" style="flex: 1; padding: 8px 4px; background: #14532d;" onclick="submitDonation('gold', 100)">+$100</button>
+                    </div>
+                </div>
+
+                <!-- Orb Rarity Upgrade (Very Expensive) -->
+                <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                        <strong style="color: #a855f7;">Epic Luck Bonus (Lvl 1)</strong>
+                        <span style="font-size: 0.8em; color: var(--text-muted);">Current: +0% ➔ <span style="color: #fff;">Next: +2% Rare Drop Rate</span></span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 0.85em; font-weight: bold; margin-bottom: 5px;">
+                        <span style="color: #a855f7;">Target: $500.00</span>
+                        <span>$0.00 / $500.00</span>
+                    </div>
+                    <div class="boss-bar" style="height: 10px; margin: 0 0 10px 0;">
+                        <div class="boss-progress" style="width: 0%; background: #a855f7;"></div>
+                    </div>
+                    <div style="display: flex; gap: 5px;">
+                        <button class="btn" style="flex: 1; padding: 8px 4px; background: #22c55e;" onclick="submitDonation('luck', 5)">+$5</button>
+                        <button class="btn" style="flex: 1; padding: 8px 4px; background: #16a34a;" onclick="submitDonation('luck', 10)">+$10</button>
+                        <button class="btn" style="flex: 1; padding: 8px 4px; background: #15803d;" onclick="submitDonation('luck', 25)">+$25</button>
+                        <button class="btn" style="flex: 1; padding: 8px 4px; background: #166534;" onclick="submitDonation('luck', 50)">+$50</button>
+                        <button class="btn" style="flex: 1; padding: 8px 4px; background: #14532d;" onclick="submitDonation('luck', 100)">+$100</button>
+                    </div>
+                </div>
+
+            </div> <!-- End Scrollable Container -->
+        </div>
+
+                <!-- Orb Rarity Upgrade (Very Expensive) -->
+                <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                        <strong style="color: #a855f7;">Epic Luck Bonus (Lvl 1)</strong>
+                        <span style="font-size: 0.8em; color: var(--text-muted);">Current: +0% ➔ <span style="color: #fff;">Next: +2% Rare Drop Rate</span></span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 0.85em; font-weight: bold; margin-bottom: 5px;">
+                        <span style="color: #a855f7;">Target: $500.00</span>
+                        <span>$0.00 / $500.00</span>
+                    </div>
+                    <div class="boss-bar" style="height: 10px; margin: 0 0 10px 0;">
+                        <div class="boss-progress" style="width: 0%; background: #a855f7;"></div>
+                    </div>
+                    <div style="display: flex; gap: 5px;">
+                        <button class="btn" style="flex: 1; padding: 8px 4px; background: #22c55e;" onclick="testDonation('luck', 5)">+$5</button>
+                        <button class="btn" style="flex: 1; padding: 8px 4px; background: #16a34a;" onclick="testDonation('luck', 10)">+$10</button>
+                        <button class="btn" style="flex: 1; padding: 8px 4px; background: #15803d;" onclick="testDonation('luck', 25)">+$25</button>
+                        <button class="btn" style="flex: 1; padding: 8px 4px; background: #166534;" onclick="testDonation('luck', 50)">+$50</button>
+                        <button class="btn" style="flex: 1; padding: 8px 4px; background: #14532d;" onclick="testDonation('luck', 100)">+$100</button>
+                    </div>
+                </div>
+
+            </div> <!-- End Scrollable Container -->
+        </div>
+        <!-- THE QUARTERMASTER -->
+       <!-- THE QUARTERMASTER -->
+        <div class="card" id="quartermaster">
+            <h3 style="margin: 0 0 15px 0; color: #f59e0b;">⛺ Snivels' Daily Deals</h3>
+            
+            <div class="kobold-container">
+                <div class="kobold-avatar" style="border-color: #f59e0b;">🧥🦎</div>
+                <div class="kobold-speech" id="snivels-speech">"No refunds, no returns, no eye contact! New shipments arrive at midnight. Buy it or beat it." - Snivels</div>
+            </div>
+            
+            <div class="flex-grid">
+                {% if daily_shop %}
+                    {% for shop_item in daily_shop %}
+                        <!-- Rarity Color Routing -->
+                        {% set rarity_color = '#a1a1aa' %}
+                        {% if shop_item.rarity == 'Uncommon' %}{% set rarity_color = '#10b981' %}{% endif %}
+                        {% if shop_item.rarity == 'Rare' %}{% set rarity_color = '#3b82f6' %}{% endif %}
+                        {% if shop_item.rarity == 'Legendary' %}{% set rarity_color = '#f59e0b' %}{% endif %}
+                        
+                        <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; text-align: center; display: flex; flex-direction: column; justify-content: space-between;">
+                            <div>
+                                <strong style="color: {{ rarity_color }};">{{ shop_item.name }}</strong>
+                                <p style="font-size: 0.8em; color: var(--text-muted); margin: 5px 0 10px 0;">{{ shop_item.desc }}</p>
+                            </div>
+                            
+                            <!-- Sold Out state handling -->
+                            {% if shop_item.is_sold %}
+                                <button class="btn" style="background: transparent; border: 1px solid #475569; color: #475569; padding: 8px; cursor: not-allowed;" disabled>SOLD OUT</button>
+                            {% else %}
+                                <button class="btn" style="background: transparent; border: 1px solid gold; color: gold; padding: 8px;" onclick="submitPurchase({{ shop_item.id }}, {{ shop_item.price }})">Buy: ${{ "%.2f"|format(shop_item.price) }}</button>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p style="color: var(--text-muted); text-align: center; width: 100%; font-style: italic; margin-top: 10px;">Snivels is currently restocking. Check back soon!</p>
+                {% endif %}
+            </div>
     </div>
     <!-- ========================================== -->
     
@@ -934,7 +1119,128 @@
                 window.scrollTo(0, 0);
             }
         };
-        // Run once on initial load
+       // REACTIVE KOBOLD DIALOGUE ARRAYS
+        const kragTier1 = [
+            '"WE ARE BUILDING A CASTLE TODAY! KEEP IT COMING!"',
+            '"A donation fit for a dragon\'s hoard! I\'ll put the best crew on it!"',
+            '"Now THAT is how you fund a guild! Drinks are on me!"'
+        ];
+        const kragTier2 = [
+            '"Now that is a solid load of bricks! Excellent!"',
+            '"Halfway to a new roof! Keep swinging!"',
+            '"Heavy purses make light work! Good job."'
+        ];
+        const kragTier3 = [
+            '"Good contribution. The foundation grows stronger."',
+            '"Every bit helps. I\'ll order more mortar."',
+            '"Not bad, not bad at all."'
+        ];
+        const kragTier4 = [
+            '"I suppose a few extra nails never hurt."',
+            '"A small pouch, but we\'ll put it to work."',
+            '"I guess this buys a single brick..."'
+        ];
+
+        window.submitDonation = async function(type, amount) {
+            const speech = document.getElementById('krag-speech');
+            
+            // 1. Randomly select dialogue based on donation amount
+            let quote = "";
+            if (amount >= 100) quote = kragTier1[Math.floor(Math.random() * kragTier1.length)];
+            else if (amount >= 50) quote = kragTier2[Math.floor(Math.random() * kragTier2.length)];
+            else if (amount >= 25) quote = kragTier3[Math.floor(Math.random() * kragTier3.length)];
+            else quote = kragTier4[Math.floor(Math.random() * kragTier4.length)];
+
+            speech.innerText = `${quote} - Krag`;
+            
+            setTimeout(() => {
+                speech.innerText = '"Grab a hammer! Pool your gold here for permanent upgrades. Don\'t skimp on materials!" - Krag';
+            }, 4000);
+            
+            // 2. The Real Backend Submission
+            try {
+                const formData = new FormData();
+                formData.append('upgrade_type', type);
+                formData.append('amount', amount);
+                
+                const response = await fetch('/donate_guild', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const newHtml = await response.text();
+                const newDoc = new DOMParser().parseFromString(newHtml, 'text/html');
+                
+                // 3. Seamlessly swap the Guild Hall and Vault cards
+                const oldGuild = document.getElementById('guild-hall');
+                const newGuild = newDoc.getElementById('guild-hall');
+                if (oldGuild && newGuild) oldGuild.innerHTML = newGuild.innerHTML;
+                
+                const oldVault = document.getElementById('vault-card');
+                const newVault = newDoc.getElementById('vault-card');
+                if (oldVault && newVault) oldVault.innerHTML = newVault.innerHTML;
+                
+            } catch (error) {
+                console.error("Donation processing failed:", error);
+            }
+        };
+        // REACTIVE KOBOLD DIALOGUE ARRAYS (SNIVELS)
+        const snivelsHigh = [
+            '"A HIGH ROLLER! I knew I liked you! Absolute steal!"',
+            '"Best deal in town, and I\'m practically robbing myself!"',
+            '"Finally, someone with actual coin!"'
+        ];
+        const snivelsLow = [
+            '"Heh heh, a fine choice. Pleasure doing business..."',
+            '"No refunds! It\'s yours now."',
+            '"Don\'t drop it. If you break it, you buy it twice."'
+        ];
+
+        window.submitPurchase = async function(shopItemId, price) {
+            const speech = document.getElementById('snivels-speech');
+            
+            // 1. Dialogue generation based on exponential pricing logic
+            let quote = price >= 25 
+                ? snivelsHigh[Math.floor(Math.random() * snivelsHigh.length)] 
+                : snivelsLow[Math.floor(Math.random() * snivelsLow.length)];
+                
+            speech.innerText = `${quote} - Snivels`;
+            
+            setTimeout(() => {
+                speech.innerText = '"No refunds, no returns, no eye contact! New shipments arrive at midnight. Buy it or beat it." - Snivels';
+            }, 4000);
+            
+            // 2. The Real Backend Submission
+            try {
+                const formData = new FormData();
+                formData.append('shop_item_id', shopItemId);
+                
+                const response = await fetch('/buy_shop_item', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const newHtml = await response.text();
+                const newDoc = new DOMParser().parseFromString(newHtml, 'text/html');
+                
+                // 3. Seamlessly swap the Quartermaster, Vault, and Inventory cards to reflect the purchase instantly
+                const oldShop = document.getElementById('quartermaster');
+                const newShop = newDoc.getElementById('quartermaster');
+                if (oldShop && newShop) oldShop.innerHTML = newShop.innerHTML;
+                
+                const oldVault = document.getElementById('vault-card');
+                const newVault = newDoc.getElementById('vault-card');
+                if (oldVault && newVault) oldVault.innerHTML = newVault.innerHTML;
+                
+                const oldInventory = document.getElementById('inventory-card');
+                const newInventory = newDoc.getElementById('inventory-card');
+                if (oldInventory && newInventory) oldInventory.innerHTML = newInventory.innerHTML;
+                
+            } catch (error) {
+                console.error("Purchase processing failed:", error);
+            }
+        };
+        
         window.toggleWorkoutFields();
     </script>
     {% endif %}
