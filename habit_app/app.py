@@ -953,12 +953,10 @@ def stage_activity():
             gold_drop = calculate_90_percent_loot_orb(boss.world_level, current_event)
             guild_stats = get_guild_stats()
             bonus_multiplier = 1.0 + (guild_stats['gold_cur'] / 100.0)
-            gold_drop = round(base_amt * bonus_multiplier, 2)
+            gold_drop = round(gold_drop * bonus_multiplier, 2)
             
             if current_event == "Goblin Merchant's Crash": gold_drop *= 2.0
             if current_event == "Treasure Mimic Infestation": gold_drop = 10.00
-            
-            # --- NEW EVENT: COLOSSEUM CHAMPION ---
             if current_event == "Colosseum Champion" and user.bosses_killed_today <= 3:
                 gold_drop *= 5.0
             # -------------------------------------
