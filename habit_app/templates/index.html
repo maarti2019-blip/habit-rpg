@@ -376,6 +376,12 @@
             <button class="btn" style="background: var(--border-color); margin-top: 15px;" onclick="saveAndCloseSettings()">Save & Close</button>
         </div>
     </div>
+    </div> <!-- This is the closing tag for your Settings Modal -->
+
+    <!-- ========================================== -->
+    <!-- MAIN GAME VIEW WRAPPER STARTS HERE         -->
+    <!-- ========================================== -->
+    <div id="main-view">
 
     {% if event_active_now and server_state and server_state.active_event %}
     {% set skin_class = "" %}
@@ -735,6 +741,26 @@
         {% endif %}
     </div>
 
+    </div> 
+    <!-- ========================================== -->
+    <!-- MAIN GAME VIEW WRAPPER ENDS HERE           -->
+    <!-- ========================================== -->
+
+
+    <!-- ========================================== -->
+    <!-- MARKETPLACE VIEW STARTS HERE               -->
+    <!-- ========================================== -->
+    <div id="marketplace-view" style="display: none;">
+        <div class="card" style="border-color: gold;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="margin: 0; color: gold;">🏪 The Guild Quartermaster</h2>
+                <button class="btn" style="width: auto; background: var(--border-color);" onclick="toggleView('main')">⬅️ Back to Battle</button>
+            </div>
+            <p style="color: var(--text-muted); text-align: center;">Marketplace features under construction...</p>
+        </div>
+    </div>
+    <!-- ========================================== -->
+    
     <script>
        // 1. GACHA ORB TRIGGER (Moved to global scope!)
         window.triggerGacha = function() {
