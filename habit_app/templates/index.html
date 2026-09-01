@@ -1120,20 +1120,16 @@
         ];
 
         window.submitDonation = async function(type, amount) {
-            const speech = document.getElementById('krag-speech');
-            
-            // 1. Randomly select dialogue based on donation amount
+            // 1. Randomly select dialogue
             let quote = "";
             if (amount >= 100) quote = kragTier1[Math.floor(Math.random() * kragTier1.length)];
             else if (amount >= 50) quote = kragTier2[Math.floor(Math.random() * kragTier2.length)];
             else if (amount >= 25) quote = kragTier3[Math.floor(Math.random() * kragTier3.length)];
             else quote = kragTier4[Math.floor(Math.random() * kragTier4.length)];
 
-            speech.innerText = `${quote} - Krag`;
-            
-            setTimeout(() => {
-                speech.innerText = '"Grab a hammer! Pool your gold here for permanent upgrades. Don\'t skimp on materials!" - Krag';
-            }, 15000);
+            // Play it instantly so the button feels responsive
+            const tempSpeech = document.getElementById('krag-speech');
+            if (tempSpeech) tempSpeech.innerText = `${quote} - Krag`;
             
             // 2. The Real Backend Submission
             try {
@@ -1158,6 +1154,15 @@
                 const newVault = newDoc.getElementById('vault-card');
                 if (oldVault && newVault) oldVault.innerHTML = newVault.innerHTML;
                 
+                // 4. THE FIX: Re-apply the quote to the fresh HTML and start the 8-second timer!
+                const freshSpeech = document.getElementById('krag-speech');
+                if (freshSpeech) {
+                    freshSpeech.innerText = `${quote} - Krag`;
+                    setTimeout(() => {
+                        freshSpeech.innerText = '"Grab a hammer! Pool your gold here for permanent upgrades. Don\'t skimp on materials!" - Krag';
+                    }, 8000);
+                }
+                
             } catch (error) {
                 console.error("Donation processing failed:", error);
             }
@@ -1175,18 +1180,13 @@
         ];
 
         window.submitPurchase = async function(shopItemId, price) {
-            const speech = document.getElementById('snivels-speech');
-            
-            // 1. Dialogue generation based on exponential pricing logic
+            // 1. Dialogue generation
             let quote = price >= 25 
                 ? snivelsHigh[Math.floor(Math.random() * snivelsHigh.length)] 
                 : snivelsLow[Math.floor(Math.random() * snivelsLow.length)];
                 
-            speech.innerText = `${quote} - Snivels`;
-            
-            setTimeout(() => {
-                speech.innerText = '"No refunds, no returns, no eye contact! New shipments arrive at midnight. Buy it or beat it." - Snivels';
-            }, 15000);
+            const tempSpeech = document.getElementById('snivels-speech');
+            if (tempSpeech) tempSpeech.innerText = `${quote} - Snivels`;
             
             // 2. The Real Backend Submission
             try {
@@ -1201,7 +1201,7 @@
                 const newHtml = await response.text();
                 const newDoc = new DOMParser().parseFromString(newHtml, 'text/html');
                 
-                // 3. Seamlessly swap the Quartermaster, Vault, and Inventory cards to reflect the purchase instantly
+                // 3. Seamlessly swap cards
                 const oldShop = document.getElementById('quartermaster');
                 const newShop = newDoc.getElementById('quartermaster');
                 if (oldShop && newShop) oldShop.innerHTML = newShop.innerHTML;
@@ -1213,6 +1213,15 @@
                 const oldInventory = document.getElementById('inventory-card');
                 const newInventory = newDoc.getElementById('inventory-card');
                 if (oldInventory && newInventory) oldInventory.innerHTML = newInventory.innerHTML;
+                
+                // 4. THE FIX: Re-apply the quote to the fresh HTML and start the 8-second timer!
+                const freshSpeech = document.getElementById('snivels-speech');
+                if (freshSpeech) {
+                    freshSpeech.innerText = `${quote} - Snivels`;
+                    setTimeout(() => {
+                        freshSpeech.innerText = '"No refunds, no returns, no eye contact! New shipments arrive at midnight. Buy it or beat it." - Snivels';
+                    }, 8000);
+                }
                 
             } catch (error) {
                 console.error("Purchase processing failed:", error);
