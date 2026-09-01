@@ -290,34 +290,6 @@
             <button class="settings-trigger" onclick="toggleSettings(true)">⚙️ Layout</button>
         </div>
     </div>
-
-    <!-- MAIN GAME VIEW -->
-    <div id="main-view">
-        
-        <div class="card" id="vault-card">...</div>
-        <div class="card" id="journal-card">...</div>
-        <div class="card" id="pet-card">...</div>
-        <div class="card" id="solo-card">...</div>
-        <div class="card" id="quest-card">...</div>
-        <div class="card" id="boss-card">...</div>
-        <div class="card" id="inventory-card">...</div>
-
-    </div>
-    <!-- MARKETPLACE VIEW -->
-    <div id="marketplace-view" style="display: none;">
-        
-        <div class="card" style="border-color: gold;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <h2 style="margin: 0; color: gold;">🏪 The Guild Quartermaster</h2>
-                <button class="btn" style="width: auto; background: var(--border-color);" onclick="toggleView('main')">⬅️ Back to Battle</button>
-            </div>
-            <p style="color: var(--text-muted); text-align: center;">Marketplace features under construction...</p>
-        </div>
-
-        <!-- We will build the Daily Shop, Bounties, and Upgrades inside this wrapper next -->
-
-    </div>
-
     
     <div id="settingsModal" class="settings-modal">
         <div class="modal-body">
@@ -740,8 +712,6 @@
             {% endfor %}
         {% endif %}
     </div>
-
-    </div> 
     <!-- ========================================== -->
     <!-- MAIN GAME VIEW WRAPPER ENDS HERE           -->
     <!-- ========================================== -->
