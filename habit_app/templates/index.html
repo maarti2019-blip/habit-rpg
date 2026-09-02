@@ -334,9 +334,10 @@
             <span style="font-size: 1.1em;">Profile: <strong>{{ current_user.username }}</strong></span><br>
             <a href="/manual_login/{% if current_user.username == 'Alaina' %}Matthew{% else %}Alaina{% endif %}" style="color:var(--text-muted); text-decoration:underline; font-size: 0.8em;">Switch User Profile</a>
         </div>
-        <div style="display: flex; gap: 10px;">
-            <button class="btn" style="width: auto; padding: 8px 12px;" onclick="toggleView('marketplace')">🏪 Marketplace</button>
-            <button class="settings-trigger" onclick="toggleSettings(true)">⚙️ Layout</button>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end;">
+            <button class="btn" style="width: auto; padding: 8px 12px; font-size: 0.9em;" onclick="toggleView('marketplace')">🏪 Market</button>
+            <button class="btn" style="width: auto; padding: 8px 12px; font-size: 0.9em; background: #fcd34d; color: black;" onclick="toggleView('tavern')">🤝 Co-Op Hub</button>
+            <button class="settings-trigger" style="padding: 8px; font-size: 0.9em;" onclick="toggleSettings(true)">⚙️</button>
         </div>
     </div>
     
@@ -980,6 +981,82 @@
         
     </div>
     <!-- ========================================== -->
+    <!-- ========================================== -->
+    <!-- CO-OP TAVERN VIEW STARTS HERE              -->
+    <!-- ========================================== -->
+    <div id="tavern-view" style="display: none; padding-top: 10px;">
+        
+        <!-- Header & Return Button -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <h2 style="margin: 0; color: #fcd34d;">🤝 Co-Op Hub</h2>
+            <button class="btn" style="width: auto; background: #ef4444; box-shadow: 0 4px 10px rgba(239, 68, 68, 0.4);" onclick="toggleView('main')">↩ Return</button>
+        </div>
+
+        <!-- THE P2P JOB BOARD -->
+        <div class="card" id="job-board" style="border-color: #fcd34d;">
+            <h3 style="margin: 0 0 15px 0; color: #fcd34d;">📜 Co-Op Bounty Board</h3>
+            <p style="color: var(--text-muted); font-size: 0.9em; margin-top: -10px; margin-bottom: 15px; font-style: italic;">Post custom jobs for your partner. Rewards are held in escrow from your Vault!</p>
+
+            <!-- Post a Job Form -->
+            <div style="background: rgba(0,0,0,0.3); border: 1px dashed #fcd34d; border-radius: 8px; padding: 12px; margin-bottom: 15px;">
+                <h4 style="margin: 0 0 10px 0; color: #fcd34d; font-size: 1em;">Post a New Bounty</h4>
+                <form id="postBountyForm" onsubmit="submitBounty(event)">
+                    <input type="text" name="task_desc" placeholder="Task (e.g., Help me clean my car)" required style="margin-bottom: 8px;">
+                    <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                        <input type="number" name="gold_reward" placeholder="Gold Reward ($)" step="0.01" min="0" required style="flex: 1; margin-bottom: 0;">
+                        <select name="item_reward" style="flex: 1; margin-bottom: 0;">
+                            <option value="None">No Item</option>
+                            <option value="Common">Common Item</option>
+                            <option value="Uncommon">Uncommon Item</option>
+                            <option value="Rare">Rare Item</option>
+                            <option value="Legendary">Legendary Item</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn" style="background: #fcd34d; color: black; font-weight: bold;">Pin to Board</button>
+                </form>
+            </div>
+
+            <!-- Active Bounties List -->
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                {% if active_bounties %}
+                    {% for bounty in active_bounties %}
+                        <div style="background: rgba(0,0,0,0.4); border-left: 4px solid #3b82f6; border-radius: 6px; padding: 12px; display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <strong style="color: #e2e8f0; font-size: 1.05em;">{{ bounty.task_desc }}</strong>
+                                <p style="color: var(--text-muted); font-size: 0.85em; margin: 4px 0 0 0;">Posted by: <span style="color: #fff;">{{ bounty.poster_name }}</span></p>
+                            </div>
+                            <div style="text-align: right;">
+                                <span style="display: block; color: #fcd34d; font-weight: bold; margin-bottom: 2px;">+${{ "%.2f"|format(bounty.gold_reward) }}</span>
+                                {% if bounty.item_reward != 'None' %}
+                                    <span style="display: block; color: {% if bounty.item_reward == 'Legendary' %}#f59e0b{% elif bounty.item_reward == 'Rare' %}#3b82f6{% elif bounty.item_reward == 'Uncommon' %}#10b981{% else %}#a1a1aa{% endif %}; font-size: 0.8em; margin-bottom: 5px; font-weight: bold;">+ 1 {{ bounty.item_reward }}</span>
+                                {% endif %}
+                                
+                                {% if bounty.poster_id == current_user.id %}
+                                    <button class="btn" style="padding: 6px 12px; font-size: 0.85em; width: auto; background: transparent; border: 1px solid #ef4444; color: #ef4444;" onclick="interactBounty('cancel', {{ bounty.id }})">Cancel</button>
+                                {% else %}
+                                    <button class="btn" style="padding: 6px 12px; font-size: 0.85em; width: auto; background: #10b981;" onclick="interactBounty('claim', {{ bounty.id }})">Fulfill</button>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p style="text-align: center; color: var(--text-muted); font-size: 0.9em; font-style: italic; margin: 5px 0;">No active bounties posted.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- THE TRADING POST (Shell for Next Step) -->
+        <div class="card" id="trading-post" style="border-color: #10b981;">
+            <h3 style="margin: 0 0 15px 0; color: #10b981;">📦 Item Trading Post</h3>
+            <p style="color: var(--text-muted); font-size: 0.9em; margin-top: -10px; margin-bottom: 15px; font-style: italic;">Swap equipment directly from your Vault inventory.</p>
+            
+            <div style="text-align: center; padding: 20px; background: rgba(0,0,0,0.3); border-radius: 8px; border: 1px dashed var(--border-color);">
+                <p style="color: var(--text-muted); font-size: 0.9em;">Trading mechanisms are currently being constructed...</p>
+            </div>
+        </div>
+
+    </div> <!-- This closes the tavern-view wrapper! -->
+    <!-- ========================================== -->
     
     <script>
        // 1. GACHA ORB TRIGGER (Moved to global scope!)
@@ -1168,21 +1245,28 @@
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('/static/sw.js');
         }
-        // INSTANT VIEW TOGGLING
+        // INSTANT VIEW TOGGLING (3-Way Router)
         window.toggleView = function(targetView) {
             const mainView = document.getElementById('main-view');
             const marketView = document.getElementById('marketplace-view');
+            const tavernView = document.getElementById('tavern-view');
             
-            if (targetView === 'marketplace') {
-                mainView.style.display = 'none';
+            // 1. Hide everything first
+            if (mainView) mainView.style.display = 'none';
+            if (marketView) marketView.style.display = 'none';
+            if (tavernView) tavernView.style.display = 'none';
+            
+            // 2. Reveal only the requested view
+            if (targetView === 'marketplace' && marketView) {
                 marketView.style.display = 'block';
-                // Optional: Scroll to top instantly when opening the shop
-                window.scrollTo(0, 0); 
-            } else {
+            } else if (targetView === 'tavern' && tavernView) {
+                tavernView.style.display = 'block';
+            } else if (mainView) {
                 mainView.style.display = 'block';
-                marketView.style.display = 'none';
-                window.scrollTo(0, 0);
             }
+            
+            // 3. Reset scroll position to the top of the new room
+            window.scrollTo(0, 0); 
         };
        // REACTIVE KOBOLD DIALOGUE ARRAYS
         const kragTier1 = [
