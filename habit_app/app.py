@@ -777,8 +777,11 @@ def index():
     
     active_bounties = BountyBoard.query.filter_by(is_active=True).all()
     
-    return render_template('index.html', current_user=current_user, players=players, boss=boss, pending_rewards=pending_rewards, inventory=inventory, solo_img=solo_img, raid_img=raid_img, server_state=server_state, transactions=transactions, activity_logs=activity_logs, WEEKLY_QUESTS=WEEKLY_QUESTS, event_active_now=event_active_now, active_spoils=active_spoils, daily_shop=daily_shop, guild_stats=guild_stats, alaina_hustled=alaina_hustled, matthew_hustled=matthew_hustled, active_bounties=active_bounties)
-
+    # Calculate how many active bounties were posted by the OTHER player
+    partner_bounty_count = sum(1 for b in active_bounties if current_user and b.poster_id != current_user.id)
+    
+    return render_template('index.html', current_user=current_user, players=players, boss=boss, pending_rewards=pending_rewards, inventory=inventory, solo_img=solo_img, raid_img=raid_img, server_state=server_state, transactions=transactions, activity_logs=activity_logs, WEEKLY_QUESTS=WEEKLY_QUESTS, event_active_now=event_active_now, active_spoils=active_spoils, daily_shop=daily_shop, guild_stats=guild_stats, alaina_hustled=alaina_hustled, matthew_hustled=matthew_hustled, active_bounties=active_bounties, partner_bounty_count=partner_bounty_count)
+    
 @app.route('/select_quest/<int:q_id>', methods=['POST'])
 def select_quest(q_id):
     if 'user_id' not in session: return redirect('/')
