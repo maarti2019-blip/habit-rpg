@@ -783,7 +783,10 @@
         
         <!-- Header & Return Button -->
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-            <h2 style="margin: 0; color: gold;">🏪 The Marketplace</h2>
+            <div>
+                <h2 style="margin: 0; color: gold;">🏪 The Marketplace</h2>
+                <span style="color: #fcd34d; font-weight: bold; font-size: 0.9em;">Vault: ${{ "%.2f"|format(current_user.gold_balance) }}</span>
+            </div>
             <button class="btn" style="width: auto; background: #ef4444; box-shadow: 0 4px 10px rgba(239, 68, 68, 0.4);" onclick="toggleView('main')">↩ Return</button>
         </div>
 
@@ -996,7 +999,10 @@
         
         <!-- Header & Return Button -->
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-            <h2 style="margin: 0; color: #fcd34d;">🤝 Co-Op Hub</h2>
+            <div>
+                <h2 style="margin: 0; color: #fcd34d;">🤝 Co-Op Hub</h2>
+                <span style="color: #fcd34d; font-weight: bold; font-size: 0.9em;">Vault: ${{ "%.2f"|format(current_user.gold_balance) }}</span>
+            </div>
             <button class="btn" style="width: auto; background: #ef4444; box-shadow: 0 4px 10px rgba(239, 68, 68, 0.4);" onclick="toggleView('main')">↩ Return</button>
         </div>
 
@@ -1012,17 +1018,50 @@
                     <input type="text" name="task_desc" placeholder="Task (e.g., Help me clean my car)" required style="margin-bottom: 8px;">
                     <div style="display: flex; gap: 8px; margin-bottom: 8px;">
                         <input type="number" name="gold_reward" placeholder="Gold Reward ($)" step="0.01" min="0" required style="flex: 1; margin-bottom: 0;">
-                        <select name="item_reward" style="flex: 1; margin-bottom: 0;">
-                            <option value="None">No Item</option>
-                            <option value="Common">Common Item</option>
-                            <option value="Uncommon">Uncommon Item</option>
-                            <option value="Rare">Rare Item</option>
-                            <option value="Legendary">Legendary Item</option>
+                        <select name="item_reward" style="flex: 1; margin-bottom: 0; font-size: 0.85em; padding: 12px;">
+                            <option value="None">No Item Bonus</option>
+                            {% if inventory %}
+                                {% for item in inventory %}
+                                    {% if not item.is_active %}
+                                        <option value="{{ item.id }}">[{{ item.rarity }}] {{ item.item_name }}</option>
+                                    {% endif %}
+                                {% endfor %}
+                            {% endif %}
                         </select>
                     </div>
                     <button type="submit" class="btn" style="background: #fcd34d; color: black; font-weight: bold;">Pin to Board</button>
                 </form>
             </div>
+
+            <!-- Active Bounties List -->
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                {% if active_bounties %}
+                    {% for bounty in active_bounties %}
+                        <div style="background: rgba(0,0,0,0.4); border-left: 4px solid #3b82f6; border-radius: 6px; padding: 12px; display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <strong style="color: #e2e8f0; font-size: 1.05em;">{{ bounty.task_desc }}</strong>
+                                <p style="color: var(--text-muted); font-size: 0.85em; margin: 4px 0 0 0;">Posted by: <span style="color: #fff;">{{ bounty.poster_name }}</span></p>
+                            </div>
+                            <div style="text-align: right;">
+                                <span style="display: block; color: #fcd34d; font-weight: bold; margin-bottom: 2px;">+${{ "%.2f"|format(bounty.gold_reward) }}</span>
+                                
+                                {% if bounty.item_reward != 'None' and bounty.display_item_name %}
+                                    <span style="display: block; color: {% if bounty.display_item_rarity == 'Legendary' %}#f59e0b{% elif bounty.display_item_rarity == 'Rare' %}#3b82f6{% elif bounty.display_item_rarity == 'Uncommon' %}#10b981{% else %}#a1a1aa{% endif %}; font-size: 0.8em; margin-bottom: 5px; font-weight: bold;">+ [{{ bounty.display_item_rarity }}] {{ bounty.display_item_name }}</span>
+                                {% endif %}
+                                
+                                {% if bounty.poster_id == current_user.id %}
+                                    <button class="btn" style="padding: 6px 12px; font-size: 0.85em; width: auto; background: transparent; border: 1px solid #ef4444; color: #ef4444;" onclick="interactBounty('cancel', {{ bounty.id }})">Cancel</button>
+                                {% else %}
+                                    <button class="btn" style="padding: 6px 12px; font-size: 0.85em; width: auto; background: #10b981;" onclick="interactBounty('claim', {{ bounty.id }})">Fulfill</button>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p style="text-align: center; color: var(--text-muted); font-size: 0.9em; font-style: italic; margin: 5px 0;">No active bounties posted.</p>
+                {% endif %}
+            </div>
+        </div>
 
             <!-- Active Bounties List -->
             <div style="display: flex; flex-direction: column; gap: 10px;">
@@ -1366,7 +1405,7 @@
                 
             const tempSpeech = document.getElementById('snivels-speech');
             if (tempSpeech) tempSpeech.innerText = `${quote} - Snivels`;
-
+        };
             // 7. CO-OP BOUNTY BOARD LOGIC
         window.submitBounty = async function(e) {
             e.preventDefault();
