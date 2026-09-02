@@ -366,6 +366,16 @@ class BountyBoard(db.Model):
     item_reward = db.Column(db.String(50), default='None')
     is_active = db.Column(db.Boolean, default=True)
     timestamp = db.Column(db.DateTime, default=lambda: get_est_now().replace(tzinfo=None))
+
+class TradeOffer(db.Model):
+    __tablename__ = 'trade_offer'
+    id = db.Column(db.Integer, primary_key=True)
+    poster_id = db.Column(db.Integer, nullable=False)
+    poster_name = db.Column(db.String(50), nullable=False)
+    offered_item_ids = db.Column(db.String(255), nullable=False) # Stores multiple item IDs
+    offered_item_names = db.Column(db.String(500), nullable=False) # Stores the formatted list for the HTML
+    requested_return = db.Column(db.String(255), nullable=False)
+    timestamp = db.Column(db.DateTime, default=lambda: get_est_now().replace(tzinfo=None))
     
 class TransactionHistory(db.Model):
     __tablename__ = 'transaction_history'
@@ -776,6 +786,7 @@ def index():
     matthew_hustled = matthew_max >= 120.0
     
     active_bounties = BountyBoard.query.filter_by(is_active=True).all()
+    active_trades = TradeOffer.query.order_by(TradeOffer.timestamp.desc()).all()
     
     # Recover the escrowed item details so the HTML can display them properly
     for bounty in active_bounties:
@@ -790,7 +801,7 @@ def index():
     # Calculate how many active bounties were posted by the OTHER player
     partner_bounty_count = sum(1 for b in active_bounties if current_user and b.poster_id != current_user.id)
     
-    return render_template('index.html', current_user=current_user, players=players, boss=boss, pending_rewards=pending_rewards, inventory=inventory, solo_img=solo_img, raid_img=raid_img, server_state=server_state, transactions=transactions, activity_logs=activity_logs, WEEKLY_QUESTS=WEEKLY_QUESTS, event_active_now=event_active_now, active_spoils=active_spoils, daily_shop=daily_shop, guild_stats=guild_stats, alaina_hustled=alaina_hustled, matthew_hustled=matthew_hustled, active_bounties=active_bounties, partner_bounty_count=partner_bounty_count)
+    return render_template('index.html', current_user=current_user, players=players, boss=boss, pending_rewards=pending_rewards, inventory=inventory, solo_img=solo_img, raid_img=raid_img, server_state=server_state, transactions=transactions, activity_logs=activity_logs, WEEKLY_QUESTS=WEEKLY_QUESTS, event_active_now=event_active_now, active_spoils=active_spoils, daily_shop=daily_shop, guild_stats=guild_stats, alaina_hustled=alaina_hustled, matthew_hustled=matthew_hustled, active_bounties=active_bounties, partner_bounty_count=partner_bounty_count, active_trades=active_trades)
 
 @app.route('/select_quest/<int:q_id>', methods=['POST'])
 def select_quest(q_id):
@@ -878,6 +889,79 @@ def interact_bounty():
                 
             bounty.is_active = False
             
+        db.session.commit()
+    return redirect('/')
+
+@app.route('/post_trade', methods=['POST'])
+def post_trade():
+    if 'user_id' not in session: return redirect('/')
+    user = User.query.get(session['user_id'])
+    
+    # getlist() captures ALL the checkboxes you ticked!
+    offered_ids = request.form.getlist('offered_items')
+    requested_return = request.form.get('requested_return')
+    
+    if not offered_ids or not requested_return:
+        return redirect('/')
+        
+    offered_names = []
+    valid_ids = []
+    
+    # Send all checked items to escrow
+    for item_id in offered_ids:
+        item = UserInventory.query.filter_by(id=int(item_id), user_id=user.id).first()
+        if item and not item.is_active:
+            item.user_id = -1 
+            offered_names.append(f"[{item.rarity}] {item.item_name}")
+            valid_ids.append(str(item.id))
+            
+    if valid_ids:
+        new_trade = TradeOffer(
+            poster_id=user.id,
+            poster_name=user.username,
+            offered_item_ids=",".join(valid_ids),
+            offered_item_names="\n".join(offered_names), # Uses line breaks for the HTML
+            requested_return=requested_return
+        )
+        db.session.add(new_trade)
+        db.session.commit()
+        
+    return redirect('/')
+
+@app.route('/interact_trade', methods=['POST'])
+def interact_trade():
+    if 'user_id' not in session: return redirect('/')
+    user = User.query.get(session['user_id'])
+    
+    action = request.form.get('action_type')
+    trade_id = request.form.get('trade_id')
+    trade = TradeOffer.query.get(trade_id)
+    
+    if trade:
+        item_ids = trade.offered_item_ids.split(',')
+        
+        if action == 'cancel' and trade.poster_id == user.id:
+            # Return all escrowed items back to the poster
+            for i_id in item_ids:
+                item = UserInventory.query.get(int(i_id))
+                if item: item.user_id = user.id
+            db.session.delete(trade)
+            
+        elif action == 'accept' and trade.poster_id != user.id:
+            given_item_id = request.form.get('given_item_id')
+            given_item = UserInventory.query.filter_by(id=int(given_item_id), user_id=user.id).first()
+            
+            if given_item and not given_item.is_active:
+                # 1. Give the partner's item to the poster
+                given_item.user_id = trade.poster_id
+                
+                # 2. Give the poster's escrowed items to the partner
+                for i_id in item_ids:
+                    item = UserInventory.query.get(int(i_id))
+                    if item: item.user_id = user.id
+                    
+                db.session.delete(trade)
+                
         db.session.commit()
     return redirect('/')
     
@@ -1364,6 +1448,7 @@ def initialize_database():
         db.create_all()
         if not ServerState.query.first():
             db.session.add(ServerState())
+        if not TradeOffer.query.first(): pass
         if not GuildHall.query.first():
             db.session.add(GuildHall())
         if not User.query.first():
