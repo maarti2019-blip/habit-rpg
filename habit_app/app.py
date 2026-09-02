@@ -772,7 +772,7 @@ def index():
     alaina_max = db.session.query(db.func.max(ActivityLog.minutes)).filter(ActivityLog.user_id == alaina_user.id, ActivityLog.timestamp >= today_start).scalar() or 0.0 if alaina_user else 0.0
     matthew_max = db.session.query(db.func.max(ActivityLog.minutes)).filter(ActivityLog.user_id == matthew_user.id, ActivityLog.timestamp >= today_start).scalar() or 0.0 if matthew_user else 0.0
     
-   alaina_hustled = alaina_max >= 120.0
+    alaina_hustled = alaina_max >= 120.0
     matthew_hustled = matthew_max >= 120.0
     
     active_bounties = BountyBoard.query.filter_by(is_active=True).all()
