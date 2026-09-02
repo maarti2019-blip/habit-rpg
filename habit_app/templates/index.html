@@ -1581,12 +1581,12 @@
                 console.error("Bounty interaction failed:", error);
             }
         };
-
         // 8. TRADING POST LOGIC
         window.submitTrade = async function(e) {
             e.preventDefault();
             const form = e.target;
             
+            // Ensure they checked at least one item
             const checkedItems = form.querySelectorAll('input[name="offered_items"]:checked');
             if (checkedItems.length === 0) {
                 alert("You must select at least one item from your Vault to offer!");
@@ -1603,6 +1603,7 @@
                 const newHtml = await response.text();
                 const newDoc = new DOMParser().parseFromString(newHtml, 'text/html');
                 
+                // Swap the Trading Post and Inventory instantly
                 const oldPost = document.getElementById('trading-post');
                 const newPost = newDoc.getElementById('trading-post');
                 if (oldPost && newPost) oldPost.innerHTML = newPost.innerHTML;
@@ -1640,6 +1641,7 @@
                 const newHtml = await response.text();
                 const newDoc = new DOMParser().parseFromString(newHtml, 'text/html');
                 
+                // Swap the Trading Post and Inventory instantly
                 const oldPost = document.getElementById('trading-post');
                 const newPost = newDoc.getElementById('trading-post');
                 if (oldPost && newPost) oldPost.innerHTML = newPost.innerHTML;
