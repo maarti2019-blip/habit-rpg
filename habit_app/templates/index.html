@@ -24,6 +24,55 @@
         body.base-cyber { --bg-main: #09090b; --bg-card: #18181b; --border-color: #27272a; }
         body.base-forest { --bg-main: #052e16; --bg-card: #14532d; --border-color: #166534; }
 
+        /* --- KOBOLD MARKETPLACE STYLES --- */
+        .kobold-container { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; background: rgba(0,0,0,0.4); padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); }
+        .kobold-avatar { font-size: 2.5em; background: var(--bg-card); padding: 5px 10px; border-radius: 50%; border: 2px solid; text-align: center; }
+        .kobold-speech { position: relative; background: var(--bg-main); padding: 12px; border-radius: 8px; flex: 1; border: 1px solid var(--border-color); color: var(--text-main); font-size: 0.9em; font-style: italic; }
+        .kobold-speech::before { content: ''; position: absolute; left: -10px; top: 15px; border-width: 5px 10px 5px 0; border-style: solid; border-color: transparent var(--border-color) transparent transparent; }
+
+        /* --- VIBRANT MARKETPLACE OVERRIDES --- */
+        
+        /* 1. The Room Background (Overrides the global body padding/theme) */
+        #marketplace-view {
+            background: radial-gradient(circle at 50% 0%, #2e1065, #0f0f12 70%); /* Deep mystical purple fading to dark */
+            margin: -15px; /* Pulls the background flush with the edges of the phone */
+            padding: 15px;
+            min-height: 100vh;
+        }
+
+        /* 2. The Guild Hall (Arcane Blue Glow) */
+        #marketplace-view #guild-hall {
+            background: linear-gradient(160deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 58, 138, 0.4) 100%) !important;
+            border: 2px solid #3b82f6 !important;
+            box-shadow: 0 0 30px rgba(59, 130, 246, 0.25), inset 0 0 20px rgba(59, 130, 246, 0.15) !important;
+        }
+
+        /* 3. The Quartermaster (Hearth Gold Glow) */
+        #marketplace-view #quartermaster {
+            background: linear-gradient(160deg, rgba(30, 15, 0, 0.95) 0%, rgba(146, 64, 14, 0.4) 100%) !important;
+            border: 2px solid #f59e0b !important;
+            box-shadow: 0 0 30px rgba(245, 158, 11, 0.25), inset 0 0 20px rgba(245, 158, 11, 0.15) !important;
+        }
+
+        /* 4. Text Glowing & Polish */
+        #marketplace-view h2 { text-shadow: 0 0 15px rgba(255, 215, 0, 0.8); }
+        #guild-hall h3 { text-shadow: 0 0 10px rgba(59, 130, 246, 0.8); }
+        #quartermaster h3 { text-shadow: 0 0 10px rgba(245, 158, 11, 0.8); }
+
+        /* 5. Darken the inner upgrade/shop cards so the buttons pop more */
+        #marketplace-view #guild-hall > div > div, 
+        #marketplace-view #quartermaster .flex-grid > div {
+            background: rgba(0, 0, 0, 0.6) !important;
+            border-color: rgba(255, 255, 255, 0.15) !important;
+            backdrop-filter: blur(4px);
+        }
+        
+        #marketplace-view .kobold-container {
+            background: rgba(0, 0, 0, 0.7) !important;
+            border-color: rgba(255, 255, 255, 0.2) !important;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+        
         /* --- ACCENT COLORS --- */
         body.accent-blue { --accent-primary: #3b82f6; }
         body.accent-emerald { --accent-primary: #10b981; }
