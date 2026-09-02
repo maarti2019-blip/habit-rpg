@@ -772,16 +772,26 @@ def index():
     alaina_max = db.session.query(db.func.max(ActivityLog.minutes)).filter(ActivityLog.user_id == alaina_user.id, ActivityLog.timestamp >= today_start).scalar() or 0.0 if alaina_user else 0.0
     matthew_max = db.session.query(db.func.max(ActivityLog.minutes)).filter(ActivityLog.user_id == matthew_user.id, ActivityLog.timestamp >= today_start).scalar() or 0.0 if matthew_user else 0.0
     
-    alaina_hustled = alaina_max >= 120.0
+   alaina_hustled = alaina_max >= 120.0
     matthew_hustled = matthew_max >= 120.0
     
     active_bounties = BountyBoard.query.filter_by(is_active=True).all()
+    
+    # Recover the escrowed item details so the HTML can display them properly
+    for bounty in active_bounties:
+        if bounty.item_reward != 'None':
+            escrow_item = UserInventory.query.get(int(bounty.item_reward))
+            if escrow_item:
+                bounty.display_item_name = escrow_item.item_name
+                bounty.display_item_rarity = escrow_item.rarity
+            else:
+                bounty.display_item_name = None
     
     # Calculate how many active bounties were posted by the OTHER player
     partner_bounty_count = sum(1 for b in active_bounties if current_user and b.poster_id != current_user.id)
     
     return render_template('index.html', current_user=current_user, players=players, boss=boss, pending_rewards=pending_rewards, inventory=inventory, solo_img=solo_img, raid_img=raid_img, server_state=server_state, transactions=transactions, activity_logs=activity_logs, WEEKLY_QUESTS=WEEKLY_QUESTS, event_active_now=event_active_now, active_spoils=active_spoils, daily_shop=daily_shop, guild_stats=guild_stats, alaina_hustled=alaina_hustled, matthew_hustled=matthew_hustled, active_bounties=active_bounties, partner_bounty_count=partner_bounty_count)
-    
+
 @app.route('/select_quest/<int:q_id>', methods=['POST'])
 def select_quest(q_id):
     if 'user_id' not in session: return redirect('/')
@@ -803,6 +813,74 @@ def manual_login(username):
         session['user_id'] = user.id
     return redirect('/')
 
+@app.route('/post_bounty', methods=['POST'])
+def post_bounty():
+    if 'user_id' not in session: return redirect('/')
+    user = User.query.get(session['user_id'])
+    
+    task_desc = request.form.get('task_desc')
+    item_reward_id = request.form.get('item_reward', 'None')
+    try: gold_reward = float(request.form.get('gold_reward', 0))
+    except: gold_reward = 0.0
+    
+    if user.gold_balance >= gold_reward and task_desc:
+        user.gold_balance -= gold_reward  # Hold gold in escrow
+        
+        # Hold item in escrow (change owner to -1 so it leaves their Vault)
+        item_id_to_store = 'None'
+        if item_reward_id != 'None':
+            item = UserInventory.query.filter_by(id=int(item_reward_id), user_id=user.id).first()
+            if item and not item.is_active:
+                item.user_id = -1 
+                item_id_to_store = str(item.id)
+                
+        new_bounty = BountyBoard(
+            poster_id=user.id, poster_name=user.username,
+            task_desc=task_desc, gold_reward=gold_reward, item_reward=item_id_to_store
+        )
+        db.session.add(new_bounty)
+        db.session.add(TransactionHistory(user_id=user.id, amount=gold_reward, reason=f"Bounty Escrow: {task_desc}"))
+        db.session.commit()
+        
+    return redirect('/')
+
+@app.route('/interact_bounty', methods=['POST'])
+def interact_bounty():
+    if 'user_id' not in session: return redirect('/')
+    user = User.query.get(session['user_id'])
+    
+    action = request.form.get('action_type')
+    bounty_id = request.form.get('bounty_id')
+    bounty = BountyBoard.query.get(bounty_id)
+    
+    if bounty and bounty.is_active:
+        if action == 'cancel' and bounty.poster_id == user.id:
+            # Refund escrowed gold
+            user.gold_balance += bounty.gold_reward
+            
+            # Refund escrowed item back to the original poster
+            if bounty.item_reward != 'None':
+                item = UserInventory.query.get(int(bounty.item_reward))
+                if item: item.user_id = user.id
+                
+            bounty.is_active = False
+            db.session.add(TransactionHistory(user_id=user.id, amount=bounty.gold_reward, reason=f"Bounty Refund: {bounty.task_desc}"))
+            
+        elif action == 'claim' and bounty.poster_id != user.id:
+            # Payout gold to the fulfiller
+            user.gold_balance += bounty.gold_reward
+            user.wk_gold += bounty.gold_reward
+            
+            # Transfer escrowed item to the fulfiller
+            if bounty.item_reward != 'None':
+                item = UserInventory.query.get(int(bounty.item_reward))
+                if item: item.user_id = user.id
+                
+            bounty.is_active = False
+            
+        db.session.commit()
+    return redirect('/')
+    
 @app.route('/dismiss_report', methods=['POST'])
 def dismiss_report():
     if 'user_id' in session:
