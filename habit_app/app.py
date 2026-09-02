@@ -355,6 +355,17 @@ class DailyShopItem(db.Model):
     price = db.Column(db.Float)
     is_sold = db.Column(db.Boolean, default=False)
     date_seeded = db.Column(db.String(20)) # Tracks the day it was generated
+
+class BountyBoard(db.Model):
+    __tablename__ = 'bounty_board'
+    id = db.Column(db.Integer, primary_key=True)
+    poster_id = db.Column(db.Integer, nullable=False)
+    poster_name = db.Column(db.String(50), nullable=False)
+    task_desc = db.Column(db.String(255), nullable=False)
+    gold_reward = db.Column(db.Float, default=0.0)
+    item_reward = db.Column(db.String(50), default='None')
+    is_active = db.Column(db.Boolean, default=True)
+    timestamp = db.Column(db.DateTime, default=lambda: get_est_now().replace(tzinfo=None))
     
 class TransactionHistory(db.Model):
     __tablename__ = 'transaction_history'
@@ -423,30 +434,34 @@ def refresh_daily_shop():
     existing = DailyShopItem.query.first()
     
     if existing and existing.date_seeded == today_str:
-        return # Shop is already up to date for today
+        return 
         
-    # Delete yesterday's shop
     DailyShopItem.query.delete()
     
-    # Roll 4 new items with strict rarity chances
+    # Filter out all flat gold drops
+    shop_common = [i for i in COMMON_ITEMS if i[1] != 'gold']
+    shop_uncommon = [i for i in UNCOMMON_ITEMS if i[1] != 'gold']
+    shop_rare = [i for i in RARE_ITEMS if i[1] != 'gold']
+    shop_legendary = [i for i in LEGENDARY_ITEMS if i[1] != 'gold']
+    
     for _ in range(4):
         roll = random.random() * 100
-        if roll <= 10.0:  # 10% Legendary
+        if roll <= 10.0:  
             rarity = "Legendary"
-            item_data = random.choice(LEGENDARY_ITEMS)
-            price = round(random.uniform(200.0, 350.0), 2)
-        elif roll <= 25.0: # 15% Rare
+            item_data = random.choice(shop_legendary)
+            price = round(random.uniform(100.0, 175.0), 2)
+        elif roll <= 25.0: 
             rarity = "Rare"
-            item_data = random.choice(RARE_ITEMS)
-            price = round(random.uniform(75.0, 150.0), 2)
-        elif roll <= 50.0: # 25% Uncommon
+            item_data = random.choice(shop_rare)
+            price = round(random.uniform(40.0, 75.0), 2)
+        elif roll <= 50.0: 
             rarity = "Uncommon"
-            item_data = random.choice(UNCOMMON_ITEMS)
-            price = round(random.uniform(25.0, 60.0), 2)
-        else: # 50% Common
+            item_data = random.choice(shop_uncommon)
+            price = round(random.uniform(15.0, 30.0), 2)
+        else: 
             rarity = "Common"
-            item_data = random.choice(COMMON_ITEMS)
-            price = round(random.uniform(5.0, 15.0), 2)
+            item_data = random.choice(shop_common)
+            price = round(random.uniform(2.0, 8.0), 2)
             
         db.session.add(DailyShopItem(
             name=item_data[0], category=item_data[1], multiplier=item_data[2],
@@ -747,8 +762,22 @@ def index():
     refresh_daily_shop()
     daily_shop = DailyShopItem.query.all()
     guild_stats = get_guild_stats()
+
+    # Calculate daily hustle minutes for the Rebate (Must be a SINGLE unbroken session of 120+)
+    today_start = get_est_now().replace(hour=0, minute=0, second=0, microsecond=0).replace(tzinfo=None)
+    alaina_user = User.query.filter_by(username='Alaina').first()
+    matthew_user = User.query.filter_by(username='Matthew').first()
     
-    return render_template('index.html', current_user=current_user, players=players, boss=boss, pending_rewards=pending_rewards, inventory=inventory, solo_img=solo_img, raid_img=raid_img, server_state=server_state, transactions=transactions, activity_logs=activity_logs, WEEKLY_QUESTS=WEEKLY_QUESTS, event_active_now=event_active_now, active_spoils=active_spoils, daily_shop=daily_shop, guild_stats=guild_stats)
+    # Use db.func.max to find their longest single logged session today
+    alaina_max = db.session.query(db.func.max(ActivityLog.minutes)).filter(ActivityLog.user_id == alaina_user.id, ActivityLog.timestamp >= today_start).scalar() or 0.0 if alaina_user else 0.0
+    matthew_max = db.session.query(db.func.max(ActivityLog.minutes)).filter(ActivityLog.user_id == matthew_user.id, ActivityLog.timestamp >= today_start).scalar() or 0.0 if matthew_user else 0.0
+    
+    alaina_hustled = alaina_max >= 120.0
+    matthew_hustled = matthew_max >= 120.0
+    
+    active_bounties = BountyBoard.query.filter_by(is_active=True).all()
+    
+    return render_template('index.html', current_user=current_user, players=players, boss=boss, pending_rewards=pending_rewards, inventory=inventory, solo_img=solo_img, raid_img=raid_img, server_state=server_state, transactions=transactions, activity_logs=activity_logs, WEEKLY_QUESTS=WEEKLY_QUESTS, event_active_now=event_active_now, active_spoils=active_spoils, daily_shop=daily_shop, guild_stats=guild_stats, alaina_hustled=alaina_hustled, matthew_hustled=matthew_hustled, active_bounties=active_bounties)
 
 @app.route('/select_quest/<int:q_id>', methods=['POST'])
 def select_quest(q_id):
