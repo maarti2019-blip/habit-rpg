@@ -336,7 +336,15 @@
         </div>
         <div style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end;">
             <button class="btn" style="width: auto; padding: 8px 12px; font-size: 0.9em;" onclick="toggleView('marketplace')">🏪 Market</button>
-            <button class="btn" style="width: auto; padding: 8px 12px; font-size: 0.9em; background: #fcd34d; color: black;" onclick="toggleView('tavern')">🤝 Co-Op Hub</button>
+            
+            <!-- CO-OP HUB BUTTON WITH RED BADGE NOTIFICATION -->
+            <button class="btn" style="position: relative; width: auto; padding: 8px 12px; font-size: 0.9em; background: #fcd34d; color: black;" onclick="toggleView('tavern')">
+                🤝 Co-Op Hub
+                {% if partner_bounty_count > 0 %}
+                    <span style="position: absolute; top: -5px; right: -5px; background: #ef4444; color: white; border-radius: 50%; padding: 2px 6px; font-size: 0.8em; font-weight: bold; box-shadow: 0 0 5px rgba(0,0,0,0.5);">{{ partner_bounty_count }}</span>
+                {% endif %}
+            </button>
+            
             <button class="settings-trigger" style="padding: 8px; font-size: 0.9em;" onclick="toggleSettings(true)">⚙️</button>
         </div>
     </div>
@@ -1358,6 +1366,82 @@
                 
             const tempSpeech = document.getElementById('snivels-speech');
             if (tempSpeech) tempSpeech.innerText = `${quote} - Snivels`;
+
+            // 7. CO-OP BOUNTY BOARD LOGIC
+        window.submitBounty = async function(e) {
+            e.preventDefault();
+            const form = e.target;
+            const submitBtn = form.querySelector('button[type="submit"]');
+            submitBtn.disabled = true;
+            submitBtn.innerText = "Pinning...";
+            
+            try {
+                const formData = new FormData(form);
+                const response = await fetch('/post_bounty', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const newHtml = await response.text();
+                const newDoc = new DOMParser().parseFromString(newHtml, 'text/html');
+                
+                // Swap the Vault (gold deducted) and the Job Board instantly
+                const oldBoard = document.getElementById('job-board');
+                const newBoard = newDoc.getElementById('job-board');
+                if (oldBoard && newBoard) oldBoard.innerHTML = newBoard.innerHTML;
+                
+                const oldVault = document.getElementById('vault-card');
+                const newVault = newDoc.getElementById('vault-card');
+                if (oldVault && newVault) oldVault.innerHTML = newVault.innerHTML;
+                
+                // Also update the app-header to refresh the red notification badge
+                const oldHeader = document.querySelector('.app-header');
+                const newHeader = newDoc.querySelector('.app-header');
+                if (oldHeader && newHeader) oldHeader.innerHTML = newHeader.innerHTML;
+                
+            } catch (error) {
+                console.error("Bounty post failed:", error);
+                submitBtn.disabled = false;
+                submitBtn.innerText = "Pin to Board";
+            }
+        };
+
+        window.interactBounty = async function(actionType, bountyId) {
+            try {
+                const formData = new FormData();
+                formData.append('action_type', actionType); // 'claim' or 'cancel'
+                formData.append('bounty_id', bountyId);
+                
+                const response = await fetch('/interact_bounty', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const newHtml = await response.text();
+                const newDoc = new DOMParser().parseFromString(newHtml, 'text/html');
+                
+                // Swap Board, Vault, and Inventory
+                const oldBoard = document.getElementById('job-board');
+                const newBoard = newDoc.getElementById('job-board');
+                if (oldBoard && newBoard) oldBoard.innerHTML = newBoard.innerHTML;
+                
+                const oldVault = document.getElementById('vault-card');
+                const newVault = newDoc.getElementById('vault-card');
+                if (oldVault && newVault) oldVault.innerHTML = newVault.innerHTML;
+                
+                const oldInventory = document.getElementById('inventory-card');
+                const newInventory = newDoc.getElementById('inventory-card');
+                if (oldInventory && newInventory) oldInventory.innerHTML = newInventory.innerHTML;
+                
+                // Update the app-header to refresh the red notification badge
+                const oldHeader = document.querySelector('.app-header');
+                const newHeader = newDoc.querySelector('.app-header');
+                if (oldHeader && newHeader) oldHeader.innerHTML = newHeader.innerHTML;
+                
+            } catch (error) {
+                console.error("Bounty interaction failed:", error);
+            }
+        };
             
             // 2. The Real Backend Submission
             try {
