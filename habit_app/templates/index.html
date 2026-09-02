@@ -24,6 +24,33 @@
         body.base-cyber { --bg-main: #09090b; --bg-card: #18181b; --border-color: #27272a; }
         body.base-forest { --bg-main: #052e16; --bg-card: #14532d; --border-color: #166534; }
 
+        /* --- CO-OP TAVERN VIBRANT OVERRIDES --- */
+        #tavern-view {
+            background: radial-gradient(circle at 50% 0%, #451a03, #0f0f12 80%); /* Warm hearth amber fading to dark */
+            margin: -15px; 
+            padding: 15px;
+            min-height: 100vh;
+        }
+
+        /* The Bounty Board (Glowing Amber) */
+        #tavern-view #job-board {
+            background: linear-gradient(160deg, rgba(30, 15, 0, 0.95) 0%, rgba(180, 83, 9, 0.3) 100%) !important;
+            border: 2px solid #f59e0b !important;
+            box-shadow: 0 0 30px rgba(245, 158, 11, 0.2), inset 0 0 15px rgba(245, 158, 11, 0.1) !important;
+        }
+
+        /* The Trading Post (Glowing Emerald) */
+        #tavern-view #trading-post {
+            background: linear-gradient(160deg, rgba(2, 44, 34, 0.95) 0%, rgba(16, 185, 129, 0.3) 100%) !important;
+            border: 2px solid #10b981 !important;
+            box-shadow: 0 0 30px rgba(16, 185, 129, 0.2), inset 0 0 15px rgba(16, 185, 129, 0.1) !important;
+        }
+
+        /* Text Glowing & Polish */
+        #tavern-view h2 { text-shadow: 0 0 15px rgba(252, 211, 77, 0.8); }
+        #tavern-view #job-board > div { background: rgba(0, 0, 0, 0.5) !important; backdrop-filter: blur(4px); }
+        #tavern-view #trading-post > div { background: rgba(0, 0, 0, 0.5) !important; backdrop-filter: blur(4px); }
+
         /* --- KOBOLD MARKETPLACE STYLES --- */
         .kobold-container { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; background: rgba(0,0,0,0.4); padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); }
         .kobold-avatar { font-size: 2.5em; background: var(--bg-card); padding: 5px 10px; border-radius: 50%; border: 2px solid; text-align: center; }
@@ -1405,82 +1432,6 @@
                 
             const tempSpeech = document.getElementById('snivels-speech');
             if (tempSpeech) tempSpeech.innerText = `${quote} - Snivels`;
-        };
-            // 7. CO-OP BOUNTY BOARD LOGIC
-        window.submitBounty = async function(e) {
-            e.preventDefault();
-            const form = e.target;
-            const submitBtn = form.querySelector('button[type="submit"]');
-            submitBtn.disabled = true;
-            submitBtn.innerText = "Pinning...";
-            
-            try {
-                const formData = new FormData(form);
-                const response = await fetch('/post_bounty', {
-                    method: 'POST',
-                    body: formData
-                });
-                
-                const newHtml = await response.text();
-                const newDoc = new DOMParser().parseFromString(newHtml, 'text/html');
-                
-                // Swap the Vault (gold deducted) and the Job Board instantly
-                const oldBoard = document.getElementById('job-board');
-                const newBoard = newDoc.getElementById('job-board');
-                if (oldBoard && newBoard) oldBoard.innerHTML = newBoard.innerHTML;
-                
-                const oldVault = document.getElementById('vault-card');
-                const newVault = newDoc.getElementById('vault-card');
-                if (oldVault && newVault) oldVault.innerHTML = newVault.innerHTML;
-                
-                // Also update the app-header to refresh the red notification badge
-                const oldHeader = document.querySelector('.app-header');
-                const newHeader = newDoc.querySelector('.app-header');
-                if (oldHeader && newHeader) oldHeader.innerHTML = newHeader.innerHTML;
-                
-            } catch (error) {
-                console.error("Bounty post failed:", error);
-                submitBtn.disabled = false;
-                submitBtn.innerText = "Pin to Board";
-            }
-        };
-
-        window.interactBounty = async function(actionType, bountyId) {
-            try {
-                const formData = new FormData();
-                formData.append('action_type', actionType); // 'claim' or 'cancel'
-                formData.append('bounty_id', bountyId);
-                
-                const response = await fetch('/interact_bounty', {
-                    method: 'POST',
-                    body: formData
-                });
-                
-                const newHtml = await response.text();
-                const newDoc = new DOMParser().parseFromString(newHtml, 'text/html');
-                
-                // Swap Board, Vault, and Inventory
-                const oldBoard = document.getElementById('job-board');
-                const newBoard = newDoc.getElementById('job-board');
-                if (oldBoard && newBoard) oldBoard.innerHTML = newBoard.innerHTML;
-                
-                const oldVault = document.getElementById('vault-card');
-                const newVault = newDoc.getElementById('vault-card');
-                if (oldVault && newVault) oldVault.innerHTML = newVault.innerHTML;
-                
-                const oldInventory = document.getElementById('inventory-card');
-                const newInventory = newDoc.getElementById('inventory-card');
-                if (oldInventory && newInventory) oldInventory.innerHTML = newInventory.innerHTML;
-                
-                // Update the app-header to refresh the red notification badge
-                const oldHeader = document.querySelector('.app-header');
-                const newHeader = newDoc.querySelector('.app-header');
-                if (oldHeader && newHeader) oldHeader.innerHTML = newHeader.innerHTML;
-                
-            } catch (error) {
-                console.error("Bounty interaction failed:", error);
-            }
-        };
             
             // 2. The Real Backend Submission
             try {
@@ -1508,7 +1459,7 @@
                 const newInventory = newDoc.getElementById('inventory-card');
                 if (oldInventory && newInventory) oldInventory.innerHTML = newInventory.innerHTML;
                 
-                // 4. THE FIX: Re-apply the quote to the fresh HTML and start the 8-second timer!
+                // 4. Re-apply the quote to the fresh HTML and start the 8-second timer
                 const freshSpeech = document.getElementById('snivels-speech');
                 if (freshSpeech) {
                     freshSpeech.innerText = `${quote} - Snivels`;
@@ -1519,6 +1470,149 @@
                 
             } catch (error) {
                 console.error("Purchase processing failed:", error);
+            }
+        };
+
+        // 7. CO-OP BOUNTY BOARD LOGIC
+        window.submitBounty = async function(e) {
+            e.preventDefault();
+            const form = e.target;
+            const submitBtn = form.querySelector('button[type="submit"]');
+            submitBtn.disabled = true;
+            submitBtn.innerText = "Pinning...";
+            
+            try {
+                const formData = new FormData(form);
+                const response = await fetch('/post_bounty', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const newHtml = await response.text();
+                const newDoc = new DOMParser().parseFromString(newHtml, 'text/html');
+                
+                const oldBoard = document.getElementById('job-board');
+                const newBoard = newDoc.getElementById('job-board');
+                if (oldBoard && newBoard) oldBoard.innerHTML = newBoard.innerHTML;
+                
+                const oldVault = document.getElementById('vault-card');
+                const newVault = newDoc.getElementById('vault-card');
+                if (oldVault && newVault) oldVault.innerHTML = newVault.innerHTML;
+                
+                const oldHeader = document.querySelector('.app-header');
+                const newHeader = newDoc.querySelector('.app-header');
+                if (oldHeader && newHeader) oldHeader.innerHTML = newHeader.innerHTML;
+                
+            } catch (error) {
+                console.error("Bounty post failed:", error);
+                submitBtn.disabled = false;
+                submitBtn.innerText = "Pin to Board";
+            }
+        };
+
+        window.interactBounty = async function(actionType, bountyId) {
+            try {
+                const formData = new FormData();
+                formData.append('action_type', actionType);
+                formData.append('bounty_id', bountyId);
+                
+                const response = await fetch('/interact_bounty', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const newHtml = await response.text();
+                const newDoc = new DOMParser().parseFromString(newHtml, 'text/html');
+                
+                const oldBoard = document.getElementById('job-board');
+                const newBoard = newDoc.getElementById('job-board');
+                if (oldBoard && newBoard) oldBoard.innerHTML = newBoard.innerHTML;
+                
+                const oldVault = document.getElementById('vault-card');
+                const newVault = newDoc.getElementById('vault-card');
+                if (oldVault && newVault) oldVault.innerHTML = newVault.innerHTML;
+                
+                const oldInventory = document.getElementById('inventory-card');
+                const newInventory = newDoc.getElementById('inventory-card');
+                if (oldInventory && newInventory) oldInventory.innerHTML = newInventory.innerHTML;
+                
+                const oldHeader = document.querySelector('.app-header');
+                const newHeader = newDoc.querySelector('.app-header');
+                if (oldHeader && newHeader) oldHeader.innerHTML = newHeader.innerHTML;
+                
+            } catch (error) {
+                console.error("Bounty interaction failed:", error);
+            }
+        };
+
+        // 8. TRADING POST LOGIC
+        window.submitTrade = async function(e) {
+            e.preventDefault();
+            const form = e.target;
+            
+            const checkedItems = form.querySelectorAll('input[name="offered_items"]:checked');
+            if (checkedItems.length === 0) {
+                alert("You must select at least one item from your Vault to offer!");
+                return;
+            }
+
+            const submitBtn = form.querySelector('button[type="submit"]');
+            submitBtn.disabled = true;
+            submitBtn.innerText = "Posting...";
+            
+            try {
+                const formData = new FormData(form);
+                const response = await fetch('/post_trade', { method: 'POST', body: formData });
+                const newHtml = await response.text();
+                const newDoc = new DOMParser().parseFromString(newHtml, 'text/html');
+                
+                const oldPost = document.getElementById('trading-post');
+                const newPost = newDoc.getElementById('trading-post');
+                if (oldPost && newPost) oldPost.innerHTML = newPost.innerHTML;
+                
+                const oldInv = document.getElementById('inventory-card');
+                const newInv = newDoc.getElementById('inventory-card');
+                if (oldInv && newInv) oldInv.innerHTML = newInv.innerHTML;
+                
+            } catch (error) {
+                console.error("Trade post failed:", error);
+                submitBtn.disabled = false;
+                submitBtn.innerText = "Post Trade Offer";
+            }
+        };
+
+        window.interactTrade = async function(actionType, tradeId, event = null) {
+            if (event) event.preventDefault();
+            
+            try {
+                const formData = new FormData();
+                formData.append('action_type', actionType);
+                formData.append('trade_id', tradeId);
+                
+                if (event && actionType === 'accept') {
+                    const form = event.target;
+                    const givenItem = form.querySelector('select[name="given_item_id"]').value;
+                    if (!givenItem) {
+                        alert("You must select an item from your inventory to trade them!");
+                        return;
+                    }
+                    formData.append('given_item_id', givenItem);
+                }
+                
+                const response = await fetch('/interact_trade', { method: 'POST', body: formData });
+                const newHtml = await response.text();
+                const newDoc = new DOMParser().parseFromString(newHtml, 'text/html');
+                
+                const oldPost = document.getElementById('trading-post');
+                const newPost = newDoc.getElementById('trading-post');
+                if (oldPost && newPost) oldPost.innerHTML = newPost.innerHTML;
+                
+                const oldInv = document.getElementById('inventory-card');
+                const newInv = newDoc.getElementById('inventory-card');
+                if (oldInv && newInv) oldInv.innerHTML = newInv.innerHTML;
+                
+            } catch (error) {
+                console.error("Trade interaction failed:", error);
             }
         };
         
