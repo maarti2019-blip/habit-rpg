@@ -910,15 +910,49 @@
                 <img class="kobold-avatar" src="/static/images/snivels.png" alt="Snivels" style="border-color: #f59e0b; width: 65px; height: 65px; padding: 2px; object-fit: cover; background: var(--bg-main);">
                 <div class="kobold-speech" id="snivels-speech">"No refunds, no returns, no eye contact! New shipments arrive at midnight. Buy it or beat it." - Snivels</div>
             </div>
+
+            <!-- Hustler's Rebate Logic & Tracker -->
+            {% set my_discount = 0.0 %}
+            {% set banner_color = 'var(--border-color)' %}
+            {% set banner_msg = 'Log 120 minutes of activity today to slash prices!' %}
+            
+            {% if alaina_hustled and matthew_hustled %}
+                {% set my_discount = 0.25 %}
+                {% set banner_color = '#ec4899' %} <!-- Pink Synergy -->
+                {% set banner_msg = 'SYNERGY ACHIEVED! Both players hustled today. 25% OFF everything!' %}
+            {% elif current_user.username == 'Alaina' and alaina_hustled %}
+                {% set my_discount = 0.10 %}
+                {% set banner_color = '#a855f7' %} <!-- Alaina's Purple -->
+                {% set banner_msg = 'You put in the work. 10% OFF for you!' %}
+            {% elif current_user.username == 'Matthew' and matthew_hustled %}
+                {% set my_discount = 0.10 %}
+                {% set banner_color = '#ef4444' %} <!-- Matthew's Red -->
+                {% set banner_msg = 'You put in the work. 10% OFF for you!' %}
+            {% elif current_user.username == 'Alaina' and matthew_hustled %}
+                {% set banner_color = '#ef4444' %} <!-- Matthew's Red (Taunt) -->
+                {% set banner_msg = 'Matthew secured his 10% discount! Hustle 120 minutes to unlock 25% for BOTH of you!' %}
+            {% elif current_user.username == 'Matthew' and alaina_hustled %}
+                {% set banner_color = '#a855f7' %} <!-- Alaina's Purple (Taunt) -->
+                {% set banner_msg = 'Alaina secured her 10% discount! Hustle 120 minutes to unlock 25% for BOTH of you!' %}
+            {% endif %}
+
+            <div style="background: rgba(0,0,0,0.5); border: 1px solid {{ banner_color }}; border-radius: 8px; padding: 10px; margin-bottom: 15px; text-align: center; box-shadow: 0 0 15px {{ banner_color }}40;">
+                <strong style="color: #fff;">Hustler's Rebate</strong>
+                <p style="font-size: 0.85em; color: {{ banner_color }}; font-weight: bold; margin: 4px 0 0 0;">
+                    {{ banner_msg }}
+                </p>
+            </div>
             
             <div class="flex-grid">
                 {% if daily_shop %}
                     {% for shop_item in daily_shop %}
-                        <!-- Rarity Color Routing -->
                         {% set rarity_color = '#a1a1aa' %}
                         {% if shop_item.rarity == 'Uncommon' %}{% set rarity_color = '#10b981' %}{% endif %}
                         {% if shop_item.rarity == 'Rare' %}{% set rarity_color = '#3b82f6' %}{% endif %}
                         {% if shop_item.rarity == 'Legendary' %}{% set rarity_color = '#f59e0b' %}{% endif %}
+                        
+                        <!-- Apply the isolated discount math -->
+                        {% set final_price = shop_item.price * (1.0 - my_discount) %}
                         
                         <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; text-align: center; display: flex; flex-direction: column; justify-content: space-between;">
                             <div>
@@ -926,11 +960,15 @@
                                 <p style="font-size: 0.8em; color: var(--text-muted); margin: 5px 0 10px 0;">{{ shop_item.desc }}</p>
                             </div>
                             
-                            <!-- Sold Out state handling -->
                             {% if shop_item.is_sold %}
                                 <button class="btn" style="background: transparent; border: 1px solid #475569; color: #475569; padding: 8px; cursor: not-allowed;" disabled>SOLD OUT</button>
                             {% else %}
-                                <button class="btn" style="background: transparent; border: 1px solid gold; color: gold; padding: 8px;" onclick="submitPurchase({{ shop_item.id }}, {{ shop_item.price }})">Buy: ${{ "%.2f"|format(shop_item.price) }}</button>
+                                <div style="display: flex; flex-direction: column; gap: 4px;">
+                                    {% if my_discount > 0 %}
+                                        <span style="text-decoration: line-through; font-size: 0.8em; color: #ef4444;">${{ "%.2f"|format(shop_item.price) }}</span>
+                                    {% endif %}
+                                    <button class="btn" style="background: transparent; border: 1px solid gold; color: gold; padding: 8px;" onclick="submitPurchase({{ shop_item.id }}, {{ final_price }})">Buy: ${{ "%.2f"|format(final_price) }}</button>
+                                </div>
                             {% endif %}
                         </div>
                     {% endfor %}
