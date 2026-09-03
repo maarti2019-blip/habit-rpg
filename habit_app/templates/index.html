@@ -704,48 +704,45 @@
         {% endif %}
     </div>
 
-        <!-- SOLO MONSTER CARD -->
-   <div class="card" id="solo-card">
+    <!-- SOLO MONSTER CARD -->
+    <div class="card" id="solo-card">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
             <h3 style="margin: 0; display: flex; align-items: center; gap: 8px;">
                 🐺 Solo Monster
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-            <h3 style="margin: 0; display: flex; align-items: center; gap: 8px;">
-            🐺 Solo Monster
                 <button onclick="document.getElementById('lootInfoModal').classList.add('open')" style="background: rgba(255,255,255,0.1); border: 1px solid var(--border-color); color: var(--text-muted); border-radius: 50%; width: 22px; height: 22px; display: flex; justify-content: center; align-items: center; font-size: 0.75em; cursor: pointer; padding: 0;">i</button>
             </h3>
-        <div style="font-size: 0.85em; background: rgba(0,0,0,0.4); padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border-color); color: var(--text-muted);">
-            💀 {% if boss and boss.is_active %}
-                Kills: <span style="color: white; font-weight: bold;">{{ current_user.bosses_killed_today }} / 3</span>
-            {% else %}
-                Kills: <span style="color: white; font-weight: bold;">{{ current_user.bosses_killed_today }}</span> (Endless)
-            {% endif %}
-        </div>
-    </div>
-    
-    {% if boss and boss.is_active and boss.current_hp > 0 and current_user.bosses_killed_today >= 3 %}
-        <!-- AREA SECURED MESSAGE -->
-        <div style="text-align: center; padding: 20px; background: rgba(16, 185, 129, 0.1); border-radius: 8px; margin-top: 15px; border: 1px dashed #10b981;">
-            <h3 style="color: #10b981; margin: 0 0 5px 0;">🛡️ Area Secured!</h3>
-            <p style="color: var(--text-muted); font-size: 0.9em; margin: 0;">You have defeated 3 solo monsters today. All attacks are now focused on the Weekly Raid Boss!</p>
-        </div>
-    {% else %}
-        <!-- MONSTER IMAGE & HEALTH BAR -->
-        <div style="display: flex; justify-content: center; margin: 10px 0;">
-            <img src="{{ solo_img }}" alt="Monster" style="max-height: 110px; object-fit: contain;">
-        </div>
-        <div class="boss-bar">
-            <div class="boss-progress" style="width: {{ (current_user.solo_monster_hp / current_user.solo_monster_max) * 100 }}%; background: var(--accent-primary);"></div>
-            <div class="boss-text">
-                {% if server_state.active_event == "Amnesia Fog" %}
-                    {{ current_user.solo_monster_name }}: ??? / ??? HP
+            <div style="font-size: 0.85em; background: rgba(0,0,0,0.4); padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border-color); color: var(--text-muted);">
+                💀 {% if boss and boss.is_active %}
+                    Kills: <span style="color: white; font-weight: bold;">{{ current_user.bosses_killed_today }} / 3</span>
                 {% else %}
-                    {{ current_user.solo_monster_name }}: {{ current_user.solo_monster_hp | int }} / {{ current_user.solo_monster_max | int }} HP
+                    Kills: <span style="color: white; font-weight: bold;">{{ current_user.bosses_killed_today }}</span> (Endless)
                 {% endif %}
             </div>
         </div>
-    {% endif %}
-</div>
+    
+        {% if boss and boss.is_active and boss.current_hp > 0 and current_user.bosses_killed_today >= 3 %}
+            <!-- AREA SECURED MESSAGE -->
+            <div style="text-align: center; padding: 20px; background: rgba(16, 185, 129, 0.1); border-radius: 8px; margin-top: 15px; border: 1px dashed #10b981;">
+                <h3 style="color: #10b981; margin: 0 0 5px 0;">🛡️ Area Secured!</h3>
+                <p style="color: var(--text-muted); font-size: 0.9em; margin: 0;">You have defeated 3 solo monsters today. All attacks are now focused on the Weekly Raid Boss!</p>
+            </div>
+        {% else %}
+            <!-- MONSTER IMAGE & HEALTH BAR -->
+            <div style="display: flex; justify-content: center; margin: 10px 0;">
+                <img src="{{ solo_img }}" alt="Monster" style="max-height: 110px; object-fit: contain;">
+            </div>
+            <div class="boss-bar">
+                <div class="boss-progress" style="width: {{ (current_user.solo_monster_hp / current_user.solo_monster_max) * 100 }}%; background: var(--accent-primary);"></div>
+                <div class="boss-text">
+                    {% if server_state.active_event == "Amnesia Fog" %}
+                        {{ current_user.solo_monster_name }}: ??? / ??? HP
+                    {% else %}
+                        {{ current_user.solo_monster_name }}: {{ current_user.solo_monster_hp | int }} / {{ current_user.solo_monster_max | int }} HP
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
+    </div>    
     
 <!-- WEEKLY QUESTS / CONTRACTS -->
     <div class="card" id="quest-card">
@@ -1179,6 +1176,7 @@
         </div>
         
     </div>
+    <!-- ========================================== -->
     <!-- CO-OP TAVERN VIEW STARTS HERE              -->
     <!-- ========================================== -->
     <div id="tavern-view" style="display: none; padding-top: 10px;">
@@ -1249,7 +1247,7 @@
             </div>
         </div>
 
-<!-- THE TRADING POST -->
+        <!-- THE TRADING POST -->
         <div class="card" id="trading-post" style="border-color: #10b981;">
             <h3 style="margin: 0 0 15px 0; color: #10b981;">📦 Item Trading Post</h3>
             <p style="color: var(--text-muted); font-size: 0.9em; margin-top: -10px; margin-bottom: 15px; font-style: italic;">Bundle multiple items from your Vault to propose a trade to your partner.</p>
@@ -1265,7 +1263,7 @@
                                 {% if not item.is_active %}
                                     <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85em; padding: 6px; border-bottom: 1px solid rgba(255,255,255,0.05); cursor: pointer;">
                                         <input type="checkbox" name="offered_items" value="{{ item.id }}">
-                                        <span style="color: {% if item.rarity == 'Legendary' %}#f59e0b{% elif item.rarity == 'Rare' %}#3b82f6{% elif item.rarity == 'Uncommon' %}#10b981{% else %}#a1a1aa{% endif %};">[{{ item.rarity }}] {{ item.item_name }}</span>
+                                        <span class="{% if item.rarity == 'Mythic' %}color-mythic{% elif item.rarity == 'Legendary' %}color-legendary{% elif item.rarity == 'Epic' %}color-epic{% endif %}" style="{% if item.rarity == 'Rare' %}color: #3b82f6;{% elif item.rarity == 'Uncommon' %}color: #10b981;{% elif item.rarity in ['Common', 'unknown'] %}color: #a1a1aa;{% endif %}">[{{ item.rarity }}] {{ item.item_name }}</span>
                                     </label>
                                 {% endif %}
                             {% endfor %}
