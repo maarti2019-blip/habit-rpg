@@ -112,6 +112,39 @@
         body.accent-orange { --accent-primary: #f97316; }
         body.accent-white { --accent-primary: #ffffff; }
 
+        /* --- RARITY COLORS & MYTHIC SHIMMER --- */
+        .color-epic { color: #a855f7 !important; }
+        .color-legendary { color: #f59e0b !important; }
+        
+        .color-mythic {
+            background: linear-gradient(90deg, #ff007f, #7928ca, #0070f3, #00dfd8, #7928ca, #ff007f);
+            background-size: 300% 300%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: rainbowShimmer 3s ease infinite;
+            font-weight: 900;
+        }
+
+        .border-mythic {
+            border: 2px solid transparent !important;
+            background-image: linear-gradient(rgba(26, 26, 36, 0.95), rgba(26, 26, 36, 0.95)), 
+                              linear-gradient(90deg, #ff007f, #7928ca, #0070f3, #00dfd8, #ff007f);
+            background-origin: border-box;
+            background-clip: padding-box, border-box;
+            box-shadow: 0 0 20px rgba(121, 40, 202, 0.4);
+            animation: rainbowGlow 4s linear infinite alternate;
+        }
+
+        @keyframes rainbowShimmer {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        @keyframes rainbowGlow {
+            0% { box-shadow: 0 0 15px rgba(255, 0, 127, 0.3); }
+            100% { box-shadow: 0 0 25px rgba(0, 223, 216, 0.5); }
+        }
+        
         /* --- TYPOGRAPHY --- */
         body.font-standard { --font-family: -apple-system, sans-serif; }
         body.font-retro { --font-family: 'Courier New', Courier, monospace; }
@@ -434,7 +467,119 @@
         </div>
     </div>
     </div> <!-- This is the closing tag for your Settings Modal -->
+    <!-- LOOT INFO MODAL -->
+    <div id="lootInfoModal" class="settings-modal">
+        <div class="modal-body" style="max-width: 400px; padding: 20px;">
+            <h3 style="margin-top: 0; color: var(--accent-primary); border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">📊 Live Drop Intelligence</h3>
+            
+            <h4 style="color: #ef4444; margin: 15px 0 5px 0;">🐺 Solo Boss Drops</h4>
+            <div style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px; font-size: 0.9em; margin-bottom: 15px;">
+                <p style="margin: 0 0 8px 0;"><strong>Gold Range:</strong> <span style="color: gold;">{{ drop_info.solo_gold }}</span></p>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px;">
+                    <span class="color-mythic" style="font-weight: normal;">Mythic: {{ drop_info.solo_mythic }}</span>
+                    <span style="color: #f59e0b;">Legendary: {{ drop_info.solo_leg }}</span>
+                    <span style="color: #a855f7;">Epic: {{ drop_info.solo_epic }}</span>
+                    <span style="color: #3b82f6;">Rare: {{ drop_info.solo_rare }}</span>
+                    <span style="color: #10b981;">Uncommon: {{ drop_info.solo_unc }}</span>
+                    <span style="color: #a1a1aa;">Common: {{ drop_info.solo_com }}</span>
+                </div>
+            </div>
 
+            <h4 style="color: #ef4444; margin: 15px 0 5px 0;">🌋 Raid Boss Drops</h4>
+            <div style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px; font-size: 0.9em; margin-bottom: 25px;">
+                <p style="margin: 0 0 8px 0;"><strong>Gold Range:</strong> <span style="color: gold;">{{ drop_info.raid_gold }}</span></p>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px;">
+                    <span style="color: #f59e0b;">Legendary: 10.00%</span>
+                    <span style="color: #a855f7;">Epic: 20.00%</span>
+                    <span style="color: #3b82f6;">Rare: 40.00%</span>
+                    <span style="color: #10b981;">Uncommon: 20.00%</span>
+                    <span style="color: #a1a1aa;">Common: 10.00%</span>
+                </div>
+            </div>
+
+            <h3 style="margin-top: 0; color: var(--accent-primary); border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">📖 Loot Compendium</h3>
+            
+            <!-- MYTHIC DICTIONARY -->
+            <details style="margin-bottom: 8px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 6px;">
+                <summary class="color-mythic" style="cursor: pointer; padding: 10px; font-weight: bold; outline: none;">🌈 Mythic Relics</summary>
+                <div style="padding: 0 10px 10px 10px;">
+                    {% for item in MYTHIC_ITEMS %}
+                    <div style="margin-top: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px;">
+                        <strong class="color-mythic">{{ item[0] }}</strong>
+                        <p style="margin: 4px 0 0 0; font-size: 0.85em; color: var(--text-muted);">{{ item[3] }}</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </details>
+
+            <!-- LEGENDARY DICTIONARY -->
+            <details style="margin-bottom: 8px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 6px;">
+                <summary style="color: #f59e0b; cursor: pointer; padding: 10px; font-weight: bold; outline: none;">🪙 Legendary Items</summary>
+                <div style="padding: 0 10px 10px 10px;">
+                    {% for item in LEGENDARY_ITEMS %}
+                    <div style="margin-top: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px;">
+                        <strong style="color: #f59e0b;">{{ item[0] }}</strong>
+                        <p style="margin: 4px 0 0 0; font-size: 0.85em; color: var(--text-muted);">{{ item[3] }}</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </details>
+
+            <!-- EPIC DICTIONARY -->
+            <details style="margin-bottom: 8px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 6px;">
+                <summary style="color: #a855f7; cursor: pointer; padding: 10px; font-weight: bold; outline: none;">🔮 Epic Items</summary>
+                <div style="padding: 0 10px 10px 10px;">
+                    {% for item in EPIC_ITEMS %}
+                    <div style="margin-top: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px;">
+                        <strong style="color: #a855f7;">{{ item[0] }}</strong>
+                        <p style="margin: 4px 0 0 0; font-size: 0.85em; color: var(--text-muted);">{{ item[3] }}</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </details>
+
+            <!-- RARE DICTIONARY -->
+            <details style="margin-bottom: 8px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 6px;">
+                <summary style="color: #3b82f6; cursor: pointer; padding: 10px; font-weight: bold; outline: none;">📘 Rare Items</summary>
+                <div style="padding: 0 10px 10px 10px;">
+                    {% for item in RARE_ITEMS %}
+                    <div style="margin-top: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px;">
+                        <strong style="color: #3b82f6;">{{ item[0] }}</strong>
+                        <p style="margin: 4px 0 0 0; font-size: 0.85em; color: var(--text-muted);">{{ item[3] }}</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </details>
+
+            <!-- UNCOMMON DICTIONARY -->
+            <details style="margin-bottom: 8px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 6px;">
+                <summary style="color: #10b981; cursor: pointer; padding: 10px; font-weight: bold; outline: none;">📗 Uncommon Items</summary>
+                <div style="padding: 0 10px 10px 10px;">
+                    {% for item in UNCOMMON_ITEMS %}
+                    <div style="margin-top: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px;">
+                        <strong style="color: #10b981;">{{ item[0] }}</strong>
+                        <p style="margin: 4px 0 0 0; font-size: 0.85em; color: var(--text-muted);">{{ item[3] }}</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </details>
+
+            <!-- COMMON DICTIONARY -->
+            <details style="margin-bottom: 8px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 6px;">
+                <summary style="color: #a1a1aa; cursor: pointer; padding: 10px; font-weight: bold; outline: none;">📓 Common Items</summary>
+                <div style="padding: 0 10px 10px 10px;">
+                    {% for item in COMMON_ITEMS %}
+                    <div style="margin-top: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px;">
+                        <strong style="color: #a1a1aa;">{{ item[0] }}</strong>
+                        <p style="margin: 4px 0 0 0; font-size: 0.85em; color: var(--text-muted);">{{ item[3] }}</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </details>
+
+            <button class="btn" style="margin-top: 15px; background: var(--border-color);" onclick="document.getElementById('lootInfoModal').classList.remove('open')">Close</button>
+        </div>
+    </div>
     <!-- ========================================== -->
     <!-- MAIN GAME VIEW WRAPPER STARTS HERE         -->
     <!-- ========================================== -->
@@ -559,10 +704,12 @@
         {% endif %}
     </div>
 
-   <!-- SOLO MONSTER CARD -->
-<div class="card" id="solo-card">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-        <h3 style="margin: 0;">🐺 Solo Monster</h3>
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <h3 style="margin: 0; display: flex; align-items: center; gap: 8px;">
+            🐺 Solo Monster
+            <button onclick="document.getElementById('lootInfoModal').classList.add('open')" style="background: rgba(255,255,255,0.1); border: 1px solid var(--border-color); color: var(--text-muted); border-radius: 50%; width: 22px; height: 22px; display: flex; justify-content: center; align-items: center; font-size: 0.75em; cursor: pointer; padding: 0;">i</button>
+        </h3>
+        ...
         
         <div style="font-size: 0.85em; background: rgba(0,0,0,0.4); padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border-color); color: var(--text-muted);">
             💀 {% if boss and boss.is_active %}
@@ -625,10 +772,12 @@
             {% endif %}
         {% endif %}
     </div>
-   <!-- RAID BOSS -->
-    <div class="card" id="boss-card">
+   <div class="card" id="boss-card">
         <div style="display:flex; justify-content: space-between; align-items:center;">
-            <h3 style="margin:0;">🌋 Shared Co-Op Raid</h3>
+            <h3 style="margin:0; display: flex; align-items: center; gap: 8px;">
+                🌋 Shared Co-Op Raid
+                <button onclick="document.getElementById('lootInfoModal').classList.add('open')" style="background: rgba(255,255,255,0.1); border: 1px solid var(--border-color); color: var(--text-muted); border-radius: 50%; width: 22px; height: 22px; display: flex; justify-content: center; align-items: center; font-size: 0.75em; cursor: pointer; padding: 0;">i</button>
+            </h3>
             <span style="font-size: 0.8em; color: var(--text-muted); border: 1px solid var(--border-color); padding: 2px 6px; border-radius: 4px;">World Lvl {{ boss.world_level }}</span>
         </div>
         
@@ -773,20 +922,29 @@
             <p style="color: var(--text-muted); font-size: 0.9em; font-style: italic; margin: 0;">Your inventory is empty. Defeat solo bosses to earn drops!</p>
         {% else %}
             {% for item in inventory %}
-            <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; margin-bottom: 10px;">
+            <div style="background: rgba(0,0,0,0.3); border: 1px solid {% if item.rarity == 'Mythic' %}transparent{% elif item.rarity == 'Legendary' %}#f59e0b{% elif item.rarity == 'Epic' %}#a855f7{% elif item.rarity == 'Rare' %}#3b82f6{% elif item.rarity == 'Uncommon' %}#10b981{% else %}var(--border-color){% endif %}; border-radius: 8px; padding: 12px; margin-bottom: 10px;" class="{% if item.rarity == 'Mythic' %}border-mythic{% endif %}">
                 <div style="margin-bottom: 8px;">
-                    <p style="font-weight: bold; margin: 0; font-size: 1.1em; color: {% if item.rarity == 'Legendary' %}#f59e0b{% elif item.rarity == 'Rare' %}#3b82f6{% elif item.rarity == 'Uncommon' %}#10b981{% else %}#a1a1aa{% endif %};">{{ item.item_name }}</p>
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <p style="font-weight: bold; margin: 0; font-size: 1.1em;" class="{% if item.rarity == 'Mythic' %}color-mythic{% elif item.rarity == 'Legendary' %}color-legendary{% elif item.rarity == 'Epic' %}color-epic{% endif %}" style="color: {% if item.rarity == 'Rare' %}#3b82f6{% elif item.rarity == 'Uncommon' %}#10b981{% else %}#a1a1aa{% endif %};">
+                            {{ item.item_name }}
+                        </p>
+                        {% if item.rarity == 'Mythic' and not item.is_active %}
+                            <span style="font-size: 0.75em; background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px; color: #fff;">{{ item.multiplier | int }} Charges Left</span>
+                        {% endif %}
+                    </div>
                     <p style="color: var(--text-muted); font-size: 0.85em; margin: 4px 0 0 0;">{{ item.description }}</p>
                 </div>
                 
                 <div style="display: flex; gap: 8px;">
                     {% if item.is_active %}
-                        <div style="background: var(--accent-primary); color: white; padding: 6px 12px; border-radius: 4px; font-size: 0.8em; font-weight: bold;">ACTIVE (24h)</div>
+                        <div style="background: var(--accent-primary); color: white; padding: 6px 12px; border-radius: 4px; font-size: 0.8em; font-weight: bold;">ACTIVE</div>
                     {% else %}
                         <form action="/use_item/{{ item.id }}" method="POST" style="margin:0; flex:1;">
-                            <button type="submit" class="btn" style="padding: 8px; font-size: 0.85em;">Use Item</button>
+                            <button type="submit" class="btn" style="padding: 8px; font-size: 0.85em; {% if item.rarity == 'Mythic' %}background: #7928ca; font-weight: bold;{% endif %}">
+                                {% if item.rarity == 'Mythic' %}Use Charge{% else %}Use Item{% endif %}
+                            </button>
                         </form>
-                        {% if current_user.has_pet %}
+                        {% if current_user.has_pet and item.rarity != 'Mythic' %}
                         <form action="/feed_pet/{{ item.id }}" method="POST" style="margin:0; flex:1;">
                             <button type="submit" class="btn" style="padding: 8px; font-size: 0.85em; background: var(--border-color);">Feed Pet</button>
                         </form>
@@ -1134,10 +1292,13 @@
                                 {% endif %}
                             </div>
                             
-                            <div style="font-size: 0.85em; margin-bottom: 8px;">
-                                <span style="color: var(--text-muted);">Offering:</span><br>
-                                <!-- We will format this list neatly in Python -->
-                                <span style="color: #fff; white-space: pre-wrap;">{{ trade.offered_item_names }}</span>
+                           <div style="font-size: 0.85em; margin-bottom: 8px;">
+                                <span style="color: var(--text-muted);">Offering:</span>
+                                <div style="display: flex; flex-direction: column; gap: 4px; margin-top: 4px;">
+                                    {% for item_name in trade.offered_item_names.split('\n') %}
+                                        <span style="background: rgba(0,0,0,0.3); padding: 4px 8px; border-radius: 4px; color: #fff; word-break: break-word;">{{ item_name }}</span>
+                                    {% endfor %}
+                                </div>
                             </div>
                             
                             <div style="font-size: 0.85em; margin-bottom: 10px; background: rgba(0,0,0,0.3); padding: 8px; border-radius: 4px; border: 1px solid rgba(252, 211, 77, 0.3);">
