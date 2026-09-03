@@ -704,13 +704,16 @@
         {% endif %}
     </div>
 
-  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-        <h3 style="margin: 0; display: flex; align-items: center; gap: 8px;">
+        <!-- SOLO MONSTER CARD -->
+   <div class="card" id="solo-card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <h3 style="margin: 0; display: flex; align-items: center; gap: 8px;">
+                🐺 Solo Monster
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <h3 style="margin: 0; display: flex; align-items: center; gap: 8px;">
             🐺 Solo Monster
-            <button onclick="document.getElementById('lootInfoModal').classList.add('open')" style="background: rgba(255,255,255,0.1); border: 1px solid var(--border-color); color: var(--text-muted); border-radius: 50%; width: 22px; height: 22px; display: flex; justify-content: center; align-items: center; font-size: 0.75em; cursor: pointer; padding: 0;">i</button>
-        </h3>
-        ...
-        
+                <button onclick="document.getElementById('lootInfoModal').classList.add('open')" style="background: rgba(255,255,255,0.1); border: 1px solid var(--border-color); color: var(--text-muted); border-radius: 50%; width: 22px; height: 22px; display: flex; justify-content: center; align-items: center; font-size: 0.75em; cursor: pointer; padding: 0;">i</button>
+            </h3>
         <div style="font-size: 0.85em; background: rgba(0,0,0,0.4); padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border-color); color: var(--text-muted);">
             💀 {% if boss and boss.is_active %}
                 Kills: <span style="color: white; font-weight: bold;">{{ current_user.bosses_killed_today }} / 3</span>
@@ -925,7 +928,7 @@
             <div style="background: rgba(0,0,0,0.3); border: 1px solid {% if item.rarity == 'Mythic' %}transparent{% elif item.rarity == 'Legendary' %}#f59e0b{% elif item.rarity == 'Epic' %}#a855f7{% elif item.rarity == 'Rare' %}#3b82f6{% elif item.rarity == 'Uncommon' %}#10b981{% else %}var(--border-color){% endif %}; border-radius: 8px; padding: 12px; margin-bottom: 10px;" class="{% if item.rarity == 'Mythic' %}border-mythic{% endif %}">
                 <div style="margin-bottom: 8px;">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <p style="font-weight: bold; margin: 0; font-size: 1.1em;" class="{% if item.rarity == 'Mythic' %}color-mythic{% elif item.rarity == 'Legendary' %}color-legendary{% elif item.rarity == 'Epic' %}color-epic{% endif %}" style="color: {% if item.rarity == 'Rare' %}#3b82f6{% elif item.rarity == 'Uncommon' %}#10b981{% else %}#a1a1aa{% endif %};">
+                        <p class="{% if item.rarity == 'Mythic' %}color-mythic{% elif item.rarity == 'Legendary' %}color-legendary{% elif item.rarity == 'Epic' %}color-epic{% endif %}" style="font-weight: bold; margin: 0; font-size: 1.1em; {% if item.rarity == 'Rare' %}color: #3b82f6;{% elif item.rarity == 'Uncommon' %}color: #10b981;{% elif item.rarity in ['Common', 'unknown'] %}color: #a1a1aa;{% endif %}">
                             {{ item.item_name }}
                         </p>
                         {% if item.rarity == 'Mythic' and not item.is_active %}
@@ -1176,8 +1179,6 @@
         </div>
         
     </div>
-    <!-- ========================================== -->
-    <!-- ========================================== -->
     <!-- CO-OP TAVERN VIEW STARTS HERE              -->
     <!-- ========================================== -->
     <div id="tavern-view" style="display: none; padding-top: 10px;">
