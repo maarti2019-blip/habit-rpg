@@ -584,7 +584,8 @@ def get_item_data_by_name(target_name):
 def roll_raid_equipment():
     roll = random.random() * 100
     if roll <= 10.0: return ("Legendary", random.choice(LEGENDARY_ITEMS))
-    elif roll <= 50.0: return ("Rare", random.choice(RARE_ITEMS))
+    elif roll <= 30.0: return ("Epic", random.choice(EPIC_ITEMS))
+    elif roll <= 70.0: return ("Rare", random.choice(RARE_ITEMS))
     elif roll <= 90.0: return ("Uncommon", random.choice(UNCOMMON_ITEMS))
     else: return ("Common", random.choice(COMMON_ITEMS))
 
@@ -825,8 +826,46 @@ def index():
     
     # Calculate how many active bounties were posted by the OTHER player
     partner_bounty_count = sum(1 for b in active_bounties if current_user and b.poster_id != current_user.id)
+
+    # --- LIVE DROP RATE & GOLD CALCULATOR FOR UI ---
+    world_mult = 1.03 ** (boss.world_level - 1) if boss else 1.0
+    luck = guild_stats['luck_cur'] if guild_stats else 0.0
+    gold_mult = 1.0 + (guild_stats['gold_cur'] / 100.0) if guild_stats else 1.0
     
-    return render_template('index.html', current_user=current_user, players=players, boss=boss, pending_rewards=pending_rewards, inventory=inventory, solo_img=solo_img, raid_img=raid_img, server_state=server_state, transactions=transactions, activity_logs=activity_logs, WEEKLY_QUESTS=WEEKLY_QUESTS, event_active_now=event_active_now, active_spoils=active_spoils, daily_shop=daily_shop, guild_stats=guild_stats, alaina_hustled=alaina_hustled, matthew_hustled=matthew_hustled, active_bounties=active_bounties, partner_bounty_count=partner_bounty_count, active_trades=active_trades)
+    is_cursed = (server_state.active_event == "The Cursed Vault" and event_active_now)
+    is_goblin = (server_state.active_event == "Goblin Merchant's Crash" and event_active_now)
+    is_mimic = (server_state.active_event == "Treasure Mimic Infestation" and event_active_now)
+    
+    # 1. Calculate Solo Gold Ranges
+    if is_cursed:
+        solo_gold_min, solo_gold_max = 0.50 * gold_mult, 2.00 * gold_mult
+    elif is_mimic:
+        solo_gold_min = solo_gold_max = 10.00 * gold_mult
+    else:
+        solo_gold_min = 2.0 * world_mult * gold_mult
+        solo_gold_max = 7.0 * world_mult * gold_mult
+        if is_goblin:
+            solo_gold_min *= 2.0; solo_gold_max *= 2.0
+            
+    # 2. Calculate Solo Drop Percentages based on active luck/events
+    mythic_pct = 0.01 if is_cursed else 0.001
+    leg_raw = (5.0 + luck) if is_cursed else (0.8 + (luck * 0.5))
+    epic_raw = (15.0 + luck) if is_cursed else (3.5 + luck)
+    rare_raw = (30.0 + luck) if is_cursed else (11.5 + luck)
+    unc_raw = (50.0 + luck) if is_cursed else (26.5 + luck)
+    
+    drop_info = {
+        'solo_gold': f"${solo_gold_min:.2f} - ${solo_gold_max:.2f}",
+        'raid_gold': "$10.00 - $50.00",
+        'solo_mythic': f"{mythic_pct:.3f}%",
+        'solo_leg': f"{max(0, leg_raw - mythic_pct):.2f}%",
+        'solo_epic': f"{max(0, epic_raw - leg_raw):.2f}%",
+        'solo_rare': f"{max(0, rare_raw - epic_raw):.2f}%",
+        'solo_unc': f"{max(0, unc_raw - rare_raw):.2f}%",
+        'solo_com': f"{max(0, 100.0 - unc_raw):.2f}%"
+    }
+    
+    return render_template('index.html', current_user=current_user, players=players, boss=boss, pending_rewards=pending_rewards, inventory=inventory, solo_img=solo_img, raid_img=raid_img, server_state=server_state, transactions=transactions, activity_logs=activity_logs, WEEKLY_QUESTS=WEEKLY_QUESTS, event_active_now=event_active_now, active_spoils=active_spoils, daily_shop=daily_shop, guild_stats=guild_stats, alaina_hustled=alaina_hustled, matthew_hustled=matthew_hustled, active_bounties=active_bounties, partner_bounty_count=partner_bounty_count, active_trades=active_trades, drop_info=drop_info, COMMON_ITEMS=COMMON_ITEMS, UNCOMMON_ITEMS=UNCOMMON_ITEMS, RARE_ITEMS=RARE_ITEMS, EPIC_ITEMS=EPIC_ITEMS, LEGENDARY_ITEMS=LEGENDARY_ITEMS, MYTHIC_ITEMS=MYTHIC_ITEMS)
 
 @app.route('/select_quest/<int:q_id>', methods=['POST'])
 def select_quest(q_id):
