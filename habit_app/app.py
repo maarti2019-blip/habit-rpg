@@ -177,49 +177,66 @@ UNCOMMON_ITEMS = [
 ]
 
 RARE_ITEMS = [
-    ("Mithril Blade", "damage_solo", 200.0, "Instantly deal 200 DMG to your Solo Boss."),
+    ("Mithril Blade", "damage_solo", 250.0, "Instantly deal 250 DMG to your Solo Boss."),
     ("Gold Ingot", "gold", 10.00, "Instantly adds $10.00 to your Vault."),
     ("Berserker's Axe", "buff_workout", 1.50, "Multiplies Workout DMG by 1.50x for 24h."),
     ("Master Brush", "buff_hobby", 1.50, "Multiplies Hobby DMG by 1.50x for 24h."),
     ("Maid's Bell", "chore_pass", 0, "Instantly forces your Chores box to Complete."),
-    ("Dragon's Breath", "damage_raid", 250.0, "Instantly deal 250 DMG to the Raid Boss."),
-    ("Platinum Crown", "gold", 12.00, "Instantly adds $12.00 to your Vault."),
+    ("Dragon's Breath", "damage_raid", 350.0, "Instantly deal 350 DMG to the Raid Boss."),
+    ("Platinum Crown", "gold", 14.00, "Instantly adds $14.00 to your Vault."),
     ("Arcane Staff", "buff_global", 1.35, "Multiplies ALL DMG by 1.35x for 24h."),
     ("Valkyrie Wings", "buff_workout", 1.60, "Multiplies Workout DMG by 1.60x for 24h."),
     ("Timepiece", "buff_chore", 1.60, "Multiplies Chore Time DMG by 1.60x for 24h."),
     ("Grimoire", "buff_hobby", 1.60, "Multiplies Hobby DMG by 1.60x for 24h."),
-    ("Meteor Scroll", "damage_raid", 300.0, "Instantly deal 300 DMG to the Raid Boss."),
+    ("Meteor Scroll", "damage_raid", 400.0, "Instantly deal 400 DMG to the Raid Boss."),
     ("Royal Signet", "gold", 15.00, "Instantly adds $15.00 to your Vault."),
-    ("Shadow Bow", "damage_solo", 250.0, "Instantly deal 250 DMG to your Solo Boss."),
+    ("Shadow Bow", "damage_solo", 300.0, "Instantly deal 300 DMG to your Solo Boss."),
     ("Knight's Armor", "buff_global", 1.40, "Multiplies ALL DMG by 1.40x for 24h."),
     ("Crystal Ball", "buff_hobby", 1.55, "Multiplies Hobby DMG by 1.55x for 24h."),
     ("Titan's Belt", "buff_workout", 1.55, "Multiplies Workout DMG by 1.55x for 24h."),
     ("Feather Duster", "buff_chore", 1.55, "Multiplies Chore Time DMG by 1.55x for 24h."),
-    ("Treasure Map", "gold", 8.00, "Instantly adds $8.00 to your Vault."),
-    ("Lightning Bolt", "damage_solo", 280.0, "Instantly deal 280 DMG to your Solo Boss.")
+    ("Treasure Map", "gold", 12.00, "Instantly adds $12.00 to your Vault."),
+    ("Lightning Bolt", "damage_solo", 350.0, "Instantly deal 350 DMG to your Solo Boss.")
 ]
 
+# --- BRAND NEW EPIC TIER (Purple) ---
+EPIC_ITEMS = [
+    ("Obsidian Greatsword", "damage_solo", 600.0, "Instantly deal 600 DMG to your Solo Boss."),
+    ("Gilded Vault Chest", "gold", 25.00, "Instantly adds $25.00 to your Vault."),
+    ("War-God's Pauldrons", "buff_workout", 2.20, "Multiplies Workout DMG by 2.20x for 24h."),
+    ("Tome of Greater Intellect", "buff_hobby", 2.20, "Multiplies Hobby DMG by 2.20x for 24h."),
+    ("Broom of Cleansing", "buff_chore", 2.20, "Multiplies Chore Time DMG by 2.20x for 24h."),
+    ("Storm Hammer", "damage_raid", 800.0, "Instantly blast the Raid Boss for 800 DMG."),
+    ("Astral Signet", "buff_global", 1.85, "Multiplies ALL DMG by 1.85x for 24h."),
+    ("King's Ransom", "gold", 35.00, "Instantly adds $35.00 to your Vault."),
+    ("Nova Grenade", "damage_raid", 1000.0, "Instantly deal 1,000 DMG to the Raid Boss."),
+    ("Sunfire Aegis", "buff_global", 2.00, "Multiplies ALL DMG by 2.00x for 24h."),
+    ("Soul-Stealer Scythe", "damage_solo", 750.0, "Instantly deal 750 DMG to your Solo Boss."),
+    ("Ruby Dragon Egg", "gold", 30.00, "Instantly adds $30.00 to your Vault.")
+]
+
+# --- HEAVILY BUFFED LEGENDARY TIER (Gold) ---
 LEGENDARY_ITEMS = [
-    ("Excalibur", "damage_solo", 1000.0, "Instantly obliterate your Solo Boss for 1,000 DMG."),
-    ("Dragon's Hoard", "gold", 50.00, "Instantly adds $50.00 to your Vault."),
-    ("Aegis of the Titan", "buff_workout", 2.00, "Multiplies Workout DMG by 2.00x for 24h."),
-    ("Crown of the Scholar", "buff_hobby", 2.00, "Multiplies Hobby DMG by 2.00x for 24h."),
-    ("Chrono-Watch", "buff_chore", 2.00, "Multiplies Chore Time DMG by 2.00x for 24h."),
-    ("Hero's Elixir", "damage_raid", 1000.0, "Instantly blast the Raid Boss for 1,000 DMG."),
-    ("Archon's Halo", "buff_global", 1.75, "Multiplies ALL DMG by 1.75x for 24h."),
-    ("Philosopher's Stone", "gold", 30.00, "Instantly adds $30.00 to your Vault."),
-    ("Orb of Annihilation", "damage_raid", 1500.0, "Instantly deal 1,500 DMG to the Raid Boss."),
-    ("Divine Rapier", "damage_solo", 800.0, "Instantly deal 800 DMG to your Solo Boss."),
-    ("God-King's Treasure", "gold", 40.00, "Instantly adds $40.00 to your Vault."),
-    ("Omniscience Gem", "buff_hobby", 2.50, "Multiplies Hobby DMG by 2.50x for 24h."),
-    ("Hercules' Bracers", "buff_workout", 2.50, "Multiplies Workout DMG by 2.50x for 24h."),
-    ("Automaton Core", "buff_chore", 2.50, "Multiplies Chore Time DMG by 2.50x for 24h."),
-    ("Essence of Magic", "buff_global", 2.00, "Multiplies ALL DMG by 2.00x for 24h."),
-    ("Midas Touch", "gold", 25.00, "Instantly adds $25.00 to your Vault."),
-    ("Supernova Scroll", "damage_raid", 2000.0, "Instantly deal 2,000 DMG to the Raid Boss."),
-    ("Scythe of Death", "damage_solo", 1500.0, "Instantly deal 1,500 DMG to your Solo Boss."),
-    ("Infinity Catalyst", "buff_global", 2.50, "Multiplies ALL DMG by 2.50x for 24h."),
-    ("Diamond Chest", "gold", 45.00, "Instantly adds $45.00 to your Vault.")
+    ("Excalibur", "damage_solo", 3000.0, "Instantly obliterate your Solo Boss for 3,000 DMG."),
+    ("Dragon's Hoard", "gold", 100.00, "Instantly adds $100.00 to your Vault."),
+    ("Aegis of the Titan", "buff_workout", 4.00, "Multiplies Workout DMG by 4.00x for 24h."),
+    ("Crown of the Scholar", "buff_hobby", 4.00, "Multiplies Hobby DMG by 4.00x for 24h."),
+    ("Chrono-Watch", "buff_chore", 4.00, "Multiplies Chore Time DMG by 4.00x for 24h."),
+    ("Hero's Elixir", "damage_raid", 3500.0, "Instantly blast the Raid Boss for 3,500 DMG."),
+    ("Archon's Halo", "buff_global", 3.50, "Multiplies ALL DMG by 3.50x for 24h."),
+    ("Philosopher's Stone", "gold", 75.00, "Instantly adds $75.00 to your Vault."),
+    ("Orb of Annihilation", "damage_raid", 5000.0, "Instantly deal 5,000 DMG to the Raid Boss."),
+    ("Divine Rapier", "damage_solo", 2500.0, "Instantly deal 2,500 DMG to your Solo Boss."),
+    ("God-King's Treasure", "gold", 90.00, "Instantly adds $90.00 to your Vault."),
+    ("Infinity Catalyst", "buff_global", 4.50, "Multiplies ALL DMG by 4.50x for 24h.")
+]
+
+# --- ULTRA-RARE MYTHIC TIER (Rainbow - 0.001% Drop) ---
+# Format: Name, category, total_charges, description
+MYTHIC_ITEMS = [
+    ("Sugar Patron's Beacon", "mythic_care_package", 5.0, "5 Uses: Air-drops $50.00 and a guaranteed Legendary item to your partner."),
+    ("Titan's Blood Flask", "mythic_limit_break", 3.0, "3 Uses: Drink before an activity to apply a 50x DMG and gold multiplier to that session."),
+    ("Chrono-Crystal", "mythic_time_skip", 4.0, "4 Uses: Instantly fulfills your active Weekly Contract for $40.00 and Legendary loot.")
 ]
 
 # --- Models ---
@@ -442,36 +459,38 @@ def get_guild_stats():
 def refresh_daily_shop():
     today_str = get_est_now().strftime('%Y-%m-%d')
     existing = DailyShopItem.query.first()
-    
-    if existing and existing.date_seeded == today_str:
-        return 
+    if existing and existing.date_seeded == today_str: return 
         
     DailyShopItem.query.delete()
     
-    # Filter out all flat gold drops
     shop_common = [i for i in COMMON_ITEMS if i[1] != 'gold']
     shop_uncommon = [i for i in UNCOMMON_ITEMS if i[1] != 'gold']
     shop_rare = [i for i in RARE_ITEMS if i[1] != 'gold']
+    shop_epic = [i for i in EPIC_ITEMS if i[1] != 'gold']
     shop_legendary = [i for i in LEGENDARY_ITEMS if i[1] != 'gold']
     
     for _ in range(4):
         roll = random.random() * 100
-        if roll <= 10.0:  
+        if roll <= 8.0:  
             rarity = "Legendary"
             item_data = random.choice(shop_legendary)
-            price = round(random.uniform(100.0, 175.0), 2)
-        elif roll <= 25.0: 
+            price = round(random.uniform(95.0, 150.0), 2)
+        elif roll <= 22.0:
+            rarity = "Epic"
+            item_data = random.choice(shop_epic)
+            price = round(random.uniform(45.0, 75.0), 2)
+        elif roll <= 45.0: 
             rarity = "Rare"
             item_data = random.choice(shop_rare)
-            price = round(random.uniform(40.0, 75.0), 2)
-        elif roll <= 50.0: 
+            price = round(random.uniform(20.0, 35.0), 2)
+        elif roll <= 75.0: 
             rarity = "Uncommon"
             item_data = random.choice(shop_uncommon)
-            price = round(random.uniform(15.0, 30.0), 2)
+            price = round(random.uniform(8.0, 16.0), 2)
         else: 
             rarity = "Common"
             item_data = random.choice(shop_common)
-            price = round(random.uniform(2.0, 8.0), 2)
+            price = round(random.uniform(2.0, 6.0), 2)
             
         db.session.add(DailyShopItem(
             name=item_data[0], category=item_data[1], multiplier=item_data[2],
@@ -531,30 +550,36 @@ def calculate_raid_boss_orb():
     return round(max(10.0, min(50.0, random.gauss(25.0, 10.0))), 2)
 
 def roll_equipment(event_name=None):
-    # Fetch the live guild stats to get the luck bonus
     guild_stats = get_guild_stats()
     luck_bonus = guild_stats['luck_cur'] if guild_stats else 0.0
     
-    roll = random.random() * 100
+    roll = random.random() * 100.0
+
+    # 1 in 100,000 (0.001%)
+    mythic_chance = 0.01 if event_name == "The Cursed Vault" else 0.001
+    if roll <= mythic_chance:
+        return ("Mythic", random.choice(MYTHIC_ITEMS))
+
     if event_name == "The Cursed Vault":
         if roll <= (5.0 + luck_bonus): return ("Legendary", random.choice(LEGENDARY_ITEMS))
-        elif roll <= (20.0 + luck_bonus): return ("Rare", random.choice(RARE_ITEMS))
-        elif roll <= (40.0 + luck_bonus): return ("Uncommon", random.choice(UNCOMMON_ITEMS))
+        elif roll <= (15.0 + luck_bonus): return ("Epic", random.choice(EPIC_ITEMS))
+        elif roll <= (30.0 + luck_bonus): return ("Rare", random.choice(RARE_ITEMS))
+        elif roll <= (50.0 + luck_bonus): return ("Uncommon", random.choice(UNCOMMON_ITEMS))
         else: return ("Common", random.choice(COMMON_ITEMS))
     else:
-        if roll <= (0.5 + luck_bonus): return ("Legendary", random.choice(LEGENDARY_ITEMS))
-        elif roll <= (3.5 + luck_bonus): return ("Rare", random.choice(RARE_ITEMS))
-        elif roll <= (11.5 + luck_bonus): return ("Uncommon", random.choice(UNCOMMON_ITEMS))
-        elif roll <= (26.5 + luck_bonus): return ("Common", random.choice(COMMON_ITEMS))
+        if roll <= (0.8 + (luck_bonus * 0.5)): return ("Legendary", random.choice(LEGENDARY_ITEMS))
+        elif roll <= (3.5 + luck_bonus): return ("Epic", random.choice(EPIC_ITEMS))
+        elif roll <= (11.5 + luck_bonus): return ("Rare", random.choice(RARE_ITEMS))
+        elif roll <= (26.5 + luck_bonus): return ("Uncommon", random.choice(UNCOMMON_ITEMS))
+        elif roll <= (50.0 + luck_bonus): return ("Common", random.choice(COMMON_ITEMS))
     return None
 
 def get_item_data_by_name(target_name):
-    # Searches all master loot lists to recover missing stats
-    for loot_pool in [COMMON_ITEMS, UNCOMMON_ITEMS, RARE_ITEMS, LEGENDARY_ITEMS]:
+    for loot_pool in [COMMON_ITEMS, UNCOMMON_ITEMS, RARE_ITEMS, EPIC_ITEMS, LEGENDARY_ITEMS, MYTHIC_ITEMS]:
         for item in loot_pool:
             if item[0] == target_name:
-                return item[1], item[2], item[3] # Returns: category, multiplier, description
-    return "unknown", 1.0, "A mysterious item with unknown origins."
+                return item[1], item[2], item[3]
+    return "unknown", 1.0, "A mysterious artifact."
 
 def roll_raid_equipment():
     roll = random.random() * 100
@@ -1061,6 +1086,11 @@ def stage_activity():
     if act_type == 'workout': base_dmg = minutes * workout_mult; user.wk_workout += minutes
     elif act_type == 'hobby': base_dmg = minutes * hobby_mult; user.wk_hobby += minutes
     elif act_type == 'chore': base_dmg = minutes * chore_mult; user.wk_chore += minutes
+    # Check for Limit Break (50x)
+    limit_break = UserInventory.query.filter_by(user_id=user.id, category_target="buff_limit_break").first()
+    if limit_break:
+        base_dmg *= 50.0
+        db.session.delete(limit_break) # Consumed on strike
     
     # QUEST PROGRESSION
     if user.active_quest_id and not user.quest_completed:
@@ -1348,6 +1378,46 @@ def use_item(item_id):
     if current_event == "Alchemist’s Bazaar":
         user.gold_balance += 2.00; user.wk_gold += 2.00
 
+    # --- MYTHIC MULTI-USE HANDLERS ---
+    if item.rarity == "Mythic":
+        # 1. Sugar Care Package
+        if item.category_target == 'mythic_care_package':
+            partner = User.query.filter(User.id != user.id).first()
+            if partner:
+                partner.gold_balance += 50.00
+                partner.wk_gold += 50.00
+                leg_choice = random.choice(LEGENDARY_ITEMS)
+                db.session.add(UserInventory(user_id=partner.id, item_name=leg_choice[0], category_target=leg_choice[1], multiplier=leg_choice[2], description=leg_choice[3], rarity="Legendary"))
+                db.session.add(PendingReward(user_id=partner.id, gold_amount=50.00, item_name=f"[Partner Air-Drop!] [Legendary] {leg_choice[0]}"))
+                notify_discord(f"🎁 **CARE PACKAGE DELIVERED!** {user.username} activated their Mythic Beacon! {partner.username} received $50.00 and a Legendary item!")
+
+        # 2. Limit Break Prep
+        elif item.category_target == 'mythic_limit_break':
+            db.session.add(UserInventory(user_id=user.id, item_name="⚡ LIMIT BREAK ACTIVE (50x)", category_target="buff_limit_break", multiplier=50.0, description="Your next activity deals 50x DMG and yields massive rewards.", rarity="Mythic", is_active=True))
+            notify_discord(f"⚡ **LIMIT BREAK UNLEASHED!** {user.username} drank the Titan's Blood Flask! Their next activity will hit with 50x force!")
+
+        # 3. Time Skip
+        elif item.category_target == 'mythic_time_skip':
+            if user.active_quest_id and not user.quest_completed:
+                quest = WEEKLY_QUESTS.get(user.active_quest_id)
+                user.quest_progress = quest["target"]
+                user.quest_completed = True
+                user.gold_balance += quest["gold"]
+                user.wk_gold += quest["gold"]
+                loot_pool = LEGENDARY_ITEMS if quest["tier"] == "Legendary" else RARE_ITEMS
+                q_choice = random.choice(loot_pool)
+                db.session.add(UserInventory(user_id=user.id, item_name=q_choice[0], category_target=q_choice[1], multiplier=q_choice[2], description=q_choice[3], rarity=quest["tier"]))
+                db.session.add(PendingReward(user_id=user.id, gold_amount=quest["gold"], item_name=f"[Chrono-Skip Contract!] [{quest['tier']}] {q_choice[0]}"))
+                notify_discord(f"⏳ **CHRONO-SKIP!** {user.username} used a Chrono-Crystal to instantly fulfill their contract!")
+
+        # Deduct a charge from multiplier
+        item.multiplier -= 1.0
+        if item.multiplier <= 0:
+            db.session.delete(item)
+        db.session.commit()
+        return redirect('/')
+
+    # --- STANDARD ITEM HANDLERS ---
     if item.category_target.startswith('buff'):
         item.is_active = True
         duration = 72 if current_event == "Broken Seal" else 24
@@ -1357,12 +1427,9 @@ def use_item(item_id):
         if boss.is_active: 
             boss.current_hp -= item.multiplier
             user.raid_dmg_contributed += item.multiplier
-            
-            # Boss dies mid-week. It stays dead until Monday reset.
             if boss.current_hp <= 0:
                 handle_boss_death(current_event)
                 notify_discord(f"🌋 **{boss.name.upper()} ANNIHILATED BY AN ITEM!** Both players received a Raid Boss Orb and guaranteed high-tier loot! A new boss will spawn on Monday.")
-                
         db.session.delete(item)
     elif item.category_target == 'gold':
         user.gold_balance += item.multiplier
