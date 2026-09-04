@@ -709,7 +709,6 @@
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
             <h3 style="margin: 0; display: flex; align-items: center; gap: 8px;">
                 🐺 Solo Monster
-                <button onclick="document.getElementById('lootInfoModal').classList.add('open')" style="background: rgba(255,255,255,0.1); border: 1px solid var(--border-color); color: var(--text-muted); border-radius: 50%; width: 22px; height: 22px; display: flex; justify-content: center; align-items: center; font-size: 0.75em; cursor: pointer; padding: 0;">i</button>
             </h3>
             <div style="font-size: 0.85em; background: rgba(0,0,0,0.4); padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border-color); color: var(--text-muted);">
                 💀 {% if boss and boss.is_active %}
@@ -776,7 +775,6 @@
         <div style="display:flex; justify-content: space-between; align-items:center;">
             <h3 style="margin:0; display: flex; align-items: center; gap: 8px;">
                 🌋 Shared Co-Op Raid
-                <button onclick="document.getElementById('lootInfoModal').classList.add('open')" style="background: rgba(255,255,255,0.1); border: 1px solid var(--border-color); color: var(--text-muted); border-radius: 50%; width: 22px; height: 22px; display: flex; justify-content: center; align-items: center; font-size: 0.75em; cursor: pointer; padding: 0;">i</button>
             </h3>
             <span style="font-size: 0.8em; color: var(--text-muted); border: 1px solid var(--border-color); padding: 2px 6px; border-radius: 4px;">World Lvl {{ boss.world_level }}</span>
         </div>
@@ -918,6 +916,9 @@
 
     <div class="card" id="inventory-card">
         <h3 style="margin: 0 0 10px 0;">🎒 Your Vault Inventory</h3>
+            <button onclick="document.getElementById('lootInfoModal').classList.add('open')" style="background: rgba(255,255,255,0.1); border: 1px solid var(--border-color); color: var(--text-muted); border-radius: 50%; width: 22px; height: 22px; display: flex; justify-content: center; align-items: center; font-size: 0.75em; cursor: pointer; padding: 0;">i</button>
+            </h3>
+        </div>
         {% if not inventory %}
             <p style="color: var(--text-muted); font-size: 0.9em; font-style: italic; margin: 0;">Your inventory is empty. Defeat solo bosses to earn drops!</p>
         {% else %}
