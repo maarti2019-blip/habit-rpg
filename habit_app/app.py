@@ -917,6 +917,16 @@ def post_bounty():
         db.session.add(TransactionHistory(user_id=user.id, amount=gold_reward, reason=f"Bounty Escrow: {task_desc}"))
         db.session.commit()
         
+        new_bounty = BountyBoard(
+            poster_id=user.id, poster_name=user.username,
+            task_desc=task_desc, gold_reward=gold_reward, item_reward=item_id_to_store
+        )
+        db.session.add(new_bounty)
+        db.session.add(TransactionHistory(user_id=user.id, amount=gold_reward, reason=f"Bounty Escrow: {task_desc}"))
+        db.session.commit()
+        
+        notify_discord(f"📜 **JOB POSTED!** {user.username} needs help! They are offering ${gold_reward:.2f} for: {task_desc}")
+
     return redirect('/')
 
 @app.route('/interact_bounty', methods=['POST'])
@@ -1075,7 +1085,20 @@ def stage_activity():
     w_details = request.form.get('workout_details', '')
     diff = request.form.get('difficulty', '')
     feeling = request.form.get('morning_feeling', '')
-    
+
+    # --- SYNERGY NOTIFICATION CHECK ---
+    if minutes >= 120.0:
+        today_start = est_now.replace(hour=0, minute=0, second=0, microsecond=0).replace(tzinfo=None)
+        # Check if they already had a 120-min session today before this one
+        prior_max = db.session.query(db.func.max(ActivityLog.minutes)).filter(ActivityLog.user_id == user.id, ActivityLog.timestamp >= today_start).scalar() or 0.0
+        
+        if prior_max < 120.0:
+            partner = User.query.filter(User.id != user.id).first()
+            if partner:
+                partner_max = db.session.query(db.func.max(ActivityLog.minutes)).filter(ActivityLog.user_id == partner.id, ActivityLog.timestamp >= today_start).scalar() or 0.0
+                if partner_max >= 120.0:
+                    notify_discord("🤑 Both players secured 25% OFF in Snivels' Shop!")
+
     if minutes > 0:
         new_log = ActivityLog(
             user_id=user.id,
