@@ -383,6 +383,10 @@ class BountyBoard(db.Model):
     item_reward = db.Column(db.String(50), default='None')
     is_active = db.Column(db.Boolean, default=True)
     timestamp = db.Column(db.DateTime, default=lambda: get_est_now().replace(tzinfo=None))
+    
+    # NEW MULTI-STEP COLUMNS
+    status = db.Column(db.String(50), default="Open")
+    claimer_id = db.Column(db.Integer, nullable=True)
 
 class TradeOffer(db.Model):
     __tablename__ = 'trade_offer'
