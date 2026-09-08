@@ -939,6 +939,9 @@ def interact_bounty():
     bounty = BountyBoard.query.get(bounty_id)
     
     if bounty and bounty.is_active:
+        # Normalize legacy jobs to "Open"
+        b_status = bounty.status or 'Open' 
+        
         if action == 'cancel' and bounty.poster_id == user.id:
             user.gold_balance += bounty.gold_reward
             if bounty.item_reward != 'None':
@@ -947,11 +950,11 @@ def interact_bounty():
             bounty.is_active = False
             db.session.add(TransactionHistory(user_id=user.id, amount=bounty.gold_reward, reason=f"Bounty Refund: {bounty.task_desc}"))
             
-        elif action == 'accept' and bounty.poster_id != user.id and bounty.status == 'Open':
+        elif action == 'accept' and bounty.poster_id != user.id and b_status == 'Open':
             bounty.status = 'In Progress'
             bounty.claimer_id = user.id
             
-        elif action == 'fulfill' and bounty.claimer_id == user.id and bounty.status == 'In Progress':
+        elif action == 'fulfill' and bounty.claimer_id == user.id and b_status == 'In Progress':
             user.gold_balance += bounty.gold_reward
             user.wk_gold += bounty.gold_reward
             if bounty.item_reward != 'None':
@@ -962,41 +965,6 @@ def interact_bounty():
         db.session.commit()
     return index()
 
-@app.route('/post_trade', methods=['POST'])
-def post_trade():
-    if 'user_id' not in session: return redirect('/')
-    user = User.query.get(session['user_id'])
-    
-    # getlist() captures ALL the checkboxes you ticked!
-    offered_ids = request.form.getlist('offered_items')
-    requested_return = request.form.get('requested_return')
-    
-    if not offered_ids or not requested_return:
-        return index()
-        
-    offered_names = []
-    valid_ids = []
-    
-    # Send all checked items to escrow
-    for item_id in offered_ids:
-        item = UserInventory.query.filter_by(id=int(item_id), user_id=user.id).first()
-        if item and not item.is_active:
-            item.user_id = -1 
-            offered_names.append(f"[{item.rarity}] {item.item_name}")
-            valid_ids.append(str(item.id))
-            
-    if valid_ids:
-        new_trade = TradeOffer(
-            poster_id=user.id,
-            poster_name=user.username,
-            offered_item_ids=",".join(valid_ids),
-            offered_item_names="\n".join(offered_names), # Uses line breaks for the HTML
-            requested_return=requested_return
-        )
-        db.session.add(new_trade)
-        db.session.commit()
-        
-    return redirect('/')
 
 @app.route('/interact_trade', methods=['POST'])
 def interact_trade():
@@ -1009,6 +977,8 @@ def interact_trade():
     
     if trade:
         item_ids = trade.offered_item_ids.split(',')
+        # Normalize legacy trades to "Open"
+        t_status = trade.status or 'Open' 
         
         if action == 'cancel' and trade.poster_id == user.id:
             # Return poster's items
@@ -1021,18 +991,16 @@ def interact_trade():
                 if p_item: p_item.user_id = trade.partner_id
             db.session.delete(trade)
             
-        elif action == 'propose' and trade.poster_id != user.id and trade.status == 'Open':
-            # Partner proposes an item in exchange
+        elif action == 'propose' and trade.poster_id != user.id and t_status == 'Open':
             given_item_id = request.form.get('given_item_id')
             given_item = UserInventory.query.filter_by(id=int(given_item_id), user_id=user.id).first()
             if given_item and not given_item.is_active:
-                given_item.user_id = -1 # Send to Escrow
+                given_item.user_id = -1 
                 trade.partner_item_id = str(given_item.id)
                 trade.partner_id = user.id
                 trade.status = 'Pending Acceptance'
 
-        elif action == 'accept_offer' and trade.poster_id == user.id and trade.status == 'Pending Acceptance':
-            # Poster accepts the trade! Swap ownership.
+        elif action == 'accept_offer' and trade.poster_id == user.id and t_status == 'Pending Acceptance':
             p_item = UserInventory.query.get(int(trade.partner_item_id))
             if p_item: p_item.user_id = user.id
             for i_id in item_ids:
@@ -1040,16 +1008,14 @@ def interact_trade():
                 if item: item.user_id = trade.partner_id
             db.session.delete(trade)
 
-        elif action == 'deny_offer' and trade.poster_id == user.id and trade.status == 'Pending Acceptance':
-            # Poster rejects. Refund partner's item, keep trade open.
+        elif action == 'deny_offer' and trade.poster_id == user.id and t_status == 'Pending Acceptance':
             p_item = UserInventory.query.get(int(trade.partner_item_id))
             if p_item: p_item.user_id = trade.partner_id
             trade.partner_id = None
             trade.partner_item_id = None
             trade.status = 'Open'
             
-        elif action == 'cancel_offer' and trade.partner_id == user.id and trade.status == 'Pending Acceptance':
-            # Partner retracts their offer before Poster decides
+        elif action == 'cancel_offer' and trade.partner_id == user.id and t_status == 'Pending Acceptance':
             p_item = UserInventory.query.get(int(trade.partner_item_id))
             if p_item: p_item.user_id = trade.partner_id
             trade.partner_id = None
