@@ -393,6 +393,10 @@ class TradeOffer(db.Model):
     offered_item_names = db.Column(db.String(500), nullable=False) # Stores the formatted list for the HTML
     requested_return = db.Column(db.String(255), nullable=False)
     timestamp = db.Column(db.DateTime, default=lambda: get_est_now().replace(tzinfo=None))
+
+    status = db.Column(db.String(50), default="Open")
+    partner_id = db.Column(db.Integer, nullable=True)
+    partner_item_id = db.Column(db.String(50), nullable=True)
     
 class TransactionHistory(db.Model):
     __tablename__ = 'transaction_history'
@@ -813,6 +817,11 @@ def index():
     
     active_bounties = BountyBoard.query.filter_by(is_active=True).all()
     active_trades = TradeOffer.query.order_by(TradeOffer.timestamp.desc()).all()
+
+    for trade in active_trades:
+        if trade.partner_item_id:
+            p_item = UserInventory.query.get(int(trade.partner_item_id))
+            trade.display_partner_item = f"[{p_item.rarity}] {p_item.item_name}" if p_item else "Unknown Item"
     
     # Recover the escrowed item details so the HTML can display them properly
     for bounty in active_bounties:
@@ -940,27 +949,26 @@ def interact_bounty():
     
     if bounty and bounty.is_active:
         if action == 'cancel' and bounty.poster_id == user.id:
-            # Refund escrowed gold
+            # Refund escrowed gold and items back to poster
             user.gold_balance += bounty.gold_reward
-            
-            # Refund escrowed item back to the original poster
             if bounty.item_reward != 'None':
                 item = UserInventory.query.get(int(bounty.item_reward))
                 if item: item.user_id = user.id
-                
             bounty.is_active = False
             db.session.add(TransactionHistory(user_id=user.id, amount=bounty.gold_reward, reason=f"Bounty Refund: {bounty.task_desc}"))
             
-        elif action == 'claim' and bounty.poster_id != user.id:
-            # Payout gold to the fulfiller
+        elif action == 'accept' and bounty.poster_id != user.id and bounty.status == 'Open':
+            # Job is claimed, but not yet paid out
+            bounty.status = 'In Progress'
+            bounty.claimer_id = user.id
+            
+        elif action == 'fulfill' and bounty.claimer_id == user.id and bounty.status == 'In Progress':
+            # Fulfiller completes the job and gets paid
             user.gold_balance += bounty.gold_reward
             user.wk_gold += bounty.gold_reward
-            
-            # Transfer escrowed item to the fulfiller
             if bounty.item_reward != 'None':
                 item = UserInventory.query.get(int(bounty.item_reward))
                 if item: item.user_id = user.id
-                
             bounty.is_active = False
             
         db.session.commit()
@@ -1015,27 +1023,51 @@ def interact_trade():
         item_ids = trade.offered_item_ids.split(',')
         
         if action == 'cancel' and trade.poster_id == user.id:
-            # Return all escrowed items back to the poster
+            # Return poster's items
             for i_id in item_ids:
                 item = UserInventory.query.get(int(i_id))
                 if item: item.user_id = user.id
+            # Return partner's item if an offer was pending
+            if trade.partner_item_id:
+                p_item = UserInventory.query.get(int(trade.partner_item_id))
+                if p_item: p_item.user_id = trade.partner_id
             db.session.delete(trade)
             
-        elif action == 'accept' and trade.poster_id != user.id:
+        elif action == 'propose' and trade.poster_id != user.id and trade.status == 'Open':
+            # Partner proposes an item in exchange
             given_item_id = request.form.get('given_item_id')
             given_item = UserInventory.query.filter_by(id=int(given_item_id), user_id=user.id).first()
-            
             if given_item and not given_item.is_active:
-                # 1. Give the partner's item to the poster
-                given_item.user_id = trade.poster_id
-                
-                # 2. Give the poster's escrowed items to the partner
-                for i_id in item_ids:
-                    item = UserInventory.query.get(int(i_id))
-                    if item: item.user_id = user.id
-                    
-                db.session.delete(trade)
-                
+                given_item.user_id = -1 # Send to Escrow
+                trade.partner_item_id = str(given_item.id)
+                trade.partner_id = user.id
+                trade.status = 'Pending Acceptance'
+
+        elif action == 'accept_offer' and trade.poster_id == user.id and trade.status == 'Pending Acceptance':
+            # Poster accepts the trade! Swap ownership.
+            p_item = UserInventory.query.get(int(trade.partner_item_id))
+            if p_item: p_item.user_id = user.id
+            for i_id in item_ids:
+                item = UserInventory.query.get(int(i_id))
+                if item: item.user_id = trade.partner_id
+            db.session.delete(trade)
+
+        elif action == 'deny_offer' and trade.poster_id == user.id and trade.status == 'Pending Acceptance':
+            # Poster rejects. Refund partner's item, keep trade open.
+            p_item = UserInventory.query.get(int(trade.partner_item_id))
+            if p_item: p_item.user_id = trade.partner_id
+            trade.partner_id = None
+            trade.partner_item_id = None
+            trade.status = 'Open'
+            
+        elif action == 'cancel_offer' and trade.partner_id == user.id and trade.status == 'Pending Acceptance':
+            # Partner retracts their offer before Poster decides
+            p_item = UserInventory.query.get(int(trade.partner_item_id))
+            if p_item: p_item.user_id = trade.partner_id
+            trade.partner_id = None
+            trade.partner_item_id = None
+            trade.status = 'Open'
+            
         db.session.commit()
     return redirect('/')
     
@@ -1575,6 +1607,17 @@ def initialize_database():
     with app.app_context():
         os.makedirs(os.path.join(basedir, 'instance'), exist_ok=True)
         db.create_all()
+
+        try:
+            db.session.execute(text('ALTER TABLE bounty_board ADD COLUMN status VARCHAR(50) DEFAULT "Open"'))
+            db.session.execute(text('ALTER TABLE bounty_board ADD COLUMN claimer_id INTEGER'))
+            db.session.execute(text('ALTER TABLE trade_offer ADD COLUMN status VARCHAR(50) DEFAULT "Open"'))
+            db.session.execute(text('ALTER TABLE trade_offer ADD COLUMN partner_id INTEGER'))
+            db.session.execute(text('ALTER TABLE trade_offer ADD COLUMN partner_item_id VARCHAR(50)'))
+            db.session.commit()
+        except:
+            db.session.rollback()
+            
         if not ServerState.query.first():
             db.session.add(ServerState())
         if not TradeOffer.query.first(): pass
