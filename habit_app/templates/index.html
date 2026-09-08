@@ -915,10 +915,13 @@
     </div>
 
     <div class="card" id="inventory-card">
-        <h3 style="margin: 0 0 10px 0;">🎒 Your Vault Inventory</h3>
-            <button onclick="document.getElementById('lootInfoModal').classList.add('open')" style="background: rgba(255,255,255,0.1); border: 1px solid var(--border-color); color: var(--text-muted); border-radius: 50%; width: 22px; height: 22px; display: flex; justify-content: center; align-items: center; font-size: 0.75em; cursor: pointer; padding: 0;">i</button>
+        <div style="display: flex; align-items: center; margin-bottom: 10px;">
+            <h3 style="margin: 0; display: flex; align-items: center; gap: 8px;">
+                🎒 Your Vault Inventory
+                <button onclick="document.getElementById('lootInfoModal').classList.add('open')" style="background: rgba(255,255,255,0.1); border: 1px solid var(--border-color); color: var(--text-muted); border-radius: 50%; width: 22px; height: 22px; display: flex; justify-content: center; align-items: center; font-size: 0.75em; cursor: pointer; padding: 0; flex-shrink: 0;">i</button>
             </h3>
         </div>
+        
         {% if not inventory %}
             <p style="color: var(--text-muted); font-size: 0.9em; font-style: italic; margin: 0;">Your inventory is empty. Defeat solo bosses to earn drops!</p>
         {% else %}
@@ -1236,10 +1239,12 @@
                                 {% endif %}
                                 
                                 <div style="margin-top: 8px;">
-                                    {% if bounty.status == 'Open' %}
+                                    {% if bounty.status == 'Open' or not bounty.status %}
                                         {% if bounty.poster_id == current_user.id %}
-                                            <button class="btn" style="padding: 6px 12px; font-size: 0.85em; width: auto; background: transparent; border: 1px solid #ef4444; color: #ef4444;" onclick="interactBounty('cancel', {{ bounty.id }})">Cancel Job</button>
+                                            <!-- Poster sees Cancel -->
+                                            <button class="btn" style="padding: 6px 12px; font-size: 0.85em; width: auto; background: transparent; border: 1px solid #ef4444; color: #ef4444;" onclick="interactBounty('cancel', {{ bounty.id }})">Cancel</button>
                                         {% else %}
+                                            <!-- Partner sees Accept -->
                                             <button class="btn" style="padding: 6px 12px; font-size: 0.85em; width: auto; background: #3b82f6;" onclick="interactBounty('accept', {{ bounty.id }})">Accept Job</button>
                                         {% endif %}
                                     {% elif bounty.status == 'In Progress' %}
@@ -1320,7 +1325,7 @@
                                 <span style="color: var(--text-muted);">Wants:</span> <span style="color: #fcd34d; font-weight: bold;">{{ trade.requested_return }}</span>
                             </div>
 
-                            {% if trade.status == 'Open' %}
+                            {% if trade.status == 'Open' or not trade.status %}
                                 {% if trade.poster_id != current_user.id %}
                                     <form onsubmit="interactTrade('propose', {{ trade.id }}, event)" style="margin: 0; display: flex; flex-direction: column; gap: 8px;">
                                         <select name="given_item_id" style="width: 100%; margin: 0; font-size: 0.85em; padding: 8px; background: rgba(0,0,0,0.5);" required>
