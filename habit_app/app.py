@@ -910,7 +910,6 @@ def post_bounty():
     if user.gold_balance >= gold_reward and task_desc:
         user.gold_balance -= gold_reward  # Hold gold in escrow
         
-        # Hold item in escrow (change owner to -1 so it leaves their Vault)
         item_id_to_store = 'None'
         if item_reward_id != 'None':
             item = UserInventory.query.filter_by(id=int(item_reward_id), user_id=user.id).first()
@@ -918,14 +917,6 @@ def post_bounty():
                 item.user_id = -1 
                 item_id_to_store = str(item.id)
                 
-        new_bounty = BountyBoard(
-            poster_id=user.id, poster_name=user.username,
-            task_desc=task_desc, gold_reward=gold_reward, item_reward=item_id_to_store
-        )
-        db.session.add(new_bounty)
-        db.session.add(TransactionHistory(user_id=user.id, amount=gold_reward, reason=f"Bounty Escrow: {task_desc}"))
-        db.session.commit()
-        
         new_bounty = BountyBoard(
             poster_id=user.id, poster_name=user.username,
             task_desc=task_desc, gold_reward=gold_reward, item_reward=item_id_to_store
@@ -949,7 +940,6 @@ def interact_bounty():
     
     if bounty and bounty.is_active:
         if action == 'cancel' and bounty.poster_id == user.id:
-            # Refund escrowed gold and items back to poster
             user.gold_balance += bounty.gold_reward
             if bounty.item_reward != 'None':
                 item = UserInventory.query.get(int(bounty.item_reward))
@@ -958,12 +948,10 @@ def interact_bounty():
             db.session.add(TransactionHistory(user_id=user.id, amount=bounty.gold_reward, reason=f"Bounty Refund: {bounty.task_desc}"))
             
         elif action == 'accept' and bounty.poster_id != user.id and bounty.status == 'Open':
-            # Job is claimed, but not yet paid out
             bounty.status = 'In Progress'
             bounty.claimer_id = user.id
             
         elif action == 'fulfill' and bounty.claimer_id == user.id and bounty.status == 'In Progress':
-            # Fulfiller completes the job and gets paid
             user.gold_balance += bounty.gold_reward
             user.wk_gold += bounty.gold_reward
             if bounty.item_reward != 'None':
@@ -1509,7 +1497,7 @@ def use_item(item_id):
         if item.multiplier <= 0:
             db.session.delete(item)
         db.session.commit()
-        return redirect('/')
+        return index()
 
     # --- STANDARD ITEM HANDLERS ---
     if item.category_target.startswith('buff'):
