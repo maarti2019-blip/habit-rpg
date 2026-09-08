@@ -1200,7 +1200,7 @@
             <!-- Post a Job Form -->
             <div style="background: rgba(0,0,0,0.3); border: 1px dashed #fcd34d; border-radius: 8px; padding: 12px; margin-bottom: 15px;">
                 <h4 style="margin: 0 0 10px 0; color: #fcd34d; font-size: 1em;">Post a New Bounty</h4>
-                <form id="postBountyForm" onsubmit="submitBounty(event)">
+                <form id="postBountyForm">
                     <input type="text" name="task_desc" placeholder="Task (e.g., Help me clean my car)" required style="margin-bottom: 8px;">
                     <div style="display: flex; gap: 8px; margin-bottom: 8px;">
                         <input type="number" name="gold_reward" placeholder="Gold Reward ($)" step="0.01" min="0" required style="flex: 1; margin-bottom: 0;">
@@ -1215,7 +1215,8 @@
                             {% endif %}
                         </select>
                     </div>
-                    <button type="submit" class="btn" style="background: #fcd34d; color: black; font-weight: bold;">Pin to Board</button>
+                    <!-- FIX: Type is now "button" and uses onclick to prevent native browser race conditions -->
+                    <button type="button" class="btn" style="background: #fcd34d; color: black; font-weight: bold;" onclick="submitBounty(this.form, this)">Pin to Board</button>
                 </form>
             </div>
 
@@ -1269,7 +1270,7 @@
             <!-- Post a Trade Form -->
             <div style="background: rgba(0,0,0,0.3); border: 1px dashed #10b981; border-radius: 8px; padding: 12px; margin-bottom: 15px;">
                 <h4 style="margin: 0 0 10px 0; color: #10b981; font-size: 1em;">Propose a Trade</h4>
-                <form id="postTradeForm" onsubmit="submitTrade(event)">
+                <form id="postTradeForm">
                     <p style="font-size: 0.85em; color: #e2e8f0; margin: 0 0 5px 0;">1. Select Items to Offer:</p>
                     <div style="max-height: 120px; overflow-y: auto; background: rgba(0,0,0,0.5); padding: 5px; border-radius: 4px; border: 1px solid var(--border-color); margin-bottom: 10px;">
                         {% if inventory %}
@@ -1289,7 +1290,8 @@
                     <p style="font-size: 0.85em; color: #e2e8f0; margin: 0 0 5px 0;">2. What do you want in return?</p>
                     <input type="text" name="requested_return" placeholder="e.g., 1 Legendary Orb, or a specific weapon..." required style="margin-bottom: 10px; width: 100%; box-sizing: border-box;">
                     
-                    <button type="submit" class="btn" style="background: #10b981; color: white; font-weight: bold;">Post Trade Offer</button>
+                    <!-- FIX: Type is now "button" -->
+                    <button type="button" class="btn" style="background: #10b981; color: white; font-weight: bold;" onclick="submitTrade(this.form, this)">Post Trade Offer</button>
                 </form>
             </div>
 
@@ -1386,7 +1388,7 @@
         window.useItem = async function(e, actionUrl) {
             e.preventDefault();
             const btn = e.target.querySelector('button');
-            if (btn) { btn.disabled = true; btn.innerText = "Processing..."; }
+            if (btn) btn.disabled = true; // Locks the button but doesn't change the text
             
             try {
                 const response = await fetch(actionUrl, { method: 'POST' });
@@ -1403,7 +1405,7 @@
                 
             } catch (error) {
                 console.error("Item usage failed:", error);
-                if (btn) { btn.disabled = false; btn.innerText = "Failed"; }
+                if (btn) btn.disabled = false; 
             }
         };
 
@@ -1617,14 +1619,16 @@
             } catch (error) { console.error("Purchase failed:", error); }
         };
 
-        // 10. CO-OP BOUNTY BOARD LOGIC
-        window.submitBounty = async function(e) {
-            e.preventDefault();
-            const btn = e.target.querySelector('button[type="submit"]');
-            btn.disabled = true; btn.innerText = "Pinning...";
+// 10. CO-OP BOUNTY BOARD LOGIC
+        window.submitBounty = async function(form, btn) {
+            if (!form.reportValidity()) return; // Forces HTML required fields to pop up
+            if (btn.disabled) return; // Hard-lock against ghost double-firing
+            
+            btn.disabled = true; 
+            btn.innerText = "Pinning...";
             
             try {
-                const formData = new FormData(e.target);
+                const formData = new FormData(form);
                 const response = await fetch('/post_bounty', { method: 'POST', body: formData });
                 const newDoc = new DOMParser().parseFromString(await response.text(), 'text/html');
                 
@@ -1635,7 +1639,8 @@
                 document.querySelector('.app-header').innerHTML = newDoc.querySelector('.app-header').innerHTML;
             } catch (error) {
                 console.error("Bounty post failed:", error);
-                btn.disabled = false; btn.innerText = "Pin to Board";
+                btn.disabled = false; 
+                btn.innerText = "Pin to Board";
             }
         };
 
@@ -1655,18 +1660,19 @@
             } catch (error) { console.error("Bounty interaction failed:", error); }
         };
 
-        // 11. TRADING POST LOGIC
-        window.submitTrade = async function(e) {
-            e.preventDefault();
-            if (e.target.querySelectorAll('input[name="offered_items"]:checked').length === 0) {
+       // 11. TRADING POST LOGIC
+        window.submitTrade = async function(form, btn) {
+            if (!form.reportValidity()) return;
+            if (form.querySelectorAll('input[name="offered_items"]:checked').length === 0) {
                 alert("You must select at least one item from your Vault to offer!"); return;
             }
-
-            const btn = e.target.querySelector('button[type="submit"]');
-            btn.disabled = true; btn.innerText = "Posting...";
+            if (btn.disabled) return;
+            
+            btn.disabled = true; 
+            btn.innerText = "Posting...";
             
             try {
-                const formData = new FormData(e.target);
+                const formData = new FormData(form);
                 const response = await fetch('/post_trade', { method: 'POST', body: formData });
                 const newDoc = new DOMParser().parseFromString(await response.text(), 'text/html');
                 
@@ -1676,7 +1682,8 @@
                 });
             } catch (error) {
                 console.error("Trade post failed:", error);
-                btn.disabled = false; btn.innerText = "Post Trade Offer";
+                btn.disabled = false; 
+                btn.innerText = "Post Trade Offer";
             }
         };
 
