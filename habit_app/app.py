@@ -936,7 +936,7 @@ def post_bounty():
         
         notify_discord(f"📜 **JOB POSTED!** {user.username} needs help! They are offering ${gold_reward:.2f} for: {task_desc}")
 
-    return redirect('/')
+    return index()
 
 @app.route('/interact_bounty', methods=['POST'])
 def interact_bounty():
@@ -972,7 +972,7 @@ def interact_bounty():
             bounty.is_active = False
             
         db.session.commit()
-    return redirect('/')
+    return index()
 
 @app.route('/post_trade', methods=['POST'])
 def post_trade():
@@ -984,7 +984,7 @@ def post_trade():
     requested_return = request.form.get('requested_return')
     
     if not offered_ids or not requested_return:
-        return redirect('/')
+        return index()
         
     offered_names = []
     valid_ids = []
@@ -1069,7 +1069,7 @@ def interact_trade():
             trade.status = 'Open'
             
         db.session.commit()
-    return redirect('/')
+    return index()
     
 @app.route('/dismiss_report', methods=['POST'])
 def dismiss_report():
@@ -1373,7 +1373,7 @@ def feed_pet(item_id):
         user.pet_xp += xp_gain
         db.session.delete(item)
         db.session.commit()
-    return redirect('/')
+    return index()
 
 @app.route('/claim_gacha', methods=['POST'])
 def claim_gacha():
@@ -1537,7 +1537,7 @@ def use_item(item_id):
         db.session.delete(item)
         
     db.session.commit()
-    return redirect('/')
+    return index()
 
 @app.route('/donate_guild', methods=['POST'])
 def donate_guild():
