@@ -1218,27 +1218,39 @@
                 </form>
             </div>
 
-            <!-- Active Bounties List -->
+           <!-- Active Bounties List -->
             <div style="display: flex; flex-direction: column; gap: 10px;">
                 {% if active_bounties %}
                     {% for bounty in active_bounties %}
-                        <div style="background: rgba(0,0,0,0.4); border-left: 4px solid #3b82f6; border-radius: 6px; padding: 12px; display: flex; justify-content: space-between; align-items: center;">
+                        <div style="background: rgba(0,0,0,0.4); border-left: 4px solid {% if bounty.status == 'In Progress' %}#f59e0b{% else %}#3b82f6{% endif %}; border-radius: 6px; padding: 12px; display: flex; justify-content: space-between; align-items: center;">
                             <div>
                                 <strong style="color: #e2e8f0; font-size: 1.05em;">{{ bounty.task_desc }}</strong>
                                 <p style="color: var(--text-muted); font-size: 0.85em; margin: 4px 0 0 0;">Posted by: <span style="color: #fff;">{{ bounty.poster_name }}</span></p>
                             </div>
                             <div style="text-align: right;">
                                 <span style="display: block; color: #fcd34d; font-weight: bold; margin-bottom: 2px;">+${{ "%.2f"|format(bounty.gold_reward) }}</span>
-                                
                                 {% if bounty.item_reward != 'None' and bounty.display_item_name %}
                                     <span style="display: block; color: {% if bounty.display_item_rarity == 'Legendary' %}#f59e0b{% elif bounty.display_item_rarity == 'Rare' %}#3b82f6{% elif bounty.display_item_rarity == 'Uncommon' %}#10b981{% else %}#a1a1aa{% endif %}; font-size: 0.8em; margin-bottom: 5px; font-weight: bold;">+ [{{ bounty.display_item_rarity }}] {{ bounty.display_item_name }}</span>
                                 {% endif %}
                                 
-                                {% if bounty.poster_id == current_user.id %}
-                                    <button class="btn" style="padding: 6px 12px; font-size: 0.85em; width: auto; background: transparent; border: 1px solid #ef4444; color: #ef4444;" onclick="interactBounty('cancel', {{ bounty.id }})">Cancel</button>
-                                {% else %}
-                                    <button class="btn" style="padding: 6px 12px; font-size: 0.85em; width: auto; background: #10b981;" onclick="interactBounty('claim', {{ bounty.id }})">Fulfill</button>
-                                {% endif %}
+                                <div style="margin-top: 8px;">
+                                    {% if bounty.status == 'Open' %}
+                                        {% if bounty.poster_id == current_user.id %}
+                                            <button class="btn" style="padding: 6px 12px; font-size: 0.85em; width: auto; background: transparent; border: 1px solid #ef4444; color: #ef4444;" onclick="interactBounty('cancel', {{ bounty.id }})">Cancel</button>
+                                        {% else %}
+                                            <button class="btn" style="padding: 6px 12px; font-size: 0.85em; width: auto; background: #3b82f6;" onclick="interactBounty('accept', {{ bounty.id }})">Accept Job</button>
+                                        {% endif %}
+                                    {% elif bounty.status == 'In Progress' %}
+                                        {% if bounty.poster_id == current_user.id %}
+                                            <span style="font-size: 0.8em; background: #f59e0b; color: black; padding: 4px 8px; border-radius: 4px; font-weight: bold; margin-right: 5px;">Accepted!</span>
+                                            <button class="btn" style="padding: 6px 12px; font-size: 0.85em; width: auto; background: transparent; border: 1px solid #ef4444; color: #ef4444; display: inline-block;" onclick="interactBounty('cancel', {{ bounty.id }})">Cancel</button>
+                                        {% elif bounty.claimer_id == current_user.id %}
+                                            <button class="btn" style="padding: 6px 12px; font-size: 0.85em; width: auto; background: #10b981; box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);" onclick="interactBounty('fulfill', {{ bounty.id }})">Task Completed (Claim Reward)</button>
+                                        {% else %}
+                                            <span style="font-size: 0.8em; color: var(--text-muted);">Job in progress...</span>
+                                        {% endif %}
+                                    {% endif %}
+                                </div>
                             </div>
                         </div>
                     {% endfor %}
@@ -1280,15 +1292,15 @@
                 </form>
             </div>
 
-            <!-- Active Trades List -->
+           <!-- Active Trades List -->
             <div style="display: flex; flex-direction: column; gap: 10px;">
                 {% if active_trades %}
                     {% for trade in active_trades %}
-                        <div style="background: rgba(0,0,0,0.4); border-left: 4px solid #10b981; border-radius: 6px; padding: 12px;">
+                        <div style="background: rgba(0,0,0,0.4); border-left: 4px solid {% if trade.status == 'Pending Acceptance' %}#f59e0b{% else %}#10b981{% endif %}; border-radius: 6px; padding: 12px;">
                             <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
                                 <strong style="color: #e2e8f0; font-size: 1.05em;">{{ trade.poster_name }}'s Offer</strong>
                                 {% if trade.poster_id == current_user.id %}
-                                    <button class="btn" style="padding: 4px 8px; font-size: 0.75em; width: auto; background: transparent; border: 1px solid #ef4444; color: #ef4444;" onclick="interactTrade('cancel', {{ trade.id }})">Cancel</button>
+                                    <button class="btn" style="padding: 4px 8px; font-size: 0.75em; width: auto; background: transparent; border: 1px solid #ef4444; color: #ef4444;" onclick="interactTrade('cancel', {{ trade.id }})">Cancel Trade</button>
                                 {% endif %}
                             </div>
                             
@@ -1305,19 +1317,34 @@
                                 <span style="color: var(--text-muted);">Wants:</span> <span style="color: #fcd34d; font-weight: bold;">{{ trade.requested_return }}</span>
                             </div>
 
-                            {% if trade.poster_id != current_user.id %}
-                                <!-- Partner selects an item to give in exchange -->
-                                <form onsubmit="interactTrade('accept', {{ trade.id }}, event)" style="margin: 0; display: flex; flex-direction: column; gap: 8px;">
-                                    <select name="given_item_id" style="width: 100%; margin: 0; font-size: 0.85em; padding: 8px; background: rgba(0,0,0,0.5);">
-                                        <option value="" disabled selected>Select an item to give them...</option>
-                                        {% for item in inventory %}
-                                            {% if not item.is_active %}
-                                                <option value="{{ item.id }}">[{{ item.rarity }}] {{ item.item_name }}</option>
-                                            {% endif %}
-                                        {% endfor %}
-                                    </select>
-                                    <button type="submit" class="btn" style="width: 100%; padding: 8px 12px; background: #10b981; font-size: 0.9em;">Accept Swap</button>
-                                </form>
+                            {% if trade.status == 'Open' %}
+                                {% if trade.poster_id != current_user.id %}
+                                    <form onsubmit="interactTrade('propose', {{ trade.id }}, event)" style="margin: 0; display: flex; flex-direction: column; gap: 8px;">
+                                        <select name="given_item_id" style="width: 100%; margin: 0; font-size: 0.85em; padding: 8px; background: rgba(0,0,0,0.5);" required>
+                                            <option value="" disabled selected>Select an item to offer them...</option>
+                                            {% for item in inventory %}
+                                                {% if not item.is_active %}
+                                                    <option value="{{ item.id }}">[{{ item.rarity }}] {{ item.item_name }}</option>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </select>
+                                        <button type="submit" class="btn" style="width: 100%; padding: 8px 12px; background: #10b981; font-size: 0.9em;">Propose Exchange</button>
+                                    </form>
+                                {% endif %}
+                            {% elif trade.status == 'Pending Acceptance' %}
+                                <div style="background: rgba(245, 158, 11, 0.1); border: 1px dashed #f59e0b; padding: 10px; border-radius: 6px; text-align: center;">
+                                    <p style="font-size: 0.85em; color: #fcd34d; margin: 0 0 10px 0;"><strong>Offer Pending:</strong> {{ trade.display_partner_item }}</p>
+                                    
+                                    {% if trade.poster_id == current_user.id %}
+                                        <div style="display: flex; gap: 8px;">
+                                            <button class="btn" style="flex: 1; background: #10b981; padding: 8px;" onclick="interactTrade('accept_offer', {{ trade.id }})">Accept</button>
+                                            <button class="btn" style="flex: 1; background: #ef4444; padding: 8px;" onclick="interactTrade('deny_offer', {{ trade.id }})">Deny</button>
+                                        </div>
+                                    {% elif trade.partner_id == current_user.id %}
+                                        <p style="font-size: 0.8em; color: var(--text-muted); margin: 0 0 10px 0;">Awaiting partner's decision...</p>
+                                        <button class="btn" style="width: auto; background: transparent; border: 1px solid #ef4444; color: #ef4444; padding: 4px 8px; font-size: 0.8em;" onclick="interactTrade('cancel_offer', {{ trade.id }})">Revoke Offer</button>
+                                    {% endif %}
+                                </div>
                             {% endif %}
                         </div>
                     {% endfor %}
