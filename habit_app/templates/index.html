@@ -1238,18 +1238,20 @@
                                 <div style="margin-top: 8px;">
                                     {% if bounty.status == 'Open' %}
                                         {% if bounty.poster_id == current_user.id %}
+                                            <!-- Poster sees Cancel -->
                                             <button class="btn" style="padding: 6px 12px; font-size: 0.85em; width: auto; background: transparent; border: 1px solid #ef4444; color: #ef4444;" onclick="interactBounty('cancel', {{ bounty.id }})">Cancel</button>
                                         {% else %}
+                                            <!-- Partner sees Accept -->
                                             <button class="btn" style="padding: 6px 12px; font-size: 0.85em; width: auto; background: #3b82f6;" onclick="interactBounty('accept', {{ bounty.id }})">Accept Job</button>
                                         {% endif %}
                                     {% elif bounty.status == 'In Progress' %}
                                         {% if bounty.poster_id == current_user.id %}
+                                            <!-- Poster sees Status and Cancel -->
                                             <span style="font-size: 0.8em; background: #f59e0b; color: black; padding: 4px 8px; border-radius: 4px; font-weight: bold; margin-right: 5px;">Accepted!</span>
                                             <button class="btn" style="padding: 6px 12px; font-size: 0.85em; width: auto; background: transparent; border: 1px solid #ef4444; color: #ef4444; display: inline-block;" onclick="interactBounty('cancel', {{ bounty.id }})">Cancel</button>
                                         {% elif bounty.claimer_id == current_user.id %}
+                                            <!-- Fulfiller sees Complete -->
                                             <button class="btn" style="padding: 6px 12px; font-size: 0.85em; width: auto; background: #10b981; box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);" onclick="interactBounty('fulfill', {{ bounty.id }})">Task Completed</button>
-                                        {% else %}
-                                            <span style="font-size: 0.8em; color: var(--text-muted);">Job in progress...</span>
                                         {% endif %}
                                     {% endif %}
                                 </div>
