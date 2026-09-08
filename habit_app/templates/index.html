@@ -940,13 +940,14 @@
                     {% if item.is_active %}
                         <div style="background: var(--accent-primary); color: white; padding: 6px 12px; border-radius: 4px; font-size: 0.8em; font-weight: bold;">ACTIVE</div>
                     {% else %}
-                        <form action="/use_item/{{ item.id }}" method="POST" style="margin:0; flex:1;">
+                        <!-- FIX: These now use the seamless useItem() JavaScript function -->
+                        <form onsubmit="useItem(event, '/use_item/{{ item.id }}')" style="margin:0; flex:1;">
                             <button type="submit" class="btn" style="padding: 8px; font-size: 0.85em; {% if item.rarity == 'Mythic' %}background: #7928ca; font-weight: bold;{% endif %}">
                                 {% if item.rarity == 'Mythic' %}Use Charge{% else %}Use Item{% endif %}
                             </button>
                         </form>
                         {% if current_user.has_pet and item.rarity != 'Mythic' %}
-                        <form action="/feed_pet/{{ item.id }}" method="POST" style="margin:0; flex:1;">
+                        <form onsubmit="useItem(event, '/feed_pet/{{ item.id }}')" style="margin:0; flex:1;">
                             <button type="submit" class="btn" style="padding: 8px; font-size: 0.85em; background: var(--border-color);">Feed Pet</button>
                         </form>
                         {% endif %}
@@ -1191,7 +1192,7 @@
             <button class="btn" style="width: auto; background: #ef4444; box-shadow: 0 4px 10px rgba(239, 68, 68, 0.4);" onclick="toggleView('main')">↩ Return</button>
         </div>
 
-        <!-- THE P2P JOB BOARD -->
+       <!-- THE P2P JOB BOARD -->
         <div class="card" id="job-board" style="border-color: #fcd34d;">
             <h3 style="margin: 0 0 15px 0; color: #fcd34d;">📜 Co-Op Bounty Board</h3>
             <p style="color: var(--text-muted); font-size: 0.9em; margin-top: -10px; margin-bottom: 15px; font-style: italic;">Post custom jobs for your partner. Rewards are held in escrow from your Vault!</p>
@@ -1218,7 +1219,7 @@
                 </form>
             </div>
 
-           <!-- Active Bounties List -->
+            <!-- Active Bounties List -->
             <div style="display: flex; flex-direction: column; gap: 10px;">
                 {% if active_bounties %}
                     {% for bounty in active_bounties %}
@@ -1245,7 +1246,7 @@
                                             <span style="font-size: 0.8em; background: #f59e0b; color: black; padding: 4px 8px; border-radius: 4px; font-weight: bold; margin-right: 5px;">Accepted!</span>
                                             <button class="btn" style="padding: 6px 12px; font-size: 0.85em; width: auto; background: transparent; border: 1px solid #ef4444; color: #ef4444; display: inline-block;" onclick="interactBounty('cancel', {{ bounty.id }})">Cancel</button>
                                         {% elif bounty.claimer_id == current_user.id %}
-                                            <button class="btn" style="padding: 6px 12px; font-size: 0.85em; width: auto; background: #10b981; box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);" onclick="interactBounty('fulfill', {{ bounty.id }})">Task Completed (Claim Reward)</button>
+                                            <button class="btn" style="padding: 6px 12px; font-size: 0.85em; width: auto; background: #10b981; box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);" onclick="interactBounty('fulfill', {{ bounty.id }})">Task Completed</button>
                                         {% else %}
                                             <span style="font-size: 0.8em; color: var(--text-muted);">Job in progress...</span>
                                         {% endif %}
@@ -1292,7 +1293,7 @@
                 </form>
             </div>
 
-           <!-- Active Trades List -->
+            <!-- Active Trades List -->
             <div style="display: flex; flex-direction: column; gap: 10px;">
                 {% if active_trades %}
                     {% for trade in active_trades %}
@@ -1355,26 +1356,21 @@
         </div>
 
     </div> <!-- This closes the tavern-view wrapper! -->
-    <!-- ========================================== -->
     
-    <script>
-       // 1. GACHA ORB TRIGGER (Moved to global scope!)
+<script>
+        // 1. GACHA ORB TRIGGER
         window.triggerGacha = function() {
             const orb = document.getElementById('orbContainer');
             const text = document.getElementById('gachaText');
             if (!orb) return;
-            
             orb.classList.add('shake');
             text.innerText = "Extracting Loot...";
-            
             setTimeout(() => {
                 orb.style.display = 'none';
                 text.style.display = 'none';
                 document.getElementById('burstFlash').classList.add('flash-anim');
-                
                 const beam = document.getElementById('lootBeam');
                 if (beam) beam.classList.add('beam-active');
-                
                 setTimeout(() => {
                     const results = document.getElementById('rewardResults');
                     if (results) results.style.display = 'flex';
@@ -1382,75 +1378,60 @@
             }, 1100);
         };
 
-        // 2. WORKOUT FIELDS TOGGLE (Moved to global scope!)
-        window.toggleWorkoutFields = function() {
-            const type = document.getElementById('activityType')?.value;
-            const wFields = document.getElementById('workoutDetails');
-            if (wFields) {
-                wFields.style.display = (type === 'workout') ? 'block' : 'none';
+        // 2. EXPLICIT ITEM USAGE (Fixes the page reload bug!)
+        window.useItem = async function(e, actionUrl) {
+            e.preventDefault();
+            const btn = e.target.querySelector('button');
+            if (btn) { btn.disabled = true; btn.innerText = "Processing..."; }
+            
+            try {
+                const response = await fetch(actionUrl, { method: 'POST' });
+                const newHtml = await response.text();
+                const newDoc = new DOMParser().parseFromString(newHtml, 'text/html');
+                
+                // Refresh all relevant cards silently
+                const cardIds = ['vault-card', 'journal-card', 'pet-card', 'solo-card', 'boss-card', 'inventory-card', 'marketplace-view', 'tavern-view'];
+                cardIds.forEach(id => {
+                    const oldCard = document.getElementById(id);
+                    const newCard = newDoc.getElementById(id);
+                    if (oldCard && newCard) oldCard.innerHTML = newCard.innerHTML;
+                });
+                
+            } catch (error) {
+                console.error("Item usage failed:", error);
+                if (btn) { btn.disabled = false; btn.innerText = "Failed"; }
             }
         };
 
-        // 3. DYNAMIC CHORE CONFIRMATION 
-        document.addEventListener('change', function(e) {
-            if (e.target && e.target.name === 'chores') {
-                if (e.target.checked && !e.target.disabled) {
-                    if (!confirm("Are you SURE you started a chore? This will instantly deal damage to your boss and cannot be reversed!")) {
-                        e.target.checked = false;
-                    }
-                }
-            }
-        });
-
-        // 4. SEAMLESS COMBAT & INVENTORY SUBMISSION (No Page Reload)
+        // 3. SEAMLESS COMBAT ACTIVITY SUBMISSION
         document.addEventListener('submit', async function(e) {
-            const isActivity = e.target && e.target.id === 'activityForm';
-            const isInventory = e.target && e.target.closest('#inventory-card');
-            
-            // Intercept both the attack button AND inventory buttons
-            if (isActivity || isInventory) {
+            if (e.target && e.target.id === 'activityForm') {
                 e.preventDefault(); 
-                
                 const form = e.target;
                 const submitBtn = form.querySelector('button[type="submit"]');
                 
                 if (submitBtn) {
                     submitBtn.disabled = true; 
-                    submitBtn.innerText = isActivity ? "Attacking..." : "Using...";
+                    submitBtn.innerText = "Attacking...";
                 }
 
-                // Only play the screen-shake combat animation for attacks
-                if (isActivity) {
-                    const targetContainer = document.querySelector('img[alt="Monster"]')?.parentElement || 
-                                            document.querySelector('img[alt="Raid Boss"]')?.parentElement;
-                    
-                    if (targetContainer) {
-                        targetContainer.style.position = 'relative'; 
-                        const img = targetContainer.querySelector('img');
-                        if (img) img.classList.add('monster-hit');
-                        
-                        const dmgText = document.createElement('div');
-                        dmgText.className = 'floating-dmg';
-                        dmgText.innerText = "💥 STRIKE!";
-                        targetContainer.appendChild(dmgText);
-                    }
+                const targetContainer = document.querySelector('img[alt="Monster"]')?.parentElement || document.querySelector('img[alt="Raid Boss"]')?.parentElement;
+                if (targetContainer) {
+                    targetContainer.style.position = 'relative'; 
+                    const img = targetContainer.querySelector('img');
+                    if (img) img.classList.add('monster-hit');
+                    const dmgText = document.createElement('div');
+                    dmgText.className = 'floating-dmg';
+                    dmgText.innerText = "💥 STRIKE!";
+                    targetContainer.appendChild(dmgText);
                 }
 
                 const formData = new FormData(form);
-                const response = await fetch(form.action, {
-                    method: form.method,
-                    body: formData
-                });
-                
+                const response = await fetch(form.action, { method: form.method, body: formData });
                 const newHtml = await response.text();
-
-                // Wait 1 second for combat animations to finish, but update inventory instantly (100ms)
-                const delay = isActivity ? 1000 : 100;
 
                 setTimeout(() => {
                     const newDoc = new DOMParser().parseFromString(newHtml, 'text/html');
-                    
-                    // 1. Only update the specific cards, leaving the screen completely still!
                     const cardIds = ['vault-card', 'journal-card', 'pet-card', 'solo-card', 'quest-card', 'boss-card', 'inventory-card'];
                     cardIds.forEach(id => {
                         const oldCard = document.getElementById(id);
@@ -1458,391 +1439,143 @@
                         if (oldCard && newCard) oldCard.innerHTML = newCard.innerHTML;
                     });
 
-                    // 1.5 Surgically update the Chore checkbox so it visually locks without wiping your text!
                     const oldCheckbox = document.querySelector('input[name="chores"]');
                     const newCheckbox = newDoc.querySelector('input[name="chores"]');
-                    if (oldCheckbox && newCheckbox) {
-                        oldCheckbox.outerHTML = newCheckbox.outerHTML;
-                    }
+                    if (oldCheckbox && newCheckbox) oldCheckbox.outerHTML = newCheckbox.outerHTML;
 
-                    // 2. Check if a new Gacha Orb dropped and inject it if it did
                     const oldGacha = document.getElementById('gacha-overlay');
                     const newGacha = newDoc.getElementById('gacha-overlay');
                     if (newGacha) {
-                        if (oldGacha) {
-                            oldGacha.outerHTML = newGacha.outerHTML;
-                        } else {
-                            document.body.insertAdjacentHTML('afterbegin', newGacha.outerHTML);
-                        }
+                        if (oldGacha) oldGacha.outerHTML = newGacha.outerHTML;
+                        else document.body.insertAdjacentHTML('afterbegin', newGacha.outerHTML);
                     }
                     
-                    // 3. Cleanly reset the attack form (Inventory buttons delete themselves upon use)
-                    if (isActivity) {
-                        if (submitBtn) {
-                            submitBtn.disabled = false; 
-                            submitBtn.innerText = "Execute Strike";
-                        }
-                        form.reset(); 
-                        window.toggleWorkoutFields();
-                        
-                        // 4. Remove the hit animations from the monster so it can be hit again
-                        const targetContainer = document.querySelector('img[alt="Monster"]')?.parentElement || 
-                                                document.querySelector('img[alt="Raid Boss"]')?.parentElement;
-                        if (targetContainer) {
-                            const img = targetContainer.querySelector('img');
-                            if (img) img.classList.remove('monster-hit');
-                            const oldDmgText = targetContainer.querySelector('.floating-dmg');
-                            if (oldDmgText) oldDmgText.remove();
-                        }
+                    if (submitBtn) {
+                        submitBtn.disabled = false; 
+                        submitBtn.innerText = "Execute Strike";
                     }
-                }, delay); 
+                    form.reset(); 
+                    window.toggleWorkoutFields();
+                    
+                    if (targetContainer) {
+                        const img = targetContainer.querySelector('img');
+                        if (img) img.classList.remove('monster-hit');
+                        const oldDmgText = targetContainer.querySelector('.floating-dmg');
+                        if (oldDmgText) oldDmgText.remove();
+                    }
+                }, 1000); 
             }
         });
 
-        // 5. SETTINGS MODAL FUNCTIONS
-        window.toggleSettings = function(show) {
-            const modal = document.getElementById('settingsModal');
-            if (!modal) return;
-            if (show) {
-                modal.classList.add('open');
-                const classes = document.body.className;
-                document.body.dataset.base = classes.match(/\bbase-\S+/)?.[0] || 'base-obsidian';
-                document.body.dataset.accent = classes.match(/\baccent-\S+/)?.[0] || 'accent-blue';
-                document.body.dataset.font = classes.match(/\bfont-\S+/)?.[0] || 'font-standard';
-                document.body.dataset.size = classes.match(/\bsize-\S+/)?.[0] || 'size-md';
-                document.body.dataset.bg = classes.match(/\bbg-\S+/)?.[0] || 'bg-solid';
-            } else {
-                modal.classList.remove('open');
-            }
+        // 4. INSTANT VIEW TOGGLING 
+        window.toggleView = function(targetView) {
+            const views = ['main-view', 'marketplace-view', 'tavern-view'];
+            views.forEach(v => {
+                const el = document.getElementById(v);
+                if (el) el.style.display = (v === targetView + '-view' || (targetView === 'main' && v === 'main-view')) ? 'block' : 'none';
+            });
+            window.scrollTo(0, 0); 
         };
 
-        window.saveAndCloseSettings = function() {
-            window.toggleSettings(false);
-            fetch('/save_theme', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    base: document.body.dataset.base,
-                    accent: document.body.dataset.accent,
-                    font: document.body.dataset.font,
-                    size: document.body.dataset.size,
-                    bg: document.body.dataset.bg
-                })
-            }).then(res => {
-                if (!res.ok) alert("Network error: Theme did not save to profile.");
-                else location.reload();
+        // 5. WORKOUT FIELDS TOGGLE
+        window.toggleWorkoutFields = function() {
+            const type = document.getElementById('activityType')?.value;
+            const wFields = document.getElementById('workoutDetails');
+            if (wFields) wFields.style.display = (type === 'workout') ? 'block' : 'none';
+        };
+
+        // 6. SNIVELS & KRAG COMMERCE
+        window.submitDonation = async function(type, amount) {
+            const formData = new FormData();
+            formData.append('upgrade_type', type);
+            formData.append('amount', amount);
+            const response = await fetch('/donate_guild', { method: 'POST', body: formData });
+            const newDoc = new DOMParser().parseFromString(await response.text(), 'text/html');
+            
+            ['guild-hall', 'vault-card'].forEach(id => {
+                const oldEl = document.getElementById(id);
+                if (oldEl) oldEl.innerHTML = newDoc.getElementById(id).innerHTML;
             });
         };
 
-        window.applyPref = function(category, value) {
-            document.body.className = document.body.className.replace(new RegExp(`\\b${category}-\\S+`, 'g'), '');
-            document.body.classList.add(value);
-            document.body.dataset[category] = value;
-        };
-
-        // 6. SERVICE WORKER REGISTRATION
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/static/sw.js');
-        }
-        // INSTANT VIEW TOGGLING (3-Way Router)
-        window.toggleView = function(targetView) {
-            const mainView = document.getElementById('main-view');
-            const marketView = document.getElementById('marketplace-view');
-            const tavernView = document.getElementById('tavern-view');
-            
-            // 1. Hide everything first
-            if (mainView) mainView.style.display = 'none';
-            if (marketView) marketView.style.display = 'none';
-            if (tavernView) tavernView.style.display = 'none';
-            
-            // 2. Reveal only the requested view
-            if (targetView === 'marketplace' && marketView) {
-                marketView.style.display = 'block';
-            } else if (targetView === 'tavern' && tavernView) {
-                tavernView.style.display = 'block';
-            } else if (mainView) {
-                mainView.style.display = 'block';
-            }
-            
-            // 3. Reset scroll position to the top of the new room
-            window.scrollTo(0, 0); 
-        };
-       // REACTIVE KOBOLD DIALOGUE ARRAYS
-        const kragTier1 = [
-            '"WE ARE BUILDING A CASTLE TODAY! KEEP IT COMING!"',
-            '"A donation fit for a dragon\'s hoard! I\'ll put the best crew on it!"',
-            '"Now THAT is how you fund a guild! Drinks are on me!"'
-        ];
-        const kragTier2 = [
-            '"Now that is a solid load of bricks! Excellent!"',
-            '"Halfway to a new roof! Keep swinging!"',
-            '"Heavy purses make light work! Good job."'
-        ];
-        const kragTier3 = [
-            '"Good contribution. The foundation grows stronger."',
-            '"Every bit helps. I\'ll order more mortar."',
-            '"Not bad, not bad at all."'
-        ];
-        const kragTier4 = [
-            '"I suppose a few extra nails never hurt."',
-            '"A small pouch, but we\'ll put it to work."',
-            '"I guess this buys a single brick..."'
-        ];
-
-        window.submitDonation = async function(type, amount) {
-            // 1. Randomly select dialogue
-            let quote = "";
-            if (amount >= 100) quote = kragTier1[Math.floor(Math.random() * kragTier1.length)];
-            else if (amount >= 50) quote = kragTier2[Math.floor(Math.random() * kragTier2.length)];
-            else if (amount >= 25) quote = kragTier3[Math.floor(Math.random() * kragTier3.length)];
-            else quote = kragTier4[Math.floor(Math.random() * kragTier4.length)];
-
-            // Play it instantly so the button feels responsive
-            const tempSpeech = document.getElementById('krag-speech');
-            if (tempSpeech) tempSpeech.innerText = `${quote} - Krag`;
-            
-            // 2. The Real Backend Submission
-            try {
-                const formData = new FormData();
-                formData.append('upgrade_type', type);
-                formData.append('amount', amount);
-                
-                const response = await fetch('/donate_guild', {
-                    method: 'POST',
-                    body: formData
-                });
-                
-                const newHtml = await response.text();
-                const newDoc = new DOMParser().parseFromString(newHtml, 'text/html');
-                
-                // 3. Seamlessly swap the Guild Hall and Vault cards
-                const oldGuild = document.getElementById('guild-hall');
-                const newGuild = newDoc.getElementById('guild-hall');
-                if (oldGuild && newGuild) oldGuild.innerHTML = newGuild.innerHTML;
-                
-                const oldVault = document.getElementById('vault-card');
-                const newVault = newDoc.getElementById('vault-card');
-                if (oldVault && newVault) oldVault.innerHTML = newVault.innerHTML;
-                
-                // 4. THE FIX: Re-apply the quote to the fresh HTML and start the 8-second timer!
-                const freshSpeech = document.getElementById('krag-speech');
-                if (freshSpeech) {
-                    freshSpeech.innerText = `${quote} - Krag`;
-                    setTimeout(() => {
-                        freshSpeech.innerText = '"Grab a hammer! Pool your gold here for permanent upgrades. Don\'t skimp on materials!" - Krag';
-                    }, 8000);
-                }
-                
-            } catch (error) {
-                console.error("Donation processing failed:", error);
-            }
-        };
-        // REACTIVE KOBOLD DIALOGUE ARRAYS (SNIVELS)
-        const snivelsHigh = [
-            '"A HIGH ROLLER! I knew I liked you! Absolute steal!"',
-            '"Best deal in town, and I\'m practically robbing myself!"',
-            '"Finally, someone with actual coin!"'
-        ];
-        const snivelsLow = [
-            '"Heh heh, a fine choice. Pleasure doing business..."',
-            '"No refunds! It\'s yours now."',
-            '"Don\'t drop it. If you break it, you buy it twice."'
-        ];
-
         window.submitPurchase = async function(shopItemId, price) {
-            // 1. Dialogue generation
-            let quote = price >= 25 
-                ? snivelsHigh[Math.floor(Math.random() * snivelsHigh.length)] 
-                : snivelsLow[Math.floor(Math.random() * snivelsLow.length)];
-                
-            const tempSpeech = document.getElementById('snivels-speech');
-            if (tempSpeech) tempSpeech.innerText = `${quote} - Snivels`;
+            const formData = new FormData();
+            formData.append('shop_item_id', shopItemId);
+            const response = await fetch('/buy_shop_item', { method: 'POST', body: formData });
+            const newDoc = new DOMParser().parseFromString(await response.text(), 'text/html');
             
-            // 2. The Real Backend Submission
-            try {
-                const formData = new FormData();
-                formData.append('shop_item_id', shopItemId);
-                
-                const response = await fetch('/buy_shop_item', {
-                    method: 'POST',
-                    body: formData
-                });
-                
-                const newHtml = await response.text();
-                const newDoc = new DOMParser().parseFromString(newHtml, 'text/html');
-                
-                // 3. Seamlessly swap cards
-                const oldShop = document.getElementById('quartermaster');
-                const newShop = newDoc.getElementById('quartermaster');
-                if (oldShop && newShop) oldShop.innerHTML = newShop.innerHTML;
-                
-                const oldVault = document.getElementById('vault-card');
-                const newVault = newDoc.getElementById('vault-card');
-                if (oldVault && newVault) oldVault.innerHTML = newVault.innerHTML;
-                
-                const oldInventory = document.getElementById('inventory-card');
-                const newInventory = newDoc.getElementById('inventory-card');
-                if (oldInventory && newInventory) oldInventory.innerHTML = newInventory.innerHTML;
-                
-                // 4. Re-apply the quote to the fresh HTML and start the 8-second timer
-                const freshSpeech = document.getElementById('snivels-speech');
-                if (freshSpeech) {
-                    freshSpeech.innerText = `${quote} - Snivels`;
-                    setTimeout(() => {
-                        freshSpeech.innerText = '"No refunds, no returns, no eye contact! New shipments arrive at midnight. Buy it or beat it." - Snivels';
-                    }, 8000);
-                }
-                
-            } catch (error) {
-                console.error("Purchase processing failed:", error);
-            }
+            ['quartermaster', 'vault-card', 'inventory-card'].forEach(id => {
+                const oldEl = document.getElementById(id);
+                if (oldEl) oldEl.innerHTML = newDoc.getElementById(id).innerHTML;
+            });
         };
 
-        // 7. CO-OP BOUNTY BOARD LOGIC
+        // 7. CO-OP BOUNTY & TRADE INTERCEPTORS
         window.submitBounty = async function(e) {
             e.preventDefault();
-            const form = e.target;
-            const submitBtn = form.querySelector('button[type="submit"]');
-            submitBtn.disabled = true;
-            submitBtn.innerText = "Pinning...";
-            
-            try {
-                const formData = new FormData(form);
-                const response = await fetch('/post_bounty', {
-                    method: 'POST',
-                    body: formData
-                });
-                
-                const newHtml = await response.text();
-                const newDoc = new DOMParser().parseFromString(newHtml, 'text/html');
-                
-                const oldBoard = document.getElementById('job-board');
-                const newBoard = newDoc.getElementById('job-board');
-                if (oldBoard && newBoard) oldBoard.innerHTML = newBoard.innerHTML;
-                
-                const oldVault = document.getElementById('vault-card');
-                const newVault = newDoc.getElementById('vault-card');
-                if (oldVault && newVault) oldVault.innerHTML = newVault.innerHTML;
-                
-                const oldHeader = document.querySelector('.app-header');
-                const newHeader = newDoc.querySelector('.app-header');
-                if (oldHeader && newHeader) oldHeader.innerHTML = newHeader.innerHTML;
-                
-            } catch (error) {
-                console.error("Bounty post failed:", error);
-                submitBtn.disabled = false;
-                submitBtn.innerText = "Pin to Board";
-            }
+            const btn = e.target.querySelector('button');
+            btn.disabled = true; btn.innerText = "Pinning...";
+            const formData = new FormData(e.target);
+            const response = await fetch('/post_bounty', { method: 'POST', body: formData });
+            const newDoc = new DOMParser().parseFromString(await response.text(), 'text/html');
+            ['job-board', 'vault-card'].forEach(id => {
+                const oldEl = document.getElementById(id);
+                if (oldEl) oldEl.innerHTML = newDoc.getElementById(id).innerHTML;
+            });
+            document.querySelector('.app-header').innerHTML = newDoc.querySelector('.app-header').innerHTML;
         };
 
         window.interactBounty = async function(actionType, bountyId) {
-            try {
-                const formData = new FormData();
-                formData.append('action_type', actionType);
-                formData.append('bounty_id', bountyId);
-                
-                const response = await fetch('/interact_bounty', {
-                    method: 'POST',
-                    body: formData
-                });
-                
-                const newHtml = await response.text();
-                const newDoc = new DOMParser().parseFromString(newHtml, 'text/html');
-                
-                const oldBoard = document.getElementById('job-board');
-                const newBoard = newDoc.getElementById('job-board');
-                if (oldBoard && newBoard) oldBoard.innerHTML = newBoard.innerHTML;
-                
-                const oldVault = document.getElementById('vault-card');
-                const newVault = newDoc.getElementById('vault-card');
-                if (oldVault && newVault) oldVault.innerHTML = newVault.innerHTML;
-                
-                const oldInventory = document.getElementById('inventory-card');
-                const newInventory = newDoc.getElementById('inventory-card');
-                if (oldInventory && newInventory) oldInventory.innerHTML = newInventory.innerHTML;
-                
-                const oldHeader = document.querySelector('.app-header');
-                const newHeader = newDoc.querySelector('.app-header');
-                if (oldHeader && newHeader) oldHeader.innerHTML = newHeader.innerHTML;
-                
-            } catch (error) {
-                console.error("Bounty interaction failed:", error);
-            }
+            const formData = new FormData();
+            formData.append('action_type', actionType);
+            formData.append('bounty_id', bountyId);
+            const response = await fetch('/interact_bounty', { method: 'POST', body: formData });
+            const newDoc = new DOMParser().parseFromString(await response.text(), 'text/html');
+            ['job-board', 'vault-card', 'inventory-card'].forEach(id => {
+                const oldEl = document.getElementById(id);
+                if (oldEl) oldEl.innerHTML = newDoc.getElementById(id).innerHTML;
+            });
+            document.querySelector('.app-header').innerHTML = newDoc.querySelector('.app-header').innerHTML;
         };
-        // 8. TRADING POST LOGIC
+
         window.submitTrade = async function(e) {
             e.preventDefault();
-            const form = e.target;
-            
-            // Ensure they checked at least one item
-            const checkedItems = form.querySelectorAll('input[name="offered_items"]:checked');
-            if (checkedItems.length === 0) {
-                alert("You must select at least one item from your Vault to offer!");
-                return;
+            if (e.target.querySelectorAll('input[name="offered_items"]:checked').length === 0) {
+                alert("Select an item to offer!"); return;
             }
-
-            const submitBtn = form.querySelector('button[type="submit"]');
-            submitBtn.disabled = true;
-            submitBtn.innerText = "Posting...";
-            
-            try {
-                const formData = new FormData(form);
-                const response = await fetch('/post_trade', { method: 'POST', body: formData });
-                const newHtml = await response.text();
-                const newDoc = new DOMParser().parseFromString(newHtml, 'text/html');
-                
-                // Swap the Trading Post and Inventory instantly
-                const oldPost = document.getElementById('trading-post');
-                const newPost = newDoc.getElementById('trading-post');
-                if (oldPost && newPost) oldPost.innerHTML = newPost.innerHTML;
-                
-                const oldInv = document.getElementById('inventory-card');
-                const newInv = newDoc.getElementById('inventory-card');
-                if (oldInv && newInv) oldInv.innerHTML = newInv.innerHTML;
-                
-            } catch (error) {
-                console.error("Trade post failed:", error);
-                submitBtn.disabled = false;
-                submitBtn.innerText = "Post Trade Offer";
-            }
+            const btn = e.target.querySelector('button');
+            btn.disabled = true; btn.innerText = "Posting...";
+            const formData = new FormData(e.target);
+            const response = await fetch('/post_trade', { method: 'POST', body: formData });
+            const newDoc = new DOMParser().parseFromString(await response.text(), 'text/html');
+            ['trading-post', 'inventory-card'].forEach(id => {
+                const oldEl = document.getElementById(id);
+                if (oldEl) oldEl.innerHTML = newDoc.getElementById(id).innerHTML;
+            });
         };
 
         window.interactTrade = async function(actionType, tradeId, event = null) {
             if (event) event.preventDefault();
+            const formData = new FormData();
+            formData.append('action_type', actionType);
+            formData.append('trade_id', tradeId);
             
-            try {
-                const formData = new FormData();
-                formData.append('action_type', actionType);
-                formData.append('trade_id', tradeId);
-                
-                if (event && actionType === 'accept') {
-                    const form = event.target;
-                    const givenItem = form.querySelector('select[name="given_item_id"]').value;
-                    if (!givenItem) {
-                        alert("You must select an item from your inventory to trade them!");
-                        return;
-                    }
-                    formData.append('given_item_id', givenItem);
-                }
-                
-                const response = await fetch('/interact_trade', { method: 'POST', body: formData });
-                const newHtml = await response.text();
-                const newDoc = new DOMParser().parseFromString(newHtml, 'text/html');
-                
-                // Swap the Trading Post and Inventory instantly
-                const oldPost = document.getElementById('trading-post');
-                const newPost = newDoc.getElementById('trading-post');
-                if (oldPost && newPost) oldPost.innerHTML = newPost.innerHTML;
-                
-                const oldInv = document.getElementById('inventory-card');
-                const newInv = newDoc.getElementById('inventory-card');
-                if (oldInv && newInv) oldInv.innerHTML = newInv.innerHTML;
-                
-            } catch (error) {
-                console.error("Trade interaction failed:", error);
+            if (event && actionType === 'propose') {
+                const givenItem = event.target.querySelector('select[name="given_item_id"]').value;
+                if (!givenItem) { alert("Select an item to offer!"); return; }
+                formData.append('given_item_id', givenItem);
             }
+            
+            const response = await fetch('/interact_trade', { method: 'POST', body: formData });
+            const newDoc = new DOMParser().parseFromString(await response.text(), 'text/html');
+            ['trading-post', 'inventory-card'].forEach(id => {
+                const oldEl = document.getElementById(id);
+                if (oldEl) oldEl.innerHTML = newDoc.getElementById(id).innerHTML;
+            });
         };
-        
+
+        // SETTINGS & MISC
+        window.toggleSettings = function(show) { document.getElementById('settingsModal').classList.toggle('open', show); };
         window.toggleWorkoutFields();
     </script>
     {% endif %}
