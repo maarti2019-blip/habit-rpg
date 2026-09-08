@@ -1607,22 +1607,22 @@ def initialize_database():
     with app.app_context():
         os.makedirs(os.path.join(basedir, 'instance'), exist_ok=True)
         db.create_all()
-
+        
+        # Safely inject the new columns into existing tables using Postgres-safe single quotes
         try:
-            db.session.execute(text('ALTER TABLE bounty_board ADD COLUMN status VARCHAR(50) DEFAULT "Open"'))
-            db.session.execute(text('ALTER TABLE bounty_board ADD COLUMN claimer_id INTEGER'))
-            db.session.execute(text('ALTER TABLE trade_offer ADD COLUMN status VARCHAR(50) DEFAULT "Open"'))
-            db.session.execute(text('ALTER TABLE trade_offer ADD COLUMN partner_id INTEGER'))
-            db.session.execute(text('ALTER TABLE trade_offer ADD COLUMN partner_item_id VARCHAR(50)'))
+            db.session.execute(text("ALTER TABLE bounty_board ADD COLUMN status VARCHAR(50) DEFAULT 'Open'"))
+            db.session.execute(text("ALTER TABLE bounty_board ADD COLUMN claimer_id INTEGER"))
+            db.session.execute(text("ALTER TABLE trade_offer ADD COLUMN status VARCHAR(50) DEFAULT 'Open'"))
+            db.session.execute(text("ALTER TABLE trade_offer ADD COLUMN partner_id INTEGER"))
+            db.session.execute(text("ALTER TABLE trade_offer ADD COLUMN partner_item_id VARCHAR(50)"))
             db.session.commit()
-        except:
-            db.session.rollback()
+        except Exception as e:
+            # This will gracefully print the error if the columns already exist, rather than crashing
+            print(f"Migration note (safe to ignore if columns already exist): {e}")
+            db.session.rollback() 
             
-        if not ServerState.query.first():
-            db.session.add(ServerState())
-        if not TradeOffer.query.first(): pass
-        if not GuildHall.query.first():
-            db.session.add(GuildHall())
+        if not ServerState.query.first(): db.session.add(ServerState())
+        if not GuildHall.query.first(): db.session.add(GuildHall())
         if not User.query.first():
             db.session.add(User(username='Alaina', solo_monster_name='Slime'))
             db.session.add(User(username='Matthew', solo_monster_name='Slime'))
