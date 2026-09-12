@@ -601,12 +601,15 @@
         <h2 style="margin: 0; color: var(--accent-primary); text-transform: uppercase; letter-spacing: 1px;">⚡ WORLD EVENT ACTIVE ⚡</h2>
         <h3 style="margin: 8px 0; color: #fff;">{{ server_state.active_event }}</h3>
         <p style="margin: 0; color: #e2e8f0; font-style: italic;">{{ server_state.event_description }}</p>
+        </div>
+        {% endif %}
+        
         {% if victory_weekend %}
     <div class="card" style="background: linear-gradient(135deg, #f59e0b, #ea580c); border: 2px solid #fff; text-align: center; color: white; padding: 20px; box-shadow: 0 0 20px rgba(245, 158, 11, 0.6);">
         <h2 style="margin: 0 0 5px 0; text-shadow: 0 0 10px #fff;">🏆 VICTORY WEEKEND 🏆</h2>
         <p style="margin: 0; font-weight: bold; font-size: 1.1em;">The Raid Boss is dead! All Solo Boss Damage and Gold Drops are DOUBLED until Monday!</p>
     </div>
-{% endif %}
+    {% endif %}
 
     <div class="card" id="vault-card">
         <div class="flex-grid">
