@@ -885,8 +885,8 @@ def index():
     ]
     current_event = server_state.active_event if event_active_now else None
     victory_weekend = (boss and (not boss.is_active or boss.current_hp <= 0) and is_weekend and current_event in boss_altering_events)
-    
-    return render_template('index.html', current_user=current_user, players=players, boss=boss, pending_rewards=pending_rewards, inventory=inventory, solo_img=solo_img, raid_img=raid_img, server_state=server_state, transactions=transactions, activity_logs=activity_logs, WEEKLY_QUESTS=WEEKLY_QUESTS, event_active_now=event_active_now, active_spoils=active_spoils, daily_shop=daily_shop, guild_stats=guild_stats, alaina_hustled=alaina_hustled, matthew_hustled=matthew_hustled, active_bounties=active_bounties, partner_bounty_count=partner_bounty_count, active_trades=active_trades, drop_info=drop_info, COMMON_ITEMS=COMMON_ITEMS, UNCOMMON_ITEMS=UNCOMMON_ITEMS, RARE_ITEMS=RARE_ITEMS, EPIC_ITEMS=EPIC_ITEMS, LEGENDARY_ITEMS=LEGENDARY_ITEMS, MYTHIC_ITEMS=MYTHIC_ITEMS)
+
+    return render_template('index.html', current_user=current_user, players=players, boss=boss, pending_rewards=pending_rewards, inventory=inventory, solo_img=solo_img, raid_img=raid_img, server_state=server_state, transactions=transactions, activity_logs=activity_logs, WEEKLY_QUESTS=WEEKLY_QUESTS, event_active_now=event_active_now, active_spoils=active_spoils, daily_shop=daily_shop, guild_stats=guild_stats, alaina_hustled=alaina_hustled, matthew_hustled=matthew_hustled, active_bounties=active_bounties, partner_bounty_count=partner_bounty_count, active_trades=active_trades, drop_info=drop_info, COMMON_ITEMS=COMMON_ITEMS, UNCOMMON_ITEMS=UNCOMMON_ITEMS, RARE_ITEMS=RARE_ITEMS, EPIC_ITEMS=EPIC_ITEMS, LEGENDARY_ITEMS=LEGENDARY_ITEMS, MYTHIC_ITEMS=MYTHIC_ITEMS, victory_weekend=victory_weekend)
 
 @app.route('/select_quest/<int:q_id>', methods=['POST'])
 def select_quest(q_id):
