@@ -877,6 +877,14 @@ def index():
         'solo_unc': f"{max(0, unc_raw - rare_raw):.2f}%",
         'solo_com': f"{max(0, 100.0 - unc_raw):.2f}%"
     }
+
+    is_weekend = est_now.weekday() in [4, 5, 6] # Friday, Saturday, Sunday
+    boss_altering_events = [
+        "Titan’s Shield", "Raid Boss Enrage", "The Shadow Clone", 
+        "Slime Outbreak", "Necromancer’s Curse", "Amnesia Fog", "Critical Strike Weekend"
+    ]
+    current_event = server_state.active_event if event_active_now else None
+    victory_weekend = (boss and (not boss.is_active or boss.current_hp <= 0) and is_weekend and current_event in boss_altering_events)
     
     return render_template('index.html', current_user=current_user, players=players, boss=boss, pending_rewards=pending_rewards, inventory=inventory, solo_img=solo_img, raid_img=raid_img, server_state=server_state, transactions=transactions, activity_logs=activity_logs, WEEKLY_QUESTS=WEEKLY_QUESTS, event_active_now=event_active_now, active_spoils=active_spoils, daily_shop=daily_shop, guild_stats=guild_stats, alaina_hustled=alaina_hustled, matthew_hustled=matthew_hustled, active_bounties=active_bounties, partner_bounty_count=partner_bounty_count, active_trades=active_trades, drop_info=drop_info, COMMON_ITEMS=COMMON_ITEMS, UNCOMMON_ITEMS=UNCOMMON_ITEMS, RARE_ITEMS=RARE_ITEMS, EPIC_ITEMS=EPIC_ITEMS, LEGENDARY_ITEMS=LEGENDARY_ITEMS, MYTHIC_ITEMS=MYTHIC_ITEMS)
 
@@ -1134,6 +1142,16 @@ def stage_activity():
     pet_multiplier = 1.0 + (user.pet_level * 0.01) if user.has_pet else 1.0
     workout_mult *= pet_multiplier; hobby_mult *= pet_multiplier; chore_mult *= pet_multiplier
 
+    is_weekend = get_est_now().weekday() in [4, 5, 6]
+    boss_altering_events = [
+        "Titan’s Shield", "Raid Boss Enrage", "Necromancer’s Curse", "Amnesia Fog",
+    ]
+    victory_weekend = (boss and (not boss.is_active or boss.current_hp <= 0) and is_weekend)
+    if victory_weekend:
+        workout_mult *= 2.0
+        hobby_mult *= 2.0
+        chore_mult *= 2.0
+    
     base_dmg = 0
     if act_type == 'workout': base_dmg = minutes * workout_mult; user.wk_workout += minutes
     elif act_type == 'hobby': base_dmg = minutes * hobby_mult; user.wk_hobby += minutes
@@ -1230,7 +1248,10 @@ def stage_activity():
             guild_stats = get_guild_stats()
             bonus_multiplier = 1.0 + (guild_stats['gold_cur'] / 100.0)
             gold_drop = round(gold_drop * bonus_multiplier, 2)
-            
+
+            if victory_weekend: 
+                gold_drop *= 2.0
+                
             if current_event == "Goblin Merchant's Crash": gold_drop *= 2.0
             if current_event == "Treasure Mimic Infestation": gold_drop = 10.00
             if current_event == "Colosseum Champion" and user.bosses_killed_today <= 3:
@@ -1327,7 +1348,7 @@ def feed_pet(item_id):
     user = User.query.get(session['user_id'])
     item = UserInventory.query.filter_by(id=item_id, user_id=user.id).first()
     if item and user.has_pet:
-        xp_gain = {"Common": 10.0, "Uncommon": 25.0, "Rare": 50.0, "Legendary": 100.0}.get(item.rarity, 10.0)
+        xp_gain = {"Common": 10.0, "Uncommon": 25.0, "Rare": 50.0, "Epic": 75.0, "Legendary": 100.0}.get(item.rarity, 10.0)
         user.pet_xp += xp_gain
         db.session.delete(item)
         db.session.commit()
