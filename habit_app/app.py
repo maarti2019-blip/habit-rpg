@@ -1144,9 +1144,12 @@ def stage_activity():
 
     is_weekend = get_est_now().weekday() in [4, 5, 6]
     boss_altering_events = [
-        "Titan’s Shield", "Raid Boss Enrage", "Necromancer’s Curse", "Amnesia Fog",
+        "Titan’s Shield", "Raid Boss Enrage", "The Shadow Clone", 
+        "Slime Outbreak", "Necromancer’s Curse", "Amnesia Fog", "Critical Strike Weekend"
     ]
-    victory_weekend = (boss and (not boss.is_active or boss.current_hp <= 0) and is_weekend)
+    # FIX: Now strictly enforces that the current_event is in the boss_altering_events list
+    victory_weekend = (boss and (not boss.is_active or boss.current_hp <= 0) and is_weekend and current_event in boss_altering_events)
+    
     if victory_weekend:
         workout_mult *= 2.0
         hobby_mult *= 2.0
