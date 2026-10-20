@@ -780,6 +780,67 @@ def index():
 
     pending_rewards = PendingReward.query.filter_by(user_id=current_user.id).all() if current_user else []
     inventory = UserInventory.query.filter_by(user_id=current_user.id).all() if current_user else []
+
+    if inventory:
+        for item in inventory:
+            if item.is_active and item.expires_at and get_est_now() > item.expires_at.replace(tzinfo=ZoneInfo("America/New_York")):
+                db.session.delete(item)
+        db.session.commit()
+        # Refresh after purge
+        inventory = UserInventory.query.filter_by(user_id=current_user.id).all()
+
+    # --- INVENTORY STACKING & GROUPING ---
+    rarity_order = {"Common": 1, "Uncommon": 2, "Rare": 3, "Epic": 4, "Legendary": 5, "Mythic": 6}
+
+    # Group definition mapping
+    def get_item_group(cat):
+        if cat == 'buff_workout': return "Workout Buffs"
+        if cat == 'buff_chore' or cat == 'chore_pass': return "Chore Buffs"
+        if cat == 'buff_hobby': return "Hobby Buffs"
+        if cat == 'buff_global': return "All DMG Buffs"
+        if cat == 'gold': return "Vault Gold"
+        if cat.startswith('mythic_'): return "Mythic Relics"
+        return "Direct Damage / Consumables"
+
+    stacked_dict = {}
+    for item in inventory:
+        # Stack key by name, active state, and multiplier (preserves mythic charge differences)
+        key = (item.item_name, item.is_active, item.multiplier if item.rarity == 'Mythic' else 1.0)
+        if key not in stacked_dict:
+            stacked_dict[key] = {
+                'sample': item,
+                'count': 1,
+                'ids': [item.id]
+            }
+        else:
+            stacked_dict[key]['count'] += 1
+            stacked_dict[key]['ids'].append(item.id)
+
+    grouped_inventory = {
+        "Workout Buffs": [],
+        "Chore Buffs": [],
+        "Hobby Buffs": [],
+        "All DMG Buffs": [],
+        "Direct Damage / Consumables": [],
+        "Vault Gold": [],
+        "Mythic Relics": []
+    }
+
+    for data in stacked_dict.values():
+        sample = data['sample']
+        group_name = get_item_group(sample.category_target)
+        if group_name not in grouped_inventory:
+            grouped_inventory[group_name] = []
+        grouped_inventory[group_name].append({
+            'item': sample,
+            'count': data['count'],
+            'id': sample.id,
+            'rarity_rank': rarity_order.get(sample.rarity, 0)
+        })
+
+    # Sort each group by rarity starting with Common at the top
+    for group_name in grouped_inventory:
+        grouped_inventory[group_name].sort(key=lambda x: (x['rarity_rank'], x['item'].item_name))
     
     transactions = TransactionHistory.query.filter_by(user_id=current_user.id).order_by(TransactionHistory.timestamp.desc()).limit(15).all() if current_user else []
 
