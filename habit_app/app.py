@@ -781,20 +781,23 @@ def index():
             
 
     pending_rewards = PendingReward.query.filter_by(user_id=current_user.id).all() if current_user else []
+
     inventory = UserInventory.query.filter_by(user_id=current_user.id).all() if current_user else []
+    
+    transactions = TransactionHistory.query.filter_by(user_id=current_user.id).order_by(TransactionHistory.timestamp.desc()).limit(15).all() if current_user else []
+
+    activity_logs = ActivityLog.query.filter_by(user_id=current_user.id).order_by(ActivityLog.timestamp.desc()).limit(20).all() if current_user else []
 
     if inventory:
         for item in inventory:
             if item.is_active and item.expires_at and get_est_now() > item.expires_at.replace(tzinfo=ZoneInfo("America/New_York")):
                 db.session.delete(item)
         db.session.commit()
-        # Refresh after purge
         inventory = UserInventory.query.filter_by(user_id=current_user.id).all()
 
     # --- INVENTORY STACKING & GROUPING ---
     rarity_order = {"Common": 1, "Uncommon": 2, "Rare": 3, "Epic": 4, "Legendary": 5, "Mythic": 6}
 
-    # Group definition mapping
     def get_item_group(cat):
         if cat == 'buff_workout': return "Workout Buffs"
         if cat == 'buff_chore' or cat == 'chore_pass': return "Chore Buffs"
@@ -806,14 +809,9 @@ def index():
 
     stacked_dict = {}
     for item in inventory:
-        # Stack key by name, active state, and multiplier (preserves mythic charge differences)
         key = (item.item_name, item.is_active, item.multiplier if item.rarity == 'Mythic' else 1.0)
         if key not in stacked_dict:
-            stacked_dict[key] = {
-                'sample': item,
-                'count': 1,
-                'ids': [item.id]
-            }
+            stacked_dict[key] = {'sample': item, 'count': 1, 'ids': [item.id]}
         else:
             stacked_dict[key]['count'] += 1
             stacked_dict[key]['ids'].append(item.id)
@@ -840,13 +838,8 @@ def index():
             'rarity_rank': rarity_order.get(sample.rarity, 0)
         })
 
-    # Sort each group by rarity starting with Common at the top
     for group_name in grouped_inventory:
         grouped_inventory[group_name].sort(key=lambda x: (x['rarity_rank'], x['item'].item_name))
-    
-    transactions = TransactionHistory.query.filter_by(user_id=current_user.id).order_by(TransactionHistory.timestamp.desc()).limit(15).all() if current_user else []
-
-    activity_logs = ActivityLog.query.filter_by(user_id=current_user.id).order_by(ActivityLog.timestamp.desc()).limit(20).all() if current_user else []
 
     if inventory:
         for item in inventory:
@@ -948,7 +941,7 @@ def index():
     current_event = server_state.active_event if event_active_now else None
     victory_weekend = (boss and (not boss.is_active or boss.current_hp <= 0) and is_weekend and current_event in boss_altering_events)
 
-    return render_template('index.html', current_user=current_user, players=players, boss=boss, pending_rewards=pending_rewards, inventory=inventory, solo_img=solo_img, raid_img=raid_img, server_state=server_state, transactions=transactions, activity_logs=activity_logs, WEEKLY_QUESTS=WEEKLY_QUESTS, event_active_now=event_active_now, active_spoils=active_spoils, daily_shop=daily_shop, guild_stats=guild_stats, alaina_hustled=alaina_hustled, matthew_hustled=matthew_hustled, active_bounties=active_bounties, partner_bounty_count=partner_bounty_count, active_trades=active_trades, drop_info=drop_info, COMMON_ITEMS=COMMON_ITEMS, UNCOMMON_ITEMS=UNCOMMON_ITEMS, RARE_ITEMS=RARE_ITEMS, EPIC_ITEMS=EPIC_ITEMS, LEGENDARY_ITEMS=LEGENDARY_ITEMS, MYTHIC_ITEMS=MYTHIC_ITEMS, victory_weekend=victory_weekend)
+    return render_template('index.html', current_user=current_user, players=players, boss=boss, pending_rewards=pending_rewards, inventory=inventory, grouped_inventory=grouped_inventory, solo_img=solo_img, raid_img=raid_img, server_state=server_state, transactions=transactions, activity_logs=activity_logs, WEEKLY_QUESTS=WEEKLY_QUESTS, event_active_now=event_active_now, active_spoils=active_spoils, daily_shop=daily_shop, guild_stats=guild_stats, alaina_hustled=alaina_hustled, matthew_hustled=matthew_hustled, active_bounties=active_bounties, partner_bounty_count=partner_bounty_count, active_trades=active_trades, drop_info=drop_info, COMMON_ITEMS=COMMON_ITEMS, UNCOMMON_ITEMS=UNCOMMON_ITEMS, RARE_ITEMS=RARE_ITEMS, EPIC_ITEMS=EPIC_ITEMS, LEGENDARY_ITEMS=LEGENDARY_ITEMS, MYTHIC_ITEMS=MYTHIC_ITEMS, victory_weekend=victory_weekend)
 
 @app.route('/select_quest/<int:q_id>', methods=['POST'])
 def select_quest(q_id):
